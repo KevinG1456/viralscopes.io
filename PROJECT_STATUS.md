@@ -2,9 +2,9 @@
 
 # ViralScopes.io — Project Status
 
-> **Version:** 1.1
+> **Version:** 1.2
 > **Last Updated:** 2026-07-21
-> **Status:** Phase 1 — Foundation & Project Setup (In Progress)
+> **Status:** Phase 1 — Foundation & Project Setup (Complete)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -38,18 +38,18 @@
 
 ## 1. At a Glance
 
-| Property                   | Value                                                                      |
-| -------------------------- | -------------------------------------------------------------------------- |
-| **Current phase**          | Phase 1 — Foundation & Project Setup (in progress)                         |
-| **Overall MVP completion** | 3%                                                                         |
-| **Infrastructure stage**   | Stage 0 (not yet provisioned)                                              |
-| **Active engineers**       | TBD                                                                        |
-| **Target MVP launch**      | Week 19–20 from project initiation                                         |
-| **Critical path item**     | Phase 1 — Foundation & Project Setup                                       |
-| **Active blockers**        | 1 (no GitHub remote yet — blocks branch protection, Dependabot, CI wiring) |
-| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                              |
-| **Last status update**     | 2026-07-21                                                                 |
-| **Next milestone**         | M1 — Project Ready (Week 1)                                                |
+| Property                   | Value                                                          |
+| -------------------------- | -------------------------------------------------------------- |
+| **Current phase**          | Phase 1 — Foundation & Project Setup (complete) — Phase 2 next |
+| **Overall MVP completion** | 5%                                                             |
+| **Infrastructure stage**   | Stage 0 (not yet provisioned)                                  |
+| **Active engineers**       | TBD                                                            |
+| **Target MVP launch**      | Week 19–20 from project initiation                             |
+| **Critical path item**     | Phase 2 — Infrastructure & DevOps                              |
+| **Active blockers**        | None                                                           |
+| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                  |
+| **Last status update**     | 2026-07-21                                                     |
+| **Next milestone**         | M1 — Project Ready (Week 1)                                    |
 
 ---
 
@@ -70,7 +70,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 | `PROJECT_STATUS.md`             | ✅ Complete | This document                                                            |
 | `CHANGELOG.md`                  | ✅ Complete | Initialised in Keep a Changelog format                                   |
 
-### Active: Phase 1 — Foundation & Project Setup
+### Complete: Phase 1 — Foundation & Project Setup
 
 **Start condition:** Engineering team assigned and development environment available. ✅ Met.
 
@@ -81,9 +81,13 @@ All 8 core project documents have been authored and are ready for engineering ha
 - ✅ Design system: provisional colour palette (light/dark), typography (Tailwind default scale + Geist Sans/Mono), Tailwind v4 CSS-native design tokens
 - ✅ Logo placeholder, favicon, loading screen, 5-icon dashboard icon set placeholder
 - ✅ `.env.example` populated with all required variables
-- ⏳ Git repository with branch protection rules configured — **blocked**: no GitHub remote exists yet. Required settings are documented (see Blockers) for whoever creates the remote to apply.
+- ✅ Git repository with branch protection rules configured — GitHub remote created (`KevinG1456/viralscopes.io`, private), `main`/`develop` pushed and tracking, `main-protection`/`develop-protection` rulesets created (require PR + 1 approval, block force pushes, block deletions, no admin bypass; required status checks intentionally deferred to Phase 2 since no CI exists yet)
 
-**Verification:** `npm install`, `turbo run build`, `turbo run lint`, `turbo run type-check` all pass across all 4 packages. Dev server smoke-tested manually.
+**Verification:** `npm install`, `turbo run build`, `turbo run lint`, `turbo run type-check` all pass across all 4 packages. Dev server smoke-tested manually. `main`/`develop` confirmed tracking `origin/main`/`origin/develop` via `git branch -vv` (no `[gone]` markers), both at commit `0cb7a44`.
+
+**Known limitation:** with 1 required approval and no bypass, a solo maintainer cannot self-merge PRs on either branch until a second collaborator joins or the ruleset is temporarily relaxed. Not currently addressed — flagging for whoever hits it first.
+
+**Next phase:** Phase 2 — Infrastructure & DevOps (Docker, CI/CD, monitoring stack). Not yet started.
 
 ---
 
@@ -93,7 +97,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
-Phase 1          ██████████████████░░   93%  🚧 In progress (blocked on GitHub remote)
+Phase 1          ████████████████████  100%  ✅ Complete
 Phase 2          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -116,7 +120,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Category                 | Total tasks | Complete | In progress | Pending |
 | ------------------------ | ----------- | -------- | ----------- | ------- |
 | Pre-Development (docs)   | 8           | 8        | 0           | 0       |
-| Phase 1 — Foundation     | 14          | 13       | 0           | 1       |
+| Phase 1 — Foundation     | 14          | 14       | 0           | 0       |
 | Phase 2 — Infrastructure | 28          | 0        | 0           | 28      |
 | Phase 3 — Database       | 42          | 0        | 0           | 42      |
 | Phase 4 — Auth           | 26          | 0        | 0           | 26      |
@@ -130,29 +134,29 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing       | 24          | 0        | 0           | 24      |
 | Phase 13 — Documentation | 12          | 0        | 0           | 12      |
 | Phase 14 — Deployment    | 14          | 0        | 0           | 14      |
-| **Total**                | **444**     | **21**   | **0**       | **423** |
+| **Total**                | **444**     | **22**   | **0**       | **422** |
 
 ---
 
 ## 4. Phase Progress
 
-| Phase    | Name                           | Status         | Completion | Target week         | Notes                                                                |
-| -------- | ------------------------------ | -------------- | ---------- | ------------------- | -------------------------------------------------------------------- |
-| Pre-Dev  | Documentation                  | ✅ Complete    | 100%       | Week 0              | All 8 documents authored                                             |
-| Phase 1  | Foundation & Project Setup     | 🚧 In progress | 93%        | Week 1              | 13/14 tasks done; blocked on branch protection (needs GitHub remote) |
-| Phase 2  | Infrastructure & DevOps        | ⏳ Not started | 0%         | Week 1–3            | Parallel with Phase 1                                                |
-| Phase 3  | Database & Core Schema         | ⏳ Not started | 0%         | Week 3–4            | Parallel with Phase 2                                                |
-| Phase 4  | Authentication & Authorisation | ⏳ Not started | 0%         | Week 4–6            | Depends on Phase 3                                                   |
-| Phase 5  | Core Backend API               | ⏳ Not started | 0%         | Week 6–9            | Parallel with Phase 8                                                |
-| Phase 6  | n8n Workflow Engine            | ⏳ Not started | 0%         | Week 9–12           | Parallel with Phase 5                                                |
-| Phase 7  | AI Prompt Library              | ⏳ Not started | 0%         | Week 10–12          | Parallel with Phase 6                                                |
-| Phase 8  | Frontend Dashboard             | ⏳ Not started | 0%         | Week 6–13           | Parallel with Phase 5                                                |
-| Phase 9  | Subscription & Billing         | ⏳ Not started | 0%         | Week 13–15          | Depends on Phase 5                                                   |
-| Phase 10 | Security & Compliance          | ⏳ Not started | 0%         | Week 15–16          | Parallel with Phase 9                                                |
-| Phase 11 | Super Admin Panel              | ⏳ Not started | 0%         | Week 20–22          | 30 days post-launch                                                  |
-| Phase 12 | Testing                        | ⏳ Not started | 0%         | Week 3–18 (ongoing) | Runs incrementally                                                   |
-| Phase 13 | Documentation                  | ⏳ Not started | 0%         | Week 5–18 (ongoing) | Runs incrementally                                                   |
-| Phase 14 | Production Deployment          | ⏳ Not started | 0%         | Week 19–20          | Depends on all phases                                                |
+| Phase    | Name                           | Status         | Completion | Target week         | Notes                                                            |
+| -------- | ------------------------------ | -------------- | ---------- | ------------------- | ---------------------------------------------------------------- |
+| Pre-Dev  | Documentation                  | ✅ Complete    | 100%       | Week 0              | All 8 documents authored                                         |
+| Phase 1  | Foundation & Project Setup     | ✅ Complete    | 100%       | Week 1              | 14/14 tasks done; GitHub remote live, branch rulesets configured |
+| Phase 2  | Infrastructure & DevOps        | ⏳ Not started | 0%         | Week 1–3            | Parallel with Phase 1                                            |
+| Phase 3  | Database & Core Schema         | ⏳ Not started | 0%         | Week 3–4            | Parallel with Phase 2                                            |
+| Phase 4  | Authentication & Authorisation | ⏳ Not started | 0%         | Week 4–6            | Depends on Phase 3                                               |
+| Phase 5  | Core Backend API               | ⏳ Not started | 0%         | Week 6–9            | Parallel with Phase 8                                            |
+| Phase 6  | n8n Workflow Engine            | ⏳ Not started | 0%         | Week 9–12           | Parallel with Phase 5                                            |
+| Phase 7  | AI Prompt Library              | ⏳ Not started | 0%         | Week 10–12          | Parallel with Phase 6                                            |
+| Phase 8  | Frontend Dashboard             | ⏳ Not started | 0%         | Week 6–13           | Parallel with Phase 5                                            |
+| Phase 9  | Subscription & Billing         | ⏳ Not started | 0%         | Week 13–15          | Depends on Phase 5                                               |
+| Phase 10 | Security & Compliance          | ⏳ Not started | 0%         | Week 15–16          | Parallel with Phase 9                                            |
+| Phase 11 | Super Admin Panel              | ⏳ Not started | 0%         | Week 20–22          | 30 days post-launch                                              |
+| Phase 12 | Testing                        | ⏳ Not started | 0%         | Week 3–18 (ongoing) | Runs incrementally                                               |
+| Phase 13 | Documentation                  | ⏳ Not started | 0%         | Week 5–18 (ongoing) | Runs incrementally                                               |
+| Phase 14 | Production Deployment          | ⏳ Not started | 0%         | Week 19–20          | Depends on all phases                                            |
 
 ---
 
@@ -169,7 +173,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - [x] Author `PROJECT_STATUS.md` — This document
 - [x] Author `CHANGELOG.md` — Initialised in Keep a Changelog format
 
-### Phase 1 — Foundation & Project Setup (13/14) ✅
+### Phase 1 — Foundation & Project Setup (14/14) ✅
 
 - [x] Initialise monorepo: `@viralscopes/web`, `@viralscopes/api`, `@viralscopes/shared`, `@viralscopes/db` (`apps/api`, `packages/shared`, `packages/db` scaffolded as empty stubs)
 - [x] Configure TypeScript strict mode across all packages (`tsconfig.base.json`, ES2022)
@@ -184,7 +188,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - [x] Design dashboard icon set (5-icon placeholder set)
 - [x] Document all environment variables in `.env.example`
 - [x] Write initial README.md local setup instructions (+ "Current implementation status" note, Design Tokens section, broken cross-reference fixes)
-- [ ] Configure Git repository with branch protection rules for `main` and `develop` — **blocked**, see Blockers section
+- [x] Configure Git repository with branch protection rules for `main` and `develop` — GitHub remote created (`KevinG1456/viralscopes.io`, private), `main-protection`/`develop-protection` rulesets live (require PR + 1 approval, block force pushes/deletions, no admin bypass)
 
 ---
 
@@ -205,11 +209,7 @@ _This section will be populated as engineers pick up Phase 2+ work. Each in-prog
 
 ## 7. Pending Tasks
 
-### Next Up — Phase 1 remainder
-
-- [ ] Configure Git repository with branch protection rules for `main` and `develop` — requires a GitHub remote to exist first (see Blockers)
-
-### Following — Phase 2: Infrastructure & DevOps (Parallel with Phase 1)
+### Next Up — Phase 2: Infrastructure & DevOps
 
 - [ ] Write Dockerfiles for all services
 - [ ] Write `docker-compose.dev.yml` and `docker-compose.prod.yml`
@@ -232,31 +232,32 @@ _All remaining pending tasks are listed in full in [ROADMAP.md](./ROADMAP.md)._
 
 ### Active Blockers
 
+_No active blockers at this time._
+
+---
+
+### Blocker Log (Historical)
+
 ### BLK-001 — No GitHub remote configured yet
 
 - **Raised:** 2026-07-21
 - **Raised by:** Engineering (Phase 1 implementation)
 - **Severity:** Medium
 - **Phases affected:** Phase 1 (branch protection task), Phase 2 (CI/CD, Dependabot)
-- **Description:** The repository has been developed locally with git but has no GitHub (or other) remote configured. Branch protection rules for `main`/`develop`, Dependabot/Renovate, and GitHub Actions CI/CD all require a remote to exist first.
-- **Impact:** The last Phase 1 deliverable ("Configure Git repository with branch protection rules") cannot be completed. Phase 2's CI/CD and Dependabot tasks are also blocked until this is resolved.
-- **Resolution options:**
-  1. Create a GitHub repository (org or personal) and push the existing local history to it, then configure branch protection per `PROJECT_RULES.md` section 5.2.
+- **Description:** The repository had been developed locally with git but had no GitHub (or other) remote configured. Branch protection rules for `main`/`develop`, Dependabot/Renovate, and GitHub Actions CI/CD all required a remote to exist first.
+- **Impact:** The last Phase 1 deliverable ("Configure Git repository with branch protection rules") could not be completed. Phase 2's CI/CD and Dependabot tasks were also blocked.
+- **Resolution options considered:**
+  1. Create a GitHub repository and push the existing local history to it, then configure branch protection per `PROJECT_RULES.md` section 5.2.
   2. Use a different remote (GitLab, Bitbucket) with equivalent protected-branch settings.
-- **Owner:** To be assigned
+- **Owner:** Project Lead
 - **Target resolution:** Before Phase 2 CI/CD tasks begin
-- **Status:** Open
+- **Status:** Resolved
+- **Resolution:** Created `KevinG1456/viralscopes.io` (private) on GitHub. Renamed local `master` → `main` to match `PROJECT_RULES.md` conventions, pushed `main` and created/pushed `develop` from it (both at commit `0cb7a44`, verified via `git branch -vv` showing clean tracking with no `[gone]` markers). Configured `main-protection` and `develop-protection` rulesets: require PR + 1 approval, block force pushes, block deletions, no admin bypass. Required status checks intentionally deferred — no CI pipeline exists yet (Phase 2 task); enabling that requirement now would block all merges permanently since no check could ever report success.
+- **Resolved:** 2026-07-21
 
-**Required branch protection settings once a remote exists (documented here for whoever sets it up):**
+**Known follow-on limitation (not a blocker, just a note):** with 1 required approval and no bypass, a solo maintainer cannot self-merge PRs on either branch. Revisit once a second collaborator joins, or relax the ruleset temporarily.
 
-- `main`: require 1 approving code-owner review, require all CI checks green, no direct/force pushes, no deletion, squash-merge only
-- `develop`: require all CI checks green, no force pushes, squash-merge preferred
-
----
-
-### Blocker Log (Historical)
-
-_No blockers have been logged yet. The project has not started development._
+**Still pending (tracked in Phase 2, not this blocker):** adding "require status checks to pass" to both rulesets once GitHub Actions CI exists.
 
 ---
 
@@ -665,8 +666,6 @@ When a known issue is identified, log it in this format:
 
 | Priority | Task                                                                            | Owner            | Notes                                                                         |
 | -------- | ------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------- |
-| 🔴 P1    | Create a GitHub remote and push the repository                                  | Project Lead     | Resolves BLK-001; unblocks branch protection and Phase 2 CI/CD                |
-| 🔴 P1    | Configure branch protection on `main`/`develop` once the remote exists          | Project Lead     | Settings documented in BLK-001; closes the last Phase 1 task                  |
 | 🟠 P2    | Decide YouTube API quota strategy (RISK-01)                                     | Engineering Lead | Decision needed before Phase 5                                                |
 | 🟠 P2    | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02)  | Engineering Lead | Decision needed before Phase 6                                                |
 | 🟡 P3    | Review/refine the provisional design token palette with actual brand guidelines | Designer         | Palette is a Phase 1 placeholder (DEC-007-adjacent); refine when brand exists |
@@ -674,16 +673,16 @@ When a known issue is identified, log it in this format:
 
 ### Next Week (Phase 2 Start)
 
-| Priority | Task                                                                     | Owner        | Notes                                 |
-| -------- | ------------------------------------------------------------------------ | ------------ | ------------------------------------- |
-| 🔴 P1    | Write Dockerfiles + `docker-compose.dev.yml` / `docker-compose.prod.yml` | Engineer 1   | Phase 2 critical path                 |
-| 🔴 P1    | Set up GitHub Actions CI/CD pipeline (lint, type-check, test, build)     | Engineer 1/2 | Depends on the GitHub remote existing |
-| 🟠 P2    | Configure Supabase local dev environment                                 | Engineer 2   | Phase 3 preparation                   |
-| 🟡 P3    | Draft Stripe product and pricing configuration                           | Product Lead | Needed before Phase 9                 |
+| Priority | Task                                                                     | Owner        | Notes                                                   |
+| -------- | ------------------------------------------------------------------------ | ------------ | ------------------------------------------------------- |
+| 🔴 P1    | Write Dockerfiles + `docker-compose.dev.yml` / `docker-compose.prod.yml` | Engineer 1   | Phase 2 critical path                                   |
+| 🔴 P1    | Set up GitHub Actions CI/CD pipeline (lint, type-check, test, build)     | Engineer 1/2 | Once live, add "require status checks" to both rulesets |
+| 🟠 P2    | Configure Supabase local dev environment                                 | Engineer 2   | Phase 3 preparation                                     |
+| 🟡 P3    | Draft Stripe product and pricing configuration                           | Product Lead | Needed before Phase 9                                   |
 
 ### Backlog (Next 4 Weeks)
 
-- Complete Phase 1 (branch protection) and Phase 2 milestones
+- Complete Phase 2 milestones
 - Begin Phase 3 (Database Schema) immediately after Phase 2 infrastructure is stable
 - Begin Phase 4 (Auth) immediately after Phase 3 core schema is complete
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
@@ -696,6 +695,7 @@ When a known issue is identified, log it in this format:
 | ---------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-07-20 | Engineering Lead                     | Initial document created. Pre-development phase complete. All 8 project documents authored. Development not yet started.                                                                                                                                                                                                                                                                                                                |
 | 2026-07-21 | Engineering (Phase 1 implementation) | Phase 1 — Foundation & Project Setup: 13/14 tasks complete. Monorepo scaffolded (Turborepo, npm workspaces, 4 packages), TypeScript/ESLint/Prettier/Husky/secretlint configured, design tokens and placeholder brand assets added, `.env.example` written. Remaining task (branch protection) blocked on a GitHub remote existing — logged as BLK-001. Added DEC-007 (Tailwind v4), DEC-008 (secretlint), DEC-009 (flat-config ESLint). |
+| 2026-07-21 | Engineering (Phase 1 implementation) | **Phase 1 complete (14/14).** BLK-001 resolved: created `KevinG1456/viralscopes.io` (private) on GitHub, renamed `master` → `main`, pushed `main` and `develop` (both tracking cleanly at `0cb7a44`), configured `main-protection`/`develop-protection` rulesets (PR + 1 approval, no force-push/delete, no admin bypass; status checks deferred to Phase 2). Phase 2 — Infrastructure & DevOps is now the critical path item.          |
 
 ---
 

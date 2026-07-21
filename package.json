@@ -1,26 +1,36 @@
 {
-  "name": "viralscopes.io",
-  "version": "0.1.0",
+  "name": "viralscopes",
   "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@eslint/js": "^9",
+    "@secretlint/secretlint-rule-preset-recommend": "^9",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "eslint-plugin-import": "^2",
+    "husky": "^9",
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "secretlint": "^9",
+    "turbo": "^2",
+    "typescript": "^5",
+    "typescript-eslint": "^8"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "npm@11.13.0"
 }

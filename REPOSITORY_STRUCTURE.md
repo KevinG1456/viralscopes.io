@@ -2,14 +2,17 @@
 
 # ViralScopes.io — Repository Architecture & Structure
 
-> **Version:** 1.1
-> **Last Updated:** 2026-07-21
+> **Version:** 1.2
+> **Last Updated:** 2026-07-22
 > **Status:** Active
 > **Cross-references:** [README.md](./README.md) · [PROJECT_RULES.md](./PROJECT_RULES.md) · [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md)
 
-> **Phase 1 note:** The hierarchy below is the target structure for the full MVP. As of Phase 1
-> (Foundation & Project Setup), `apps/api`, `packages/shared`, and `packages/db` are empty
-> workspace stubs — see the inline "Phase 1" annotations in the tree below and
+> **Phase 2 note:** The hierarchy below is the target structure for the full MVP. As of Phase 2
+> (Infrastructure & DevOps), `docker-compose.dev.yml`, `infra/docker/`, and `infra/monitoring/`
+> are live and verified; `docker-compose.prod.yml`, `infra/traefik/`, and the Coolify deploy
+> workflows are templates (BLK-002 — no VPS/domain exists). `apps/api` has a minimal Fastify
+> bootstrap (health/readiness/metrics/storage only); `packages/shared` and `packages/db` remain
+> empty stubs. See the inline "Phase 1"/"Phase 2" annotations in the tree below and
 > [PROJECT_STATUS.md](./PROJECT_STATUS.md) for current completion status.
 
 ---
@@ -293,10 +296,12 @@ viralscopes/
 │   │   └── package.json
 │   │
 │   └── api/                          # Fastify backend API
-│       │                             # Phase 1: stub only (src/index.ts placeholder,
-│       │                             # package.json, tsconfig.json, eslint.config.mjs). No
-│       │                             # Fastify dependency yet — the layered structure below
-│       │                             # (server.ts, plugins/, routes/, etc.) lands in Phase 5.
+│       │                             # Phase 2: minimal bootstrap only — server.ts,
+│       │                             # plugins/{cors,health,metrics}.plugin.ts, and
+│       │                             # services/storage.service.ts. No routes/, controllers/,
+│       │                             # repositories/, middleware/, schemas/, or errors/ yet —
+│       │                             # config.ts is plain (no Zod validation yet). The full
+│       │                             # layered structure below lands in Phase 5.
 │       ├── src/
 │       │   ├── index.ts              # Application entry point
 │       │   ├── server.ts             # Fastify server factory and plugin registration
@@ -635,20 +640,21 @@ viralscopes/
 │       └── ADR-005-dual-ai-providers.md
 │
 ├── .github/                          # GitHub configuration
-│   ├── workflows/                    # GitHub Actions CI/CD
-│   │   ├── ci.yml                    # Lint, type-check, test on every PR
-│   │   ├── build.yml                 # Docker build and push on merge to main
-│   │   ├── deploy-staging.yml        # Auto-deploy to staging
-│   │   ├── deploy-production.yml     # Manual-approval deploy to production
-│   │   └── security.yml              # npm audit and dependency scanning
-│   ├── CODEOWNERS                    # Code ownership assignments
-│   ├── PULL_REQUEST_TEMPLATE.md      # PR description template
-│   └── ISSUE_TEMPLATE/
+│   ├── workflows/                    # GitHub Actions CI/CD — all 5 live as of Phase 2
+│   │   ├── ci.yml                    # Lint, type-check, build, test on every PR — verified locally
+│   │   ├── build.yml                 # Docker build and push to GHCR on merge to main — verified locally
+│   │   ├── deploy-staging.yml        # TEMPLATE: skips gracefully without Coolify secrets (BLK-002)
+│   │   ├── deploy-production.yml     # TEMPLATE: skips gracefully without Coolify secrets (BLK-002)
+│   │   └── security.yml              # npm audit (blocks on high/critical) + weekly scheduled re-scan
+│   ├── dependabot.yml                # npm (root + workspaces), github-actions, docker — weekly
+│   ├── CODEOWNERS                    # Not yet created — no team to assign yet
+│   ├── PULL_REQUEST_TEMPLATE.md      # Not yet created
+│   └── ISSUE_TEMPLATE/               # Not yet created
 │       ├── bug_report.md
 │       └── feature_request.md
 │
-├── docker-compose.dev.yml            # Development Docker Compose
-├── docker-compose.prod.yml           # Production Docker Compose
+├── docker-compose.dev.yml            # Development Docker Compose — verified working (Phase 2)
+├── docker-compose.prod.yml           # Production Docker Compose — TEMPLATE, unverified (BLK-002)
 ├── turbo.json                        # Turborepo task pipeline configuration
 ├── package.json                      # Root package.json (workspace definition)
 ├── tsconfig.base.json                # Base TypeScript configuration (extended by all packages)
@@ -672,8 +678,8 @@ viralscopes/
 
 | File                                       | Purpose                                                                                                                                                                                                  |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.dev.yml`                   | Local development environment: all services, hot reload, exposed ports                                                                                                                                   |
-| `docker-compose.prod.yml`                  | Production environment: health checks, restart policies, named volumes, no exposed ports                                                                                                                 |
+| `docker-compose.dev.yml`                   | Local development environment: all services, hot reload, exposed ports. **Verified working** (Phase 2).                                                                                                  |
+| `docker-compose.prod.yml`                  | Production environment: health checks, restart policies, named volumes, no exposed ports except via Traefik. **Template, unverified** — no VPS/domain exists (BLK-002).                                  |
 | `turbo.json`                               | Turborepo pipeline: defines build order, cache inputs, and task dependencies                                                                                                                             |
 | `package.json`                             | Workspace root: defines all workspaces, shared dev dependencies, and monorepo scripts                                                                                                                    |
 | `tsconfig.base.json`                       | Base TypeScript config inherited by all packages. Sets `strict: true`, target `ES2022`, path aliases                                                                                                     |
@@ -827,16 +833,27 @@ Both `apps/web` and `apps/api` import from `@viralscopes/shared`. They never imp
 
 ## 8. infra/ — Infrastructure
 
+> **Phase 2 note:** `docker/`, `monitoring/`, and `traefik/` are live as of Phase 2 (see
+> `PROJECT_STATUS.md`) — `docker/` and `monitoring/` are verified working; `traefik/` is a
+> template, unverified (BLK-002: no real domain/server exists). `n8n-workflows/` remains empty
+> until Phase 6.
+
 ### docker/
 
-One Dockerfile per deployable service. Dockerfiles use multi-stage builds to keep production images small:
+Custom Dockerfiles exist only for the two services this repo actually builds — `Dockerfile.web`
+and `Dockerfile.api`. n8n, Redis, MinIO, Postgres, and the monitoring stack all use official
+images pinned to a resolved digest directly in the compose files (see DEC-011 in
+`PROJECT_STATUS.md`) — no wrapper Dockerfile needed since nothing is customised. Both Dockerfiles
+use multi-stage builds:
 
-1. **Build stage** — installs all dependencies and compiles TypeScript
+1. **Build stage** — installs all dependencies (`--ignore-scripts`, since the root `prepare: husky`
+   script has nothing to attach to in a Docker build context) and compiles TypeScript
 2. **Production stage** — copies only the compiled output and production dependencies
 
 ### n8n-workflows/
 
-All n8n workflow definitions are exported as JSON and committed here. This ensures:
+Empty until Phase 6. All n8n workflow definitions will be exported as JSON and committed here.
+This ensures:
 
 - Workflow changes are tracked in version control
 - Workflows can be restored after environment rebuild
@@ -846,18 +863,22 @@ All n8n workflow definitions are exported as JSON and committed here. This ensur
 
 ### monitoring/
 
-| Directory             | Contents                                                                |
-| --------------------- | ----------------------------------------------------------------------- |
-| `prometheus/`         | Prometheus scrape config and alerting rules                             |
-| `grafana/dashboards/` | Pre-built Grafana dashboard JSON (imported on startup via provisioning) |
-| `loki/`               | Loki log aggregation configuration                                      |
+| Directory                   | Contents                                                                                                                                                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prometheus/prometheus.yml` | Scrape config for api, n8n, postgres-exporter, redis-exporter, prometheus itself — verified, 5/5 targets up                                                                                                                |
+| `grafana/provisioning/`     | Datasource (Prometheus + Loki) and dashboard provisioning, auto-loaded on Grafana startup                                                                                                                                  |
+| `grafana/dashboards/`       | One consolidated `infrastructure-overview.json` dashboard — see scope note in `PROJECT_STATUS.md` (the 5 dashboards named in earlier drafts of this document are deferred until Phases 5/6/9 emit the metrics they'd need) |
+| `loki/loki.yml`             | Loki log aggregation configuration                                                                                                                                                                                         |
+| `loki/promtail.yml`         | Promtail scrape config — ships every container's logs into Loki via Docker service discovery, verified                                                                                                                     |
 
 ### traefik/
 
-Traefik is the reverse proxy and SSL terminator. The configuration is split into:
+**Template only — unverified, no real domain/server exists (BLK-002).** Traefik is the reverse
+proxy and SSL terminator for `docker-compose.prod.yml`. The configuration is split into:
 
-- `traefik.yml` — static configuration (entrypoints, certificate resolvers, API)
-- `dynamic/middlewares.yml` — security headers, rate limiting, authentication middleware
+- `traefik.yml` — static configuration (entrypoints, Let's Encrypt certificate resolver, API)
+- `dynamic/middlewares.yml` — security headers middleware (HSTS, CSP-adjacent headers per
+  `PROJECT_RULES.md` 4.4)
 
 ---
 

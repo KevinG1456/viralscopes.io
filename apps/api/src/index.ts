@@ -1,8 +1,16 @@
-// Placeholder entry point for the ViralScopes API.
-//
-// This package is scaffolded in Phase 1 (Foundation & Project Setup) as an
-// empty workspace member so the monorepo build graph and tooling are wired
-// up end-to-end. The real Fastify server, plugins, routes, controllers,
-// services, and repositories are built in Phase 5 (Core Backend API) per
-// ROADMAP.md.
-export {};
+import { loadConfig } from './config';
+import { buildServer } from './server';
+
+async function main(): Promise<void> {
+  const config = loadConfig();
+  const app = await buildServer(config);
+
+  try {
+    await app.listen({ port: config.port, host: config.host });
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+}
+
+void main();

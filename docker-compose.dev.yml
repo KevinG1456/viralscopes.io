@@ -1,0 +1,186 @@
+name: viralscopes-dev
+
+services:
+  web:
+    image: node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2
+    working_dir: /repo
+    command: sh -c "npm install && npm run dev --workspace=@viralscopes/web"
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    volumes:
+      - .:/repo
+      - web_node_modules:/repo/node_modules
+
+  api:
+    image: node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2
+    working_dir: /repo
+    command: sh -c "npm install && npm run dev --workspace=@viralscopes/api"
+    ports:
+      - '3001:3001'
+    environment:
+      PORT: 3001
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      REDIS_URL: redis://redis:6379
+      S3_BUCKET: viralscopes-dev
+      S3_REGION: auto
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: 'true'
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    volumes:
+      - .:/repo
+      - api_node_modules:/repo/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      # Not 5432/54322: both fall inside common Windows dynamic port
+      # exclusion ranges (netsh interface ipv4 show excludedportrange) and
+      # fail to bind on some dev machines. 15432 avoids that.
+      - '15432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+        mc alias set local http://minio:9000 minioadmin minioadmin &&
+        mc mb --ignore-existing local/viralscopes-dev
+      "
+
+  n8n:
+    image: n8nio/n8n:1.44.1@sha256:e86cd970292e6136d2babb3da0ba9b3129c9a153a777660303eee7e672f3540e
+    ports:
+      - '5678:5678'
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-changeme}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-dev-encryption-key-change-me}
+      N8N_METRICS: 'true'
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  prometheus:
+    image: prom/prometheus:latest@sha256:3c42b892cf723fa54d2f262c37a0e1f80aa8c8ddb1da7b9b0df9455a35a7f893
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest@sha256:1c1bd67c54c5fcf6e759897852b5a584191bd6796e8d328a5ace457799801261
+    ports:
+      - '3002:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+  loki:
+    image: grafana/loki:latest@sha256:70b9f699fc9bb868b62f1cfd4f787dfa50242f1fd92e6089787d5d7daea75fe8
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./infra/monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:latest@sha256:6cfa64ec432b24a912d640e2edb940eeae2666f61861a66c121d763dd7241381
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./infra/monitoring/loki/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest@sha256:ac5ec343104fae0e2d84a27bb8d69b38430a11910c5382cad85d478d2bab713e
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest@sha256:9ca6f929a8abc518d78158757922444f1cf807661a2238f44b28c3cd08a1b652
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+networks:
+  default:
+    name: viralscopes_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  n8n_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  web_node_modules:
+  api_node_modules:

@@ -243,13 +243,14 @@ introduced, since Tailwind's default scale already meets the project's needs.
 
 ## 5. Installation
 
-> **Current implementation status:** This repository is in **Phase 1 — Foundation & Project Setup**
-> (see [PROJECT_STATUS.md](./PROJECT_STATUS.md)). The monorepo, tooling, and design tokens described
-> below are live today. `apps/api`, `packages/shared`, and `packages/db` are empty workspace
-> skeletons — no Fastify server, database schema, or Docker/CI setup exists yet. Only
-> `npm install` and `npm run dev --workspace=@viralscopes/web` are runnable right now; the
-> `docker compose` flow and the rest of the local development stack below describe the target
-> state that lands in later phases.
+> **Current implementation status:** This repository has completed **Phase 2 — Infrastructure &
+> DevOps** (see [PROJECT_STATUS.md](./PROJECT_STATUS.md)). `docker compose -f docker-compose.dev.yml
+up` genuinely works today — it brings up Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki,
+> and a minimal `apps/api` (Fastify, `/health` + `/ready` + `/metrics` only — no business routes
+> yet) alongside `apps/web`. `packages/shared` and `packages/db` are still empty workspace
+> skeletons; Fastify's full layered API, the database schema, and n8n workflows land in Phases
+> 3–6. `docker-compose.prod.yml` and the Traefik/Coolify deploy pipeline are **templates only** —
+> no VPS or domain exists yet (see BLK-002 in `PROJECT_STATUS.md`).
 
 ### Prerequisites
 
@@ -312,53 +313,67 @@ External service keys (YouTube API, OpenAI, Anthropic, Stripe, SendGrid) are req
 
 ## 6. Local Development
 
-### Starting the Full Stack
+### Docker Workflow (Phase 2)
 
-The entire development environment starts with a single command:
+The entire development environment — frontend, API, database, cache, object storage, workflow
+engine, and the full monitoring stack — starts with a single command from the repository root:
 
 ```bash
 docker compose -f docker-compose.dev.yml up
 ```
 
-This starts:
+This is a genuinely working stack (verified, not aspirational): `web` and `api` run via a
+`node:22-alpine` container with the repo bind-mounted for hot reload (each gets its own named
+volume for `node_modules` so host/container native-binary mismatches aren't an issue); everything
+else runs its official, digest-pinned image. First boot runs `npm install` inside the `web`/`api`
+containers, which takes a few minutes — subsequent starts are fast since `node_modules` persists
+in the named volume.
 
-- **PostgreSQL** (Supabase local) on port `54322`
-- **Supabase Studio** on port `54323`
-- **Redis** on port `6379`
-- **n8n** on port `5678`
-- **MinIO** (local S3) on port `9000` (console on `9001`)
-- **Prometheus** on port `9090`
-- **Grafana** on port `3002`
-- **Loki** on port `3100`
+**What's included and what isn't (Phase 2 scope):**
 
-Then, in separate terminals:
+- `apps/api` is a **minimal** Fastify bootstrap — `/health`, `/ready`, `/metrics` only. The full
+  layered API (routes/controllers/services/repositories, auth, business endpoints) is Phase 5.
+- Postgres here is a **plain** database + named volume — no Supabase Studio, Auth, PostgREST, or
+  RLS yet. Full Supabase project setup is Phase 3.
+- `docker-compose.prod.yml` and the Traefik/Coolify pieces are **templates only** — see
+  [Deployment](#10-deployment) and BLK-002 in `PROJECT_STATUS.md`.
 
-```bash
-# Terminal 1 — Start the Fastify API (with hot reload)
-npm run dev --workspace=apps/api
-
-# Terminal 2 — Start the Next.js frontend (with hot reload)
-npm run dev --workspace=apps/web
-```
-
-Or run both simultaneously:
+**Bringing the stack down:**
 
 ```bash
-npm run dev
+docker compose -f docker-compose.dev.yml down        # stop, keep volumes (data persists)
+docker compose -f docker-compose.dev.yml down -v      # stop and wipe all data (fresh start)
 ```
+
+**Rebuilding after a dependency change:** the `web`/`api` containers run `npm install` every time
+they start, so a `docker compose restart web api` picks up new dependencies without needing to
+rebuild an image (there's nothing to rebuild — these aren't the production Dockerfiles).
+
+**Common gotchas:**
+
+- If port `5432`/`54322` binding fails on Windows, it's very likely inside a Windows dynamic port
+  exclusion range (`netsh interface ipv4 show excludedportrange protocol=tcp`) — this is why
+  Postgres is mapped to `15432` here instead.
+- `docker compose logs -f api` (or `web`, `n8n`, etc.) tails a single service's logs directly; all
+  container logs are also shipped into Loki via Promtail and queryable from Grafana Explore.
 
 ### Service URLs (Development)
 
-| Service                     | URL                               |
-| --------------------------- | --------------------------------- |
-| Next.js Frontend            | http://localhost:3000             |
-| Fastify API                 | http://localhost:3001             |
-| API Documentation (Swagger) | http://localhost:3001/api/v1/docs |
-| n8n Workflow Editor         | http://localhost:5678             |
-| Supabase Studio             | http://localhost:54323            |
-| MinIO Console               | http://localhost:9001             |
-| Grafana Dashboards          | http://localhost:3002             |
-| Prometheus                  | http://localhost:9090             |
+| Service                                    | URL                                  |
+| ------------------------------------------ | ------------------------------------ |
+| Next.js Frontend                           | http://localhost:3000                |
+| Fastify API                                | http://localhost:3001                |
+| API health / readiness                     | http://localhost:3001/health, /ready |
+| API metrics (Prometheus scrape target)     | http://localhost:3001/metrics        |
+| n8n Workflow Editor                        | http://localhost:5678                |
+| Postgres (plain, Phase 3 sets up Supabase) | localhost:15432                      |
+| MinIO Console                              | http://localhost:9001                |
+| Grafana Dashboards                         | http://localhost:3002 (admin/admin)  |
+| Prometheus                                 | http://localhost:9090                |
+| Loki                                       | http://localhost:3100                |
+
+> Once Phase 3 adds Supabase project setup, Supabase Studio will be added here on its own port —
+> it does not exist in the Phase 2 stack.
 
 ### Database Setup
 
@@ -519,16 +534,26 @@ All environment variables are documented in `.env.example`. Below is the full re
 
 ### Development Mode
 
+**Option A — everything in Docker** (simplest; `web`/`api` included in the compose file with hot
+reload via a bind mount):
+
 ```bash
-# Start infrastructure (PostgreSQL, Redis, n8n, MinIO, monitoring)
 docker compose -f docker-compose.dev.yml up -d
+```
 
-# Start the API with hot reload
+**Option B — infra in Docker, `web`/`api` natively on the host** (faster iteration if you prefer
+running Node directly rather than through the container's `npm install` step):
+
+```bash
+# Start everything except web/api
+docker compose -f docker-compose.dev.yml up -d postgres redis minio minio-init n8n prometheus grafana loki promtail postgres-exporter redis-exporter
+
+# Then run web/api on the host
 npm run dev --workspace=apps/api
-
-# Start the frontend with hot reload
 npm run dev --workspace=apps/web
 ```
+
+Don't run both options for `web`/`api` at once — they'll fight over ports 3000/3001.
 
 ### Production Mode (Local)
 
@@ -680,6 +705,13 @@ describe('computeViralScore', () => {
 ---
 
 ## 10. Deployment
+
+> **Current implementation status:** `ci.yml` (lint/type-check/build/test) and `security.yml`
+> (`npm audit`) are live and run on every PR. `build.yml` genuinely builds and pushes both Docker
+> images to GHCR on merge to `main`. `deploy-staging.yml` and `deploy-production.yml` are written
+> per the pipeline below but are **templates** — they detect the absence of
+> `COOLIFY_*_WEBHOOK_TOKEN` secrets and skip (not fail) rather than error, since no Coolify server,
+> staging URL, or production URL exists yet. See BLK-002 in `PROJECT_STATUS.md`.
 
 ViralScopes.io is deployed using **Coolify** (self-hosted PaaS) via **GitHub Actions** CI/CD.
 

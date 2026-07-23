@@ -4,12 +4,23 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3",
+    "@aws-sdk/s3-request-presigner": "^3",
+    "@fastify/cors": "^10",
+    "fastify": "^5",
+    "ioredis": "^5",
+    "pg": "^8",
+    "prom-client": "^15"
+  },
   "devDependencies": {
-    "eslint-plugin-import": "^2"
+    "@types/pg": "^8",
+    "eslint-plugin-import": "^2",
+    "tsx": "^4"
   }
 }

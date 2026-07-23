@@ -1,0 +1,27 @@
+name: Security
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    # Weekly re-scan, independent of any push, in case a new CVE is
+    # disclosed for a dependency already in the lockfile.
+    - cron: '0 6 * * 1'
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # PROJECT_RULES.md 4.5: high/critical CVEs block the merge.
+      - run: npm audit --audit-level=high

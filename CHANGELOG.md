@@ -91,6 +91,31 @@ Each version entry uses the following change categories:
 - `REPOSITORY_STRUCTURE.md`: updated to reflect `eslint.config.mjs` (flat config) instead of `.eslintrc.js`, Tailwind v4's CSS-based configuration instead of `tailwind.config.ts`, and Phase 1 stub status for `apps/api`, `packages/shared`, `packages/db`
 - `PROJECT_RULES.md`: secret-scanning tooling updated to name `secretlint` as the chosen tool, with `detect-secrets` retained as an optional alternative
 
+### Added — Phase 2: Infrastructure & DevOps
+
+- `docker-compose.dev.yml` — one-command local dev stack: `web`/`api` (hot reload via bind mount), Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki, Promtail, postgres-exporter, redis-exporter. Verified: all 12 containers healthy, service-to-service DNS resolution confirmed.
+- `docker-compose.prod.yml` — Stage 1 production topology per `INFRASTRUCTURE_GROWTH_PLAN.md` (template only — no VPS/domain exists yet)
+- `infra/docker/Dockerfile.web`, `infra/docker/Dockerfile.api` — multi-stage production images, both built and run successfully
+- Minimal Fastify bootstrap in `apps/api`: `GET /health`, `GET /ready` (verified DB + Redis connectivity checks), `GET /metrics` (Prometheus format)
+- Provider-agnostic object storage abstraction (`services/storage.service.ts`) — verified end-to-end (put/get/delete/signed-URL) against live MinIO
+- `apps/web` `GET /api/health` route
+- GitHub Actions: `ci.yml` (lint/type-check/build/test), `security.yml` (`npm audit --audit-level=high`), `build.yml` (build + push both images to GHCR on merge to `main`), `deploy-staging.yml`/`deploy-production.yml` (templates — skip gracefully without Coolify secrets)
+- `.github/dependabot.yml` — weekly npm, github-actions, and Docker ecosystem updates
+- Prometheus scrape config, Grafana provisioning (datasources + one consolidated "Infrastructure Overview" dashboard), Loki + Promtail log shipping — all verified with real data
+- MinIO bucket auto-creation (`viralscopes-dev`) on stack startup
+
+### Changed — Phase 2
+
+- `apps/api/next.config.ts` (web): added `output: 'standalone'` for the minimal production Docker image
+- `.env.example`: Postgres port corrected from `54322` to `15432` (54322 falls inside a Windows dynamic port exclusion range on some dev machines); added `S3_FORCE_PATH_STYLE`
+- `README.md`: rewrote "Local Development" with a real, verified Docker workflow section; updated "Running the Application" and "Deployment" implementation-status callouts
+- `PROJECT_STATUS.md`: Phase 2 progress, BLK-002, DEC-010 through DEC-013, corrected Phase 2's task total from an approximate 28 to the actual 32
+
+### Known Issues — Phase 2
+
+- Alertmanager/PagerDuty alerting rules deferred to Stage 2 (DEC-010) — no automated alert routing exists yet, only Grafana dashboards and ad hoc Loki queries
+- `deploy-staging.yml`/`deploy-production.yml`, Traefik/Let's Encrypt, and Cloudflare R2 production credentials are untested — no deployment infrastructure exists (BLK-002 in `PROJECT_STATUS.md`)
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

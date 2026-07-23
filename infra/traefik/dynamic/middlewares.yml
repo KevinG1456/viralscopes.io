@@ -1,0 +1,15 @@
+# TEMPLATE -- part of docker-compose.prod.yml, unverified (see BLK-002).
+# Security headers per PROJECT_RULES.md 4.4.
+http:
+  middlewares:
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        frameDeny: true
+        contentTypeNosniff: true
+        referrerPolicy: 'strict-origin-when-cross-origin'
+        customResponseHeaders:
+          Permissions-Policy: 'geolocation=(), camera=(), microphone=()'

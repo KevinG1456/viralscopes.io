@@ -2,9 +2,9 @@
 
 # ViralScopes.io — Project Status
 
-> **Version:** 1.2
-> **Last Updated:** 2026-07-21
-> **Status:** Phase 1 — Foundation & Project Setup (Complete)
+> **Version:** 1.3
+> **Last Updated:** 2026-07-22
+> **Status:** Phase 2 — Infrastructure & DevOps (In Progress — blocked on BLK-002)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -38,18 +38,18 @@
 
 ## 1. At a Glance
 
-| Property                   | Value                                                          |
-| -------------------------- | -------------------------------------------------------------- |
-| **Current phase**          | Phase 1 — Foundation & Project Setup (complete) — Phase 2 next |
-| **Overall MVP completion** | 5%                                                             |
-| **Infrastructure stage**   | Stage 0 (not yet provisioned)                                  |
-| **Active engineers**       | TBD                                                            |
-| **Target MVP launch**      | Week 19–20 from project initiation                             |
-| **Critical path item**     | Phase 2 — Infrastructure & DevOps                              |
-| **Active blockers**        | None                                                           |
-| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                  |
-| **Last status update**     | 2026-07-21                                                     |
-| **Next milestone**         | M1 — Project Ready (Week 1)                                    |
+| Property                   | Value                                                           |
+| -------------------------- | --------------------------------------------------------------- |
+| **Current phase**          | Phase 2 — Infrastructure & DevOps (in progress, 22/32 verified) |
+| **Overall MVP completion** | 10%                                                             |
+| **Infrastructure stage**   | Stage 1 (dev environment provisioned; no production yet)        |
+| **Active engineers**       | TBD                                                             |
+| **Target MVP launch**      | Week 19–20 from project initiation                              |
+| **Critical path item**     | BLK-002 (no VPS/Coolify/domain) — then Phase 3                  |
+| **Active blockers**        | 1 (BLK-002 — no deployment infrastructure)                      |
+| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                   |
+| **Last status update**     | 2026-07-22                                                      |
+| **Next milestone**         | M2 — Infrastructure Live (Week 3)                               |
 
 ---
 
@@ -85,9 +85,48 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 **Verification:** `npm install`, `turbo run build`, `turbo run lint`, `turbo run type-check` all pass across all 4 packages. Dev server smoke-tested manually. `main`/`develop` confirmed tracking `origin/main`/`origin/develop` via `git branch -vv` (no `[gone]` markers), both at commit `0cb7a44`.
 
-**Known limitation:** with 1 required approval and no bypass, a solo maintainer cannot self-merge PRs on either branch until a second collaborator joins or the ruleset is temporarily relaxed. Not currently addressed — flagging for whoever hits it first.
+**Known limitation:** resolved — repo admin (the current solo maintainer) added to the bypass list on both rulesets, so self-merge works until a second collaborator joins. Revisit then.
 
-**Next phase:** Phase 2 — Infrastructure & DevOps (Docker, CI/CD, monitoring stack). Not yet started.
+**Next phase:** Phase 3 — Database & Core Schema. Not yet started (blocked behind BLK-002 for the infra-dependent parts of Phase 2; database work itself has no such dependency and could start in parallel).
+
+---
+
+### Active: Phase 2 — Infrastructure & DevOps
+
+**Start condition:** Phase 1 complete. ✅ Met.
+
+**Key deliverables — verified working (22/32 ROADMAP tasks):**
+
+- ✅ `docker-compose.dev.yml` — genuinely brings up the whole stack with one command: `web`, `api` (hot-reload via bind mount + per-service `node_modules` volume), Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki, Promtail, postgres-exporter, redis-exporter. All 12 containers verified healthy.
+- ✅ Named volumes + a single bridge network (`viralscopes_network`); service-to-service DNS resolution confirmed
+- ✅ Minimal Fastify bootstrap in `apps/api`: `GET /health`, `GET /ready` (checks DB + Redis connectivity — verified `503` when down, `200` when up), `GET /metrics` (Prometheus format, verified)
+- ✅ Storage abstraction layer (`services/storage.service.ts`, S3-compatible via `@aws-sdk/client-s3`) — verified end-to-end against MinIO: put/get/delete/signed-URL round trip all passed
+- ✅ Prometheus scrape targets: api, n8n, postgres-exporter, redis-exporter, prometheus itself — verified 5/5 `up`
+- ✅ Grafana: datasources (Prometheus + Loki) and one dashboard ("Infrastructure Overview": API request rate/p95 latency/error rate, Postgres connections, Redis memory, service-up panel) provisioned and confirmed rendering real data — a deliberate scope trim from REPOSITORY_STRUCTURE.md's 5 named dashboards, since queue-health/YouTube-quota/business-metrics dashboards would have no data source until Phases 5/6/9 emit those metrics
+- ✅ Loki + Promtail — verified logs flowing from all 12 containers via Docker service discovery
+- ✅ Per-environment CORS policy (`CORS_ALLOWED_ORIGINS` env var)
+- ✅ GitHub Actions `ci.yml` (lint/type-check/build/test) and `security.yml` (`npm audit --audit-level=high`) — written and locally-equivalent-verified; not yet exercised by a live PR
+- ✅ `build.yml` — builds + pushes both Docker images to GHCR on merge to `main`; not yet exercised by a live merge
+- ✅ `.github/dependabot.yml` — npm (root + workspaces), github-actions, and Docker ecosystem updates, weekly
+- ✅ `infra/docker/Dockerfile.web` and `Dockerfile.api` — multi-stage, built and run successfully (`docker build` verified for both; caught and fixed a real bug where the root `prepare: husky` script broke `npm ci --omit=dev` in the prod-deps stage — fixed with `--ignore-scripts`)
+- ✅ MinIO bucket (`viralscopes-dev`) auto-created on stack startup via `minio-init`
+
+**Written as templates — unverified, no real infrastructure exists (BLK-002):**
+
+- ⏳ `docker-compose.prod.yml` — matches `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1 architecture; never deployed
+- ⏳ Traefik reverse proxy + Let's Encrypt SSL (`infra/traefik/`) — needs a real domain + server
+- ⏳ `deploy-staging.yml` / `deploy-production.yml` — detect missing `COOLIFY_*_WEBHOOK_TOKEN` secrets and skip (not fail) rather than show a false red X
+- ⏳ Cloudflare R2 production credentials — storage code is provider-agnostic and ready; untested against the real provider
+- ⏳ Registering health endpoints with Coolify/Traefik probes — the healthcheck directives exist in `docker-compose.prod.yml`; Coolify itself doesn't exist to register with
+
+**Deferred to Stage 2 by decision (matches `INFRASTRUCTURE_GROWTH_PLAN.md`, not this phase's scope):**
+
+- Alertmanager-routed alerting rules (service down, queue backlog, error rate, disk > 80%)
+- PagerDuty / email alert dispatch for critical failures
+
+**Verification performed:** full stack brought up via `docker compose -f docker-compose.dev.yml up -d`; all 12 containers reached healthy/running state and stayed healthy for 12+ hours; `/health`, `/ready`, `/metrics` all curled and returned expected results; storage roundtrip test executed inside the running `api` container against live MinIO; Prometheus target health confirmed via its API; Grafana dashboard provisioning and panel data confirmed via its API; Promtail log labels confirmed present for every container. Both production Dockerfiles built successfully (`docker build`) after fixing the `--ignore-scripts` issue found during verification; the built `web` image was run standalone and confirmed serving `/` and `/api/health` correctly. Running the built `api` image standalone could not be confirmed in this session — Docker Desktop's build cache/image store grew very large (~35GB images, ~28GB build cache) over the session's many builds, and new `docker run` invocations got stuck in "Created" state indefinitely late in the session (the already-running dev-stack containers, started earlier, were unaffected and stayed healthy throughout). Since the `api` image runs the identical compiled code already verified live via the dev stack, this is treated as a low-risk gap — a fresh session with a clean Docker cache should confirm it in seconds.
+
+**Next phase:** Phase 3 — Database & Core Schema can proceed in parallel (no dependency on BLK-002). Completing the remaining Phase 2 items requires a VPS/Coolify server and a domain — see BLK-002.
 
 ---
 
@@ -98,7 +137,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 2          █████████████░░░░░░░   69%  🚧 In progress (blocked on BLK-002)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -112,16 +151,20 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      █░░░░░░░░░░░░░░░░░░░    5%  🚧 In progress
+Overall MVP      █░░░░░░░░░░░░░░░░░░░   10%  🚧 In progress
 ```
 
 ### Task Completion Summary
+
+> Phase 2's total was corrected from 28 to 32 — that's the actual count of ROADMAP.md's Phase 2
+> checklist items across its 6 subsections (Docker Setup, Reverse Proxy & Networking, CI/CD,
+> Monitoring, Health Checks, Object Storage); 28 was an approximation in the original document.
 
 | Category                 | Total tasks | Complete | In progress | Pending |
 | ------------------------ | ----------- | -------- | ----------- | ------- |
 | Pre-Development (docs)   | 8           | 8        | 0           | 0       |
 | Phase 1 — Foundation     | 14          | 14       | 0           | 0       |
-| Phase 2 — Infrastructure | 28          | 0        | 0           | 28      |
+| Phase 2 — Infrastructure | 32          | 22       | 0           | 10      |
 | Phase 3 — Database       | 42          | 0        | 0           | 42      |
 | Phase 4 — Auth           | 26          | 0        | 0           | 26      |
 | Phase 5 — Backend API    | 58          | 0        | 0           | 58      |
@@ -134,7 +177,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing       | 24          | 0        | 0           | 24      |
 | Phase 13 — Documentation | 12          | 0        | 0           | 12      |
 | Phase 14 — Deployment    | 14          | 0        | 0           | 14      |
-| **Total**                | **444**     | **22**   | **0**       | **422** |
+| **Total**                | **448**     | **44**   | **0**       | **404** |
 
 ---
 
@@ -144,7 +187,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | -------- | ------------------------------ | -------------- | ---------- | ------------------- | ---------------------------------------------------------------- |
 | Pre-Dev  | Documentation                  | ✅ Complete    | 100%       | Week 0              | All 8 documents authored                                         |
 | Phase 1  | Foundation & Project Setup     | ✅ Complete    | 100%       | Week 1              | 14/14 tasks done; GitHub remote live, branch rulesets configured |
-| Phase 2  | Infrastructure & DevOps        | ⏳ Not started | 0%         | Week 1–3            | Parallel with Phase 1                                            |
+| Phase 2  | Infrastructure & DevOps        | 🚧 In progress | 69%        | Week 1–3            | 22/32 verified; 8 blocked on BLK-002; 2 deferred to Stage 2      |
 | Phase 3  | Database & Core Schema         | ⏳ Not started | 0%         | Week 3–4            | Parallel with Phase 2                                            |
 | Phase 4  | Authentication & Authorisation | ⏳ Not started | 0%         | Week 4–6            | Depends on Phase 3                                               |
 | Phase 5  | Core Backend API               | ⏳ Not started | 0%         | Week 6–9            | Parallel with Phase 8                                            |
@@ -190,6 +233,65 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - [x] Write initial README.md local setup instructions (+ "Current implementation status" note, Design Tokens section, broken cross-reference fixes)
 - [x] Configure Git repository with branch protection rules for `main` and `develop` — GitHub remote created (`KevinG1456/viralscopes.io`, private), `main-protection`/`develop-protection` rulesets live (require PR + 1 approval, block force pushes/deletions, no admin bypass)
 
+### Phase 2 — Infrastructure & DevOps (22/32) 🚧
+
+**Docker Setup**
+
+- [x] Dockerfiles for web + api (`infra/docker/Dockerfile.web`, `Dockerfile.api`, multi-stage) — n8n/Redis/MinIO use pinned official images directly, per approved decision
+- [x] `docker-compose.dev.yml` — verified: all 12 containers healthy
+- [ ] `docker-compose.prod.yml` — written as template, unverified — **BLK-002**
+- [x] Named volumes: Postgres, Redis, n8n, MinIO
+- [x] Internal Docker network topology (`viralscopes_network`)
+- [x] Test one-command startup: `docker compose up` — verified
+
+**Reverse Proxy & Networking**
+
+- [ ] Traefik reverse proxy with automatic service discovery — written as template, unverified — **BLK-002**
+- [ ] SSL/TLS via Let's Encrypt through Coolify — written as template, unverified — **BLK-002**
+- [ ] Service routing rules (frontend, API, n8n, Grafana) via Traefik labels — written as template, unverified — **BLK-002**
+- [x] Per-environment CORS policies (`CORS_ALLOWED_ORIGINS`)
+
+**CI/CD Pipeline**
+
+- [x] GitHub Actions: lint + type-check on every PR (`ci.yml`) — written, not yet exercised by a live PR
+- [x] GitHub Actions: run all tests on every PR — wired as a safe no-op (no test suites exist yet; Phase 12)
+- [x] GitHub Actions: build and push Docker images on merge to `main` (`build.yml`, GHCR) — written, not yet exercised by a live merge
+- [ ] GitHub Actions: deploy to Coolify staging — template only, skips gracefully without secrets — **BLK-002**
+- [ ] GitHub Actions: deploy to Coolify production with manual approval gate — template only, skips gracefully without secrets — **BLK-002**
+- [x] `npm audit` vulnerability scan (`security.yml`, blocks on high/critical)
+- [x] Dependabot configured (`.github/dependabot.yml`: npm, github-actions, docker ecosystems)
+
+**Monitoring & Observability**
+
+- [x] Prometheus with scrape targets for all services — verified 5/5 targets `up`
+- [x] Grafana dashboards — one consolidated "Infrastructure Overview" dashboard provisioned and verified with real data (scope trim from 5 separate dashboards — see note below)
+- [x] Loki for centralised log aggregation — verified
+- [x] Wire all service and n8n workflow logs into Loki — verified via Promtail, all 12 containers confirmed shipping logs
+- [ ] Alerting: service down, queue backlog spike, error rate spike, disk > 80% — **deferred to Stage 2** per `INFRASTRUCTURE_GROWTH_PLAN.md` (your decision)
+- [ ] PagerDuty or email alerting for critical production failures — **deferred to Stage 2** (your decision)
+
+**Health Checks**
+
+- [x] `GET /health` on API — verified
+- [x] `GET /ready` on API (checks DB + Redis) — verified: `503` when dependencies down, `200` when up
+- [x] Equivalent health route on n8n — n8n's built-in `/healthz`; no background workers exist yet (Phase 6)
+- [ ] Register health endpoints with Coolify and Traefik health probes — healthcheck directives written into `docker-compose.prod.yml`; Coolify itself doesn't exist to register with — **BLK-002**
+- [x] Health check status panel in Grafana — "Service up" panel, verified
+
+**Object Storage**
+
+- [x] Configure MinIO for local development — verified, bucket auto-created on startup
+- [ ] Configure Cloudflare R2 for production — needs a real R2 account/credentials — **BLK-002**
+- [x] Define bucket structure (`thumbnails/`, `exports/`, `reports/`, `prompt-cache/`) — bucket created; these are virtual S3 key prefixes, not literal folders, so nothing further to provision
+- [x] Storage abstraction layer (`services/storage.service.ts`) — verified end-to-end (put/get/delete/signed-URL) against live MinIO
+
+> **Grafana dashboard scope note:** `REPOSITORY_STRUCTURE.md` names 5 dashboards (API Performance,
+> Queue Health, Database Metrics, YouTube Quota, Business Metrics). Only API/DB/Redis metrics
+> exist right now — Queue Health, YouTube Quota, and Business Metrics have no data source until
+> Phases 5/6/9 emit those metrics. Building empty dashboard shells for them now was judged not
+> worth it; one consolidated "Infrastructure Overview" dashboard covers everything with real data
+> today. Revisit per-dashboard splitting once those metrics exist.
+
 ---
 
 ## 6. In-Progress Tasks
@@ -209,20 +311,24 @@ _This section will be populated as engineers pick up Phase 2+ work. Each in-prog
 
 ## 7. Pending Tasks
 
-### Next Up — Phase 2: Infrastructure & DevOps
+### Remaining — Phase 2 (blocked on BLK-002)
 
-- [ ] Write Dockerfiles for all services
-- [ ] Write `docker-compose.dev.yml` and `docker-compose.prod.yml`
-- [ ] Configure Traefik reverse proxy and SSL
-- [ ] Set up GitHub Actions CI/CD pipeline (all 5 workflows)
-- [ ] Add `npm audit` to CI
-- [ ] Configure Dependabot or Renovate
-- [ ] Deploy Prometheus + Grafana + Loki stack
-- [ ] Wire all service and n8n logs into Loki
-- [ ] Implement `/health` and `/ready` endpoints on all services
-- [ ] Register health endpoints with Coolify and Traefik
-- [ ] Configure MinIO (dev) and Cloudflare R2 (production)
-- [ ] Test one-command startup: `docker compose up`
+- [ ] Deploy `docker-compose.prod.yml` to a real VPS
+- [ ] Configure Traefik + Let's Encrypt against a real domain
+- [ ] Wire `COOLIFY_STAGING_WEBHOOK_TOKEN` / `COOLIFY_PRODUCTION_WEBHOOK_TOKEN` secrets once Coolify exists
+- [ ] Configure Cloudflare R2 production credentials
+- [ ] Register health endpoints with Coolify's health probes
+
+### Next Up — Phase 3: Database & Core Schema
+
+- [ ] Initialise Supabase project (local dev + hosted)
+- [ ] Configure PgBouncer connection pooling
+- [ ] Enable RLS on all tables from creation
+- [ ] Set up Drizzle ORM with migration tooling
+- [ ] Core schema: users, organisations, workspaces, sessions, audit logs, billing, content tables (see `ROADMAP.md` for the full 20+ table list)
+- [ ] Dead-letter queue schema + admin retry endpoint
+- [ ] Data retention automation
+- [ ] Publish ERD to `/docs/database-erd.png`
 
 _All remaining pending tasks are listed in full in [ROADMAP.md](./ROADMAP.md)._
 
@@ -255,9 +361,29 @@ _No active blockers at this time._
 - **Resolution:** Created `KevinG1456/viralscopes.io` (private) on GitHub. Renamed local `master` → `main` to match `PROJECT_RULES.md` conventions, pushed `main` and created/pushed `develop` from it (both at commit `0cb7a44`, verified via `git branch -vv` showing clean tracking with no `[gone]` markers). Configured `main-protection` and `develop-protection` rulesets: require PR + 1 approval, block force pushes, block deletions, no admin bypass. Required status checks intentionally deferred — no CI pipeline exists yet (Phase 2 task); enabling that requirement now would block all merges permanently since no check could ever report success.
 - **Resolved:** 2026-07-21
 
-**Known follow-on limitation (not a blocker, just a note):** with 1 required approval and no bypass, a solo maintainer cannot self-merge PRs on either branch. Revisit once a second collaborator joins, or relax the ruleset temporarily.
+**Known follow-on limitation:** resolved 2026-07-21 — repo admin added to the bypass list on both rulesets so solo self-merge works. Revisit once a second collaborator joins.
 
 **Still pending (tracked in Phase 2, not this blocker):** adding "require status checks to pass" to both rulesets once GitHub Actions CI exists.
+
+---
+
+### BLK-002 — No deployment infrastructure (VPS, Coolify, domain)
+
+- **Raised:** 2026-07-22
+- **Raised by:** Engineering (Phase 2 implementation)
+- **Severity:** Medium
+- **Phases affected:** Phase 2 (remaining ~8 of 32 tasks), Phase 14 (Production Deployment depends on this existing)
+- **Description:** No VPS, no Coolify instance, and no registered domain exist yet. This blocks everything in Phase 2 that needs real infrastructure to verify: `docker-compose.prod.yml` deployment, Traefik + Let's Encrypt SSL, the `deploy-staging.yml` / `deploy-production.yml` GitHub Actions workflows, Cloudflare R2 production credentials, and registering health endpoints with Coolify's probes.
+- **Impact:** These items are written as templates (config/workflow files exist and are structurally correct per `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1) but cannot be verified end-to-end. The deploy workflows are designed to skip gracefully (not fail red) when their required secrets are absent, so this does not block CI on `main`/`develop` in the meantime.
+- **Resolution options:**
+  1. Provision a VPS (per `INFRASTRUCTURE_GROWTH_PLAN.md` §3.3: ~8 vCPU / 32GB / 500GB NVMe) and install Coolify
+  2. Register a domain and point DNS at the VPS through Cloudflare
+  3. Create a Cloudflare R2 bucket and generate API credentials
+  4. Add `COOLIFY_STAGING_WEBHOOK_TOKEN` / `COOLIFY_STAGING_WEBHOOK_URL` / `COOLIFY_PRODUCTION_WEBHOOK_TOKEN` / `COOLIFY_PRODUCTION_WEBHOOK_URL` as repository secrets, and `STAGING_URL` / `PRODUCTION_URL` as repository variables, once the above exist
+  5. Configure the `production` GitHub Environment (Settings → Environments) with required reviewers, to provide the manual-approval gate
+- **Owner:** To be assigned
+- **Target resolution:** Before Phase 14 (Production Deployment) begins; ideally before Phase 9 (Billing) needs a real staging URL for Stripe webhook testing
+- **Status:** Open
 
 ---
 
@@ -561,6 +687,67 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-010 — PagerDuty/Alertmanager Deferred to Stage 2
+
+| Property       | Value                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| **Date**       | 2026-07-22                                                                                         |
+| **Decision**   | Do not set up Alertmanager or PagerDuty in Phase 2, despite `ROADMAP.md` listing it as an MVP task |
+| **Decided by** | User decision, Phase 2 planning                                                                    |
+
+**Context:** `ROADMAP.md` Phase 2 lists "Set up PagerDuty or email alerting for critical production failures" as an MVP task. `INFRASTRUCTURE_GROWTH_PLAN.md` section 13 explicitly places Alertmanager + PagerDuty at **Stage 2** ("Add Alertmanager + PagerDuty") — Stage 1's monitoring section only lists Prometheus + Grafana + Loki. The two documents conflict.
+
+**Options considered:**
+
+1. Follow `ROADMAP.md` literally — set up PagerDuty now, even though `INFRASTRUCTURE_GROWTH_PLAN.md` says it's premature at MVP scale (0–2,000 MAU)
+2. Follow `INFRASTRUCTURE_GROWTH_PLAN.md` — defer Alertmanager/PagerDuty to Stage 2, ship Prometheus + Grafana + Loki only for now
+
+**Decision:** Follow `INFRASTRUCTURE_GROWTH_PLAN.md`. No Alertmanager, no PagerDuty, no formal alert-routing rules this phase. Basic visibility exists via Grafana dashboards and Explore (ad hoc Loki queries). Revisit at Stage 2 trigger (per `INFRASTRUCTURE_GROWTH_PLAN.md` §2: 2,000+ MAU or £15k+ MRR).
+
+---
+
+### DEC-011 — Official Pinned Images Instead of Custom Dockerfiles for n8n/Redis/MinIO
+
+| Property       | Value                                                                                                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**       | 2026-07-22                                                                                                                                                                                               |
+| **Decision**   | Custom Dockerfiles only for `apps/web` and `apps/api`. n8n, Redis, MinIO, Postgres, and all monitoring images use official images pinned to a resolved digest, referenced directly in the compose files. |
+| **Decided by** | User decision, Phase 2 planning                                                                                                                                                                          |
+
+**Context:** `ROADMAP.md`'s task wording ("Write Dockerfiles for: Next.js frontend, Node.js API, n8n, Redis, MinIO") could be read as requiring a custom Dockerfile per service, but n8n/Redis/MinIO/Postgres are all used as-is with no custom build step — wrapping them in a Dockerfile would add a redundant layer with no benefit.
+
+**Decision:** Custom Dockerfiles for the two services we actually build (`infra/docker/Dockerfile.web`, `Dockerfile.api`). Every other service pins its official image to a resolved SHA-256 digest (not just a tag) — satisfies `PROJECT_RULES.md`'s "Docker base images pinned" requirement more rigorously than tag-pinning alone, since a digest can't silently change. Dependabot's `docker` ecosystem entry (`.github/dependabot.yml`, directory `/infra/docker`) keeps these current going forward.
+
+---
+
+### DEC-012 — Plain Postgres Container in Phase 2 (Full Supabase Setup Deferred to Phase 3)
+
+| Property       | Value                                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**       | 2026-07-22                                                                                                                                       |
+| **Decision**   | `docker-compose.dev.yml` includes a plain `postgres:16-alpine` container + named volume. No Supabase Studio, Auth, PostgREST, or RLS this phase. |
+| **Decided by** | User decision, Phase 2 planning                                                                                                                  |
+
+**Context:** `ROADMAP.md` Phase 2's task list requires a "Configure named volumes: PostgreSQL, ..." deliverable, but full Supabase project initialisation (Studio, Auth, PostgREST, RLS) is explicitly Phase 3's job ("Initialise Supabase project (local dev + hosted)"). Also clarified during implementation: in **production**, Postgres is Supabase-hosted (external, managed) and object storage is Cloudflare R2 (external, S3-compatible over HTTPS) — neither is a self-hosted container, so `docker-compose.prod.yml` deliberately has no `postgres` or `minio` service at all, unlike `docker-compose.dev.yml`.
+
+**Decision:** Plain Postgres + volume in dev only, matching just the "shape" Phase 2 needs. Phase 3 does the actual Supabase project setup on top of it.
+
+---
+
+### DEC-013 — Minimal Fastify Bootstrap in Phase 2 (Full Layered API Deferred to Phase 5)
+
+| Property       | Value                                                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**       | 2026-07-22                                                                                                                                                                                                                       |
+| **Decision**   | `apps/api` gets a minimal Fastify server this phase — `/health`, `/ready`, `/metrics` only, via direct plugin registration, not the full routes → controllers → services → repositories layering from `REPOSITORY_STRUCTURE.md`. |
+| **Decided by** | Approved implementation plan, Phase 2                                                                                                                                                                                            |
+
+**Context:** `ROADMAP.md` Phase 2 requires working health-check endpoints, which needs _some_ running server, but the full layered API architecture is explicitly Phase 5's scope. Building the full layering now for three endpoints would be premature structure with nothing to justify it yet.
+
+**Decision:** `server.ts` + `plugins/{cors,health,metrics}.plugin.ts` + `services/storage.service.ts` only. New dependencies added: `fastify`, `@fastify/cors`, `pg` and `ioredis` (for `/ready`'s connectivity checks), `prom-client` (for `/metrics`), `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` (for the storage abstraction), `tsx` (dev-time runner, since there's now an actual server process to run and watch). Phase 5 builds out the real routes/controllers/services/repositories structure around this.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -671,19 +858,28 @@ When a known issue is identified, log it in this format:
 | 🟡 P3    | Review/refine the provisional design token palette with actual brand guidelines | Designer         | Palette is a Phase 1 placeholder (DEC-007-adjacent); refine when brand exists |
 | 🟡 P3    | Set up project management tooling (Linear, Jira, or GitHub Projects)            | Project Lead     | Needed to track Phase 2+ tasks                                                |
 
-### Next Week (Phase 2 Start)
+### This Week (Week of 2026-07-22) — resolve BLK-002
 
-| Priority | Task                                                                     | Owner        | Notes                                                   |
-| -------- | ------------------------------------------------------------------------ | ------------ | ------------------------------------------------------- |
-| 🔴 P1    | Write Dockerfiles + `docker-compose.dev.yml` / `docker-compose.prod.yml` | Engineer 1   | Phase 2 critical path                                   |
-| 🔴 P1    | Set up GitHub Actions CI/CD pipeline (lint, type-check, test, build)     | Engineer 1/2 | Once live, add "require status checks" to both rulesets |
-| 🟠 P2    | Configure Supabase local dev environment                                 | Engineer 2   | Phase 3 preparation                                     |
-| 🟡 P3    | Draft Stripe product and pricing configuration                           | Product Lead | Needed before Phase 9                                   |
+| Priority | Task                                                                            | Owner      | Notes                                                                |
+| -------- | ------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
+| 🔴 P1    | Provision a VPS and install Coolify                                             | DevOps     | Unblocks the remaining ~8 Phase 2 tasks (BLK-002)                    |
+| 🔴 P1    | Register a domain, point DNS through Cloudflare                                 | DevOps     | Required for Traefik + Let's Encrypt to actually issue a certificate |
+| 🟠 P2    | Create a Cloudflare R2 bucket + API credentials                                 | DevOps     | Storage code is ready; just needs real credentials (BLK-002)         |
+| 🟠 P2    | Open a PR to confirm `ci.yml`/`security.yml`/`build.yml` actually run on GitHub | Engineer 1 | Written and locally verified, but never exercised by a live PR/merge |
+
+### Next Week (Phase 3 Start)
+
+| Priority | Task                                           | Owner        | Notes                                            |
+| -------- | ---------------------------------------------- | ------------ | ------------------------------------------------ |
+| 🔴 P1    | Initialise Supabase project (local + hosted)   | Engineer 2   | Phase 3 critical path                            |
+| 🔴 P1    | Set up Drizzle ORM with migration tooling      | Engineer 2   | Phase 3 critical path                            |
+| 🟠 P2    | Design and migrate core schema tables          | Engineer 1/2 | See `ROADMAP.md` Phase 3 for the full table list |
+| 🟡 P3    | Draft Stripe product and pricing configuration | Product Lead | Needed before Phase 9                            |
 
 ### Backlog (Next 4 Weeks)
 
-- Complete Phase 2 milestones
-- Begin Phase 3 (Database Schema) immediately after Phase 2 infrastructure is stable
+- Resolve BLK-002, complete the remaining Phase 2 tasks
+- Begin Phase 3 (Database Schema) — no dependency on BLK-002, can start immediately
 - Begin Phase 4 (Auth) immediately after Phase 3 core schema is complete
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
@@ -691,11 +887,12 @@ When a known issue is identified, log it in this format:
 
 ## Status Update History
 
-| Date       | Updated by                           | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-07-20 | Engineering Lead                     | Initial document created. Pre-development phase complete. All 8 project documents authored. Development not yet started.                                                                                                                                                                                                                                                                                                                |
-| 2026-07-21 | Engineering (Phase 1 implementation) | Phase 1 — Foundation & Project Setup: 13/14 tasks complete. Monorepo scaffolded (Turborepo, npm workspaces, 4 packages), TypeScript/ESLint/Prettier/Husky/secretlint configured, design tokens and placeholder brand assets added, `.env.example` written. Remaining task (branch protection) blocked on a GitHub remote existing — logged as BLK-001. Added DEC-007 (Tailwind v4), DEC-008 (secretlint), DEC-009 (flat-config ESLint). |
-| 2026-07-21 | Engineering (Phase 1 implementation) | **Phase 1 complete (14/14).** BLK-001 resolved: created `KevinG1456/viralscopes.io` (private) on GitHub, renamed `master` → `main`, pushed `main` and `develop` (both tracking cleanly at `0cb7a44`), configured `main-protection`/`develop-protection` rulesets (PR + 1 approval, no force-push/delete, no admin bypass; status checks deferred to Phase 2). Phase 2 — Infrastructure & DevOps is now the critical path item.          |
+| Date       | Updated by                           | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-20 | Engineering Lead                     | Initial document created. Pre-development phase complete. All 8 project documents authored. Development not yet started.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-07-21 | Engineering (Phase 1 implementation) | Phase 1 — Foundation & Project Setup: 13/14 tasks complete. Monorepo scaffolded (Turborepo, npm workspaces, 4 packages), TypeScript/ESLint/Prettier/Husky/secretlint configured, design tokens and placeholder brand assets added, `.env.example` written. Remaining task (branch protection) blocked on a GitHub remote existing — logged as BLK-001. Added DEC-007 (Tailwind v4), DEC-008 (secretlint), DEC-009 (flat-config ESLint).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-07-21 | Engineering (Phase 1 implementation) | **Phase 1 complete (14/14).** BLK-001 resolved: created `KevinG1456/viralscopes.io` (private) on GitHub, renamed `master` → `main`, pushed `main` and `develop` (both tracking cleanly at `0cb7a44`), configured `main-protection`/`develop-protection` rulesets (PR + 1 approval, no force-push/delete, no admin bypass; status checks deferred to Phase 2). Phase 2 — Infrastructure & DevOps is now the critical path item.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 2026-07-22 | Engineering (Phase 2 implementation) | **Phase 2 substantially complete (22/32, corrected from an inaccurate 28-task total).** `docker-compose.dev.yml` verified end-to-end: all 12 containers healthy, `/health`/`/ready`/`/metrics` confirmed, storage roundtrip (put/get/delete/signed-URL) passed against live MinIO, Prometheus 5/5 targets up, Grafana dashboard rendering real data, Promtail confirmed shipping logs from every container. Both production Dockerfiles built successfully (caught and fixed a real `--ignore-scripts` bug in the process). Remaining ~8 tasks need real infrastructure that doesn't exist — logged as **BLK-002** (VPS/Coolify/domain/R2). Alertmanager/PagerDuty deferred to Stage 2 per `INFRASTRUCTURE_GROWTH_PLAN.md` (resolves a doc conflict with `ROADMAP.md`). Added DEC-010 (PagerDuty deferral), DEC-011 (pinned official images vs. custom Dockerfiles), DEC-012 (plain Postgres in Phase 2), DEC-013 (minimal Fastify bootstrap). Phase 3 — Database & Core Schema can start in parallel; it has no dependency on BLK-002. |
 
 ---
 

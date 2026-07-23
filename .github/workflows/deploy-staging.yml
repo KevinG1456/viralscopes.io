@@ -1,0 +1,36 @@
+# TEMPLATE -- not yet functional. No Coolify server/staging environment
+# exists (see PROJECT_STATUS.md BLK-002). This workflow is intentionally
+# written to skip (not fail) until COOLIFY_STAGING_WEBHOOK_TOKEN is
+# configured as a repository secret, so pushes to develop don't show a
+# red X for infrastructure that doesn't exist yet.
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - name: Check staging deploy is configured
+        id: check
+        run: |
+          if [ -z "${{ secrets.COOLIFY_STAGING_WEBHOOK_TOKEN }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping staging deploy -- COOLIFY_STAGING_WEBHOOK_TOKEN is not set. See BLK-002 in PROJECT_STATUS.md."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger Coolify staging deploy
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          curl -f -X POST "${{ secrets.COOLIFY_STAGING_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_STAGING_WEBHOOK_TOKEN }}"
+
+      - name: Smoke test staging
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          curl -f "${{ vars.STAGING_URL }}/health"

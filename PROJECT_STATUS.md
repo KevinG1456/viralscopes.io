@@ -2,9 +2,9 @@
 
 # ViralScopes.io — Project Status
 
-> **Version:** 1.5
+> **Version:** 1.7
 > **Last Updated:** 2026-07-25
-> **Status:** Phase 2 — Infrastructure & DevOps (In Progress — blocked on BLK-002)
+> **Status:** Phase 2 — Infrastructure & DevOps (Complete — code/config scope; BLK-002 carried forward, see DEC-014)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -38,18 +38,18 @@
 
 ## 1. At a Glance
 
-| Property                   | Value                                                           |
-| -------------------------- | --------------------------------------------------------------- |
-| **Current phase**          | Phase 2 — Infrastructure & DevOps (in progress, 22/32 verified) |
-| **Overall MVP completion** | 10%                                                             |
-| **Infrastructure stage**   | Stage 1 (dev environment provisioned; no production yet)        |
-| **Active engineers**       | TBD                                                             |
-| **Target MVP launch**      | Week 19–20 from project initiation                              |
-| **Critical path item**     | BLK-002 (no VPS/Coolify/domain) — then Phase 3                  |
-| **Active blockers**        | 1 (BLK-002 — no deployment infrastructure)                      |
-| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                   |
-| **Last status update**     | 2026-07-25                                                      |
-| **Next milestone**         | M2 — Infrastructure Live (Week 3)                               |
+| Property                   | Value                                                                      |
+| -------------------------- | -------------------------------------------------------------------------- |
+| **Current phase**          | Phase 2 — Infrastructure & DevOps (✅ Complete — code/config scope)        |
+| **Overall MVP completion** | 10%                                                                        |
+| **Infrastructure stage**   | Stage 1 (dev environment provisioned; no production yet)                   |
+| **Active engineers**       | TBD                                                                        |
+| **Target MVP launch**      | Week 19–20 from project initiation                                         |
+| **Critical path item**     | Phase 3 — Database & Core Schema                                           |
+| **Active blockers**        | 1 (BLK-002 — carried forward, non-blocking for phase closure; see DEC-014) |
+| **Open risks**             | 2 (YouTube API quota strategy, AI cost model)                              |
+| **Last status update**     | 2026-07-25                                                                 |
+| **Next milestone**         | M3 — Schema Complete (Week 4)                                              |
 
 ---
 
@@ -91,9 +91,17 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 ---
 
-### Active: Phase 2 — Infrastructure & DevOps
+### Complete: Phase 2 — Infrastructure & DevOps
 
 **Start condition:** Phase 1 complete. ✅ Met.
+
+**Closure basis (see DEC-014):** Phase 2 is marked complete on a **code/config-complete** basis —
+every deliverable buildable without real external infrastructure is done and verified. The 8
+tasks that genuinely require a VPS/Coolify/domain/R2 account (BLK-002) are **carried forward as a
+standing, separately-tracked item** rather than gating this phase's closure, since they cannot be
+completed by engineering work alone. This is a deliberate, documented policy for infra-dependent
+phases going forward (Phase 14 will need the same treatment), not a lowering of the bar — the
+task-level counts below remain exactly as verified; only the phase-level label has changed.
 
 **Key deliverables — verified working (22/32 ROADMAP tasks):**
 
@@ -111,13 +119,15 @@ All 8 core project documents have been authored and are ready for engineering ha
 - ✅ `infra/docker/Dockerfile.web` and `Dockerfile.api` — multi-stage, built and run successfully (`docker build` verified for both; caught and fixed a real bug where the root `prepare: husky` script broke `npm ci --omit=dev` in the prod-deps stage — fixed with `--ignore-scripts`)
 - ✅ MinIO bucket (`viralscopes-dev`) auto-created on stack startup via `minio-init`
 
-**Written as templates — unverified, no real infrastructure exists (BLK-002):**
+**Written as templates — unverified, no real infrastructure exists (BLK-002, carried forward, non-blocking):**
 
-- ⏳ `docker-compose.prod.yml` — matches `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1 architecture; never deployed
-- ⏳ Traefik reverse proxy + Let's Encrypt SSL (`infra/traefik/`) — needs a real domain + server
+- ⏳ `docker-compose.prod.yml` — matches `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1 architecture; never deployed. Hardened 2026-07-25: `/metrics` is now blocked from public access (dedicated Traefik router + `deny-external` middleware) ahead of any real deployment.
+- ⏳ Traefik reverse proxy + Let's Encrypt SSL (`infra/traefik/`) — needs a real domain + server. Hardened 2026-07-25: added the previously-missing CSP header to the security-headers middleware.
 - ⏳ `deploy-staging.yml` / `deploy-production.yml` — detect missing `COOLIFY_*_WEBHOOK_TOKEN` secrets and skip (not fail) rather than show a false red X
 - ⏳ Cloudflare R2 production credentials — storage code is provider-agnostic and ready; untested against the real provider
 - ⏳ Registering health endpoints with Coolify/Traefik probes — the healthcheck directives exist in `docker-compose.prod.yml`; Coolify itself doesn't exist to register with
+
+**Also fixed 2026-07-25 (architecture review):** `build.yml`'s GHCR image tag would have failed on every run — `github.repository` (`KevinG1456/viralscopes.io`) contains uppercase characters, which OCI registries reject. Added a step to lowercase it before use. This was a genuine bug, not template hardening — `build.yml` is otherwise counted as done above.
 
 **Deferred to Stage 2 by decision (matches `INFRASTRUCTURE_GROWTH_PLAN.md`, not this phase's scope):**
 
@@ -126,7 +136,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 **Verification performed:** full stack brought up via `docker compose -f docker-compose.dev.yml up -d`; all 12 containers reached healthy/running state and stayed healthy for 12+ hours; `/health`, `/ready`, `/metrics` all curled and returned expected results; storage roundtrip test executed inside the running `api` container against live MinIO; Prometheus target health confirmed via its API; Grafana dashboard provisioning and panel data confirmed via its API; Promtail log labels confirmed present for every container. Both production Dockerfiles built successfully (`docker build`) after fixing the `--ignore-scripts` issue found during verification; the built `web` image was run standalone and confirmed serving `/` and `/api/health` correctly. Running the built `api` image standalone could not be confirmed in this session — Docker Desktop's build cache/image store grew very large (~35GB images, ~28GB build cache) over the session's many builds, and new `docker run` invocations got stuck in "Created" state indefinitely late in the session (the already-running dev-stack containers, started earlier, were unaffected and stayed healthy throughout). Since the `api` image runs the identical compiled code already verified live via the dev stack, this is treated as a low-risk gap — a fresh session with a clean Docker cache should confirm it in seconds.
 
-**Next phase:** Phase 3 — Database & Core Schema can proceed in parallel (no dependency on BLK-002). Completing the remaining Phase 2 items requires a VPS/Coolify server and a domain — see BLK-002.
+**Next phase:** Phase 3 — Database & Core Schema. No dependency on BLK-002; starts now as the critical path item. Completing the remaining Phase 2 items still requires a VPS/Coolify server and a domain — tracked under BLK-002, revisit before Phase 9 (Stripe webhook testing needs a real staging URL) and Phase 14 (Production Deployment).
 
 ---
 
@@ -137,7 +147,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          █████████████░░░░░░░   69%  🚧 In progress (blocked on BLK-002)
+Phase 2          █████████████░░░░░░░   69%  ✅ Complete (code/config; BLK-002 carried forward)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -183,23 +193,23 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 
 ## 4. Phase Progress
 
-| Phase    | Name                           | Status         | Completion | Target week         | Notes                                                            |
-| -------- | ------------------------------ | -------------- | ---------- | ------------------- | ---------------------------------------------------------------- |
-| Pre-Dev  | Documentation                  | ✅ Complete    | 100%       | Week 0              | All 8 documents authored                                         |
-| Phase 1  | Foundation & Project Setup     | ✅ Complete    | 100%       | Week 1              | 14/14 tasks done; GitHub remote live, branch rulesets configured |
-| Phase 2  | Infrastructure & DevOps        | 🚧 In progress | 69%        | Week 1–3            | 22/32 verified; 8 blocked on BLK-002; 2 deferred to Stage 2      |
-| Phase 3  | Database & Core Schema         | ⏳ Not started | 0%         | Week 3–4            | Parallel with Phase 2                                            |
-| Phase 4  | Authentication & Authorisation | ⏳ Not started | 0%         | Week 4–6            | Depends on Phase 3                                               |
-| Phase 5  | Core Backend API               | ⏳ Not started | 0%         | Week 6–9            | Parallel with Phase 8                                            |
-| Phase 6  | n8n Workflow Engine            | ⏳ Not started | 0%         | Week 9–12           | Parallel with Phase 5                                            |
-| Phase 7  | AI Prompt Library              | ⏳ Not started | 0%         | Week 10–12          | Parallel with Phase 6                                            |
-| Phase 8  | Frontend Dashboard             | ⏳ Not started | 0%         | Week 6–13           | Parallel with Phase 5                                            |
-| Phase 9  | Subscription & Billing         | ⏳ Not started | 0%         | Week 13–15          | Depends on Phase 5                                               |
-| Phase 10 | Security & Compliance          | ⏳ Not started | 0%         | Week 15–16          | Parallel with Phase 9                                            |
-| Phase 11 | Super Admin Panel              | ⏳ Not started | 0%         | Week 20–22          | 30 days post-launch                                              |
-| Phase 12 | Testing                        | ⏳ Not started | 0%         | Week 3–18 (ongoing) | Runs incrementally                                               |
-| Phase 13 | Documentation                  | ⏳ Not started | 0%         | Week 5–18 (ongoing) | Runs incrementally                                               |
-| Phase 14 | Production Deployment          | ⏳ Not started | 0%         | Week 19–20          | Depends on all phases                                            |
+| Phase    | Name                           | Status         | Completion | Target week         | Notes                                                                                                              |
+| -------- | ------------------------------ | -------------- | ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Pre-Dev  | Documentation                  | ✅ Complete    | 100%       | Week 0              | All 8 documents authored                                                                                           |
+| Phase 1  | Foundation & Project Setup     | ✅ Complete    | 100%       | Week 1              | 14/14 tasks done; GitHub remote live, branch rulesets configured                                                   |
+| Phase 2  | Infrastructure & DevOps        | ✅ Complete    | 69%        | Week 1–3            | Code/config-complete (DEC-014); 22/32 verified, 2 deferred to Stage 2, 8 carried forward as BLK-002 (non-blocking) |
+| Phase 3  | Database & Core Schema         | ⏳ Not started | 0%         | Week 3–4            | Parallel with Phase 2                                                                                              |
+| Phase 4  | Authentication & Authorisation | ⏳ Not started | 0%         | Week 4–6            | Depends on Phase 3                                                                                                 |
+| Phase 5  | Core Backend API               | ⏳ Not started | 0%         | Week 6–9            | Parallel with Phase 8                                                                                              |
+| Phase 6  | n8n Workflow Engine            | ⏳ Not started | 0%         | Week 9–12           | Parallel with Phase 5                                                                                              |
+| Phase 7  | AI Prompt Library              | ⏳ Not started | 0%         | Week 10–12          | Parallel with Phase 6                                                                                              |
+| Phase 8  | Frontend Dashboard             | ⏳ Not started | 0%         | Week 6–13           | Parallel with Phase 5                                                                                              |
+| Phase 9  | Subscription & Billing         | ⏳ Not started | 0%         | Week 13–15          | Depends on Phase 5                                                                                                 |
+| Phase 10 | Security & Compliance          | ⏳ Not started | 0%         | Week 15–16          | Parallel with Phase 9                                                                                              |
+| Phase 11 | Super Admin Panel              | ⏳ Not started | 0%         | Week 20–22          | 30 days post-launch                                                                                                |
+| Phase 12 | Testing                        | ⏳ Not started | 0%         | Week 3–18 (ongoing) | Runs incrementally                                                                                                 |
+| Phase 13 | Documentation                  | ⏳ Not started | 0%         | Week 5–18 (ongoing) | Runs incrementally                                                                                                 |
+| Phase 14 | Production Deployment          | ⏳ Not started | 0%         | Week 19–20          | Depends on all phases                                                                                              |
 
 ---
 
@@ -233,7 +243,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - [x] Write initial README.md local setup instructions (+ "Current implementation status" note, Design Tokens section, broken cross-reference fixes)
 - [x] Configure Git repository with branch protection rules for `main` and `develop` — GitHub remote created (`KevinG1456/viralscopes.io`, private), `main-protection`/`develop-protection` rulesets live (require PR + 1 approval, block force pushes/deletions, no admin bypass)
 
-### Phase 2 — Infrastructure & DevOps (22/32) 🚧
+### Phase 2 — Infrastructure & DevOps (22/32 verified; ✅ Complete per DEC-014)
 
 **Docker Setup**
 
@@ -338,7 +348,23 @@ _All remaining pending tasks are listed in full in [ROADMAP.md](./ROADMAP.md)._
 
 ### Active Blockers
 
-_No active blockers at this time._
+### BLK-002 — No deployment infrastructure (VPS, Coolify, domain)
+
+- **Raised:** 2026-07-22
+- **Raised by:** Engineering (Phase 2 implementation)
+- **Severity:** Medium
+- **Phases affected:** Phase 2 (8 of 32 tasks — reclassified 2026-07-25 as carried forward, non-blocking for phase closure; see DEC-014), Phase 14 (Production Deployment depends on this existing)
+- **Description:** No VPS, no Coolify instance, and no registered domain exist yet. This blocks everything that needs real infrastructure to verify: `docker-compose.prod.yml` deployment, Traefik + Let's Encrypt SSL, the `deploy-staging.yml` / `deploy-production.yml` GitHub Actions workflows, Cloudflare R2 production credentials, and registering health endpoints with Coolify's probes.
+- **Impact:** These items are written as templates (config/workflow files exist and are structurally correct per `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1, and were further hardened during the 2026-07-25 architecture review) but cannot be verified end-to-end. The deploy workflows are designed to skip gracefully (not fail red) when their required secrets are absent, so this does not block CI on `main`/`develop` in the meantime.
+- **Resolution options:**
+  1. Provision a VPS (per `INFRASTRUCTURE_GROWTH_PLAN.md` §3.3: ~8 vCPU / 32GB / 500GB NVMe) and install Coolify
+  2. Register a domain and point DNS at the VPS through Cloudflare
+  3. Create a Cloudflare R2 bucket and generate API credentials
+  4. Add `COOLIFY_STAGING_WEBHOOK_TOKEN` / `COOLIFY_STAGING_WEBHOOK_URL` / `COOLIFY_PRODUCTION_WEBHOOK_TOKEN` / `COOLIFY_PRODUCTION_WEBHOOK_URL` as repository secrets, and `STAGING_URL` / `PRODUCTION_URL` as repository variables, once the above exist
+  5. Configure the `production` GitHub Environment (Settings → Environments) with required reviewers, to provide the manual-approval gate
+- **Owner:** To be assigned
+- **Target resolution:** Before Phase 14 (Production Deployment) begins; ideally before Phase 9 (Billing) needs a real staging URL for Stripe webhook testing
+- **Status:** Open — reclassified 2026-07-25 as a standing cross-phase item (see DEC-014); no longer gates Phase 2 completion
 
 ---
 
@@ -364,26 +390,6 @@ _No active blockers at this time._
 **Known follow-on limitation:** resolved 2026-07-21 — repo admin added to the bypass list on both rulesets so solo self-merge works. Revisit once a second collaborator joins.
 
 **Still pending (tracked in Phase 2, not this blocker):** adding "require status checks to pass" to both rulesets once GitHub Actions CI exists.
-
----
-
-### BLK-002 — No deployment infrastructure (VPS, Coolify, domain)
-
-- **Raised:** 2026-07-22
-- **Raised by:** Engineering (Phase 2 implementation)
-- **Severity:** Medium
-- **Phases affected:** Phase 2 (remaining ~8 of 32 tasks), Phase 14 (Production Deployment depends on this existing)
-- **Description:** No VPS, no Coolify instance, and no registered domain exist yet. This blocks everything in Phase 2 that needs real infrastructure to verify: `docker-compose.prod.yml` deployment, Traefik + Let's Encrypt SSL, the `deploy-staging.yml` / `deploy-production.yml` GitHub Actions workflows, Cloudflare R2 production credentials, and registering health endpoints with Coolify's probes.
-- **Impact:** These items are written as templates (config/workflow files exist and are structurally correct per `INFRASTRUCTURE_GROWTH_PLAN.md` Stage 1) but cannot be verified end-to-end. The deploy workflows are designed to skip gracefully (not fail red) when their required secrets are absent, so this does not block CI on `main`/`develop` in the meantime.
-- **Resolution options:**
-  1. Provision a VPS (per `INFRASTRUCTURE_GROWTH_PLAN.md` §3.3: ~8 vCPU / 32GB / 500GB NVMe) and install Coolify
-  2. Register a domain and point DNS at the VPS through Cloudflare
-  3. Create a Cloudflare R2 bucket and generate API credentials
-  4. Add `COOLIFY_STAGING_WEBHOOK_TOKEN` / `COOLIFY_STAGING_WEBHOOK_URL` / `COOLIFY_PRODUCTION_WEBHOOK_TOKEN` / `COOLIFY_PRODUCTION_WEBHOOK_URL` as repository secrets, and `STAGING_URL` / `PRODUCTION_URL` as repository variables, once the above exist
-  5. Configure the `production` GitHub Environment (Settings → Environments) with required reviewers, to provide the manual-approval gate
-- **Owner:** To be assigned
-- **Target resolution:** Before Phase 14 (Production Deployment) begins; ideally before Phase 9 (Billing) needs a real staging URL for Stripe webhook testing
-- **Status:** Open
 
 ---
 
@@ -481,24 +487,24 @@ _No risks have been resolved yet._
 
 ## 10. Upcoming Milestones
 
-| ID  | Milestone            | Target     | Phase    | Status     | Deliverable                                                |
-| --- | -------------------- | ---------- | -------- | ---------- | ---------------------------------------------------------- |
-| M1  | Project Ready        | Week 1     | Phase 1  | ⏳ Pending | Repo initialised, tooling configured, design system done   |
-| M2  | Infrastructure Live  | Week 3     | Phase 2  | ⏳ Pending | Docker running, CI/CD deployed to staging, monitoring live |
-| M3  | Schema Complete      | Week 4     | Phase 3  | ⏳ Pending | All migrations applied, RLS active, ERD published          |
-| M4  | Auth Complete        | Week 6     | Phase 4  | ⏳ Pending | Full auth system + all email templates live in staging     |
-| M5  | API v1 Complete      | Week 9     | Phase 5  | ⏳ Pending | All endpoints live, OpenAPI spec published                 |
-| M6  | Workflows Live       | Week 12    | Phase 6  | ⏳ Pending | All 14 n8n workflows running, dead-letter queue active     |
-| M7  | Prompts Live         | Week 12    | Phase 7  | ⏳ Pending | All 8 prompts versioned, cached, test harness working      |
-| M8  | Dashboard Complete   | Week 13    | Phase 8  | ⏳ Pending | All MVP pages live in staging, onboarding tested           |
-| M9  | Billing Live         | Week 15    | Phase 9  | ⏳ Pending | Stripe billing live in staging, usage tracking active      |
-| M10 | Security Complete    | Week 16    | Phase 10 | ⏳ Pending | Security checklist done, GDPR endpoints live               |
-| M11 | Tests Green          | Week 18    | Phase 12 | ⏳ Pending | All test suites passing, coverage targets met              |
-| M12 | Docs Complete        | Week 18    | Phase 13 | ⏳ Pending | All technical docs published and reviewed                  |
-| M13 | Production Launch 🚀 | Week 19–20 | Phase 14 | ⏳ Pending | All services live in production                            |
-| M14 | Admin Panel Live     | Week 22    | Phase 11 | ⏳ Pending | Super Admin Panel live (within 30 days of launch)          |
-| M15 | v1.5 Launch          | Week 36    | Post-MVP | ⏳ Pending | AI Chat, Scheduled Reports, Chrome Extension, Paddle       |
-| M16 | v2.0 Launch          | Week 72    | v2.0     | ⏳ Pending | TikTok, Instagram, Mobile App, Public API                  |
+| ID  | Milestone            | Target     | Phase    | Status     | Deliverable                                                                                             |
+| --- | -------------------- | ---------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| M1  | Project Ready        | Week 1     | Phase 1  | ✅ Done    | Repo initialised, tooling configured, design system done                                                |
+| M2  | Infrastructure Live  | Week 3     | Phase 2  | 🚧 Partial | Docker running ✅, monitoring live ✅; CI/CD deployed to staging ⏳ (BLK-002 — no Coolify instance yet) |
+| M3  | Schema Complete      | Week 4     | Phase 3  | ⏳ Pending | All migrations applied, RLS active, ERD published                                                       |
+| M4  | Auth Complete        | Week 6     | Phase 4  | ⏳ Pending | Full auth system + all email templates live in staging                                                  |
+| M5  | API v1 Complete      | Week 9     | Phase 5  | ⏳ Pending | All endpoints live, OpenAPI spec published                                                              |
+| M6  | Workflows Live       | Week 12    | Phase 6  | ⏳ Pending | All 14 n8n workflows running, dead-letter queue active                                                  |
+| M7  | Prompts Live         | Week 12    | Phase 7  | ⏳ Pending | All 8 prompts versioned, cached, test harness working                                                   |
+| M8  | Dashboard Complete   | Week 13    | Phase 8  | ⏳ Pending | All MVP pages live in staging, onboarding tested                                                        |
+| M9  | Billing Live         | Week 15    | Phase 9  | ⏳ Pending | Stripe billing live in staging, usage tracking active                                                   |
+| M10 | Security Complete    | Week 16    | Phase 10 | ⏳ Pending | Security checklist done, GDPR endpoints live                                                            |
+| M11 | Tests Green          | Week 18    | Phase 12 | ⏳ Pending | All test suites passing, coverage targets met                                                           |
+| M12 | Docs Complete        | Week 18    | Phase 13 | ⏳ Pending | All technical docs published and reviewed                                                               |
+| M13 | Production Launch 🚀 | Week 19–20 | Phase 14 | ⏳ Pending | All services live in production                                                                         |
+| M14 | Admin Panel Live     | Week 22    | Phase 11 | ⏳ Pending | Super Admin Panel live (within 30 days of launch)                                                       |
+| M15 | v1.5 Launch          | Week 36    | Post-MVP | ⏳ Pending | AI Chat, Scheduled Reports, Chrome Extension, Paddle                                                    |
+| M16 | v2.0 Launch          | Week 72    | v2.0     | ⏳ Pending | TikTok, Instagram, Mobile App, Public API                                                               |
 
 ---
 
@@ -748,6 +754,26 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-014 — Phase Completion Policy for Infra-Dependent Phases
+
+| Property       | Value                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**       | 2026-07-25                                                                                                                                                                                                                                                                                                                                                               |
+| **Decision**   | A phase whose remaining tasks require real external infrastructure the team must provision (VPS, domain, third-party accounts) can be marked **Complete** once every code/config deliverable achievable without that infrastructure is done and verified. The infra-dependent tasks convert into a standing, cross-phase blocker rather than gating the phase's closure. |
+| **Decided by** | User decision, applied to Phase 2 closure                                                                                                                                                                                                                                                                                                                                |
+
+**Context:** Phase 2 reached 22/32 verified ROADMAP tasks; the remaining 8 all require a VPS, a registered domain, a Coolify instance, or Cloudflare R2 credentials — none of which engineering work alone can produce. Holding the phase open indefinitely for infrastructure that depends on someone provisioning real accounts would block Phase 3+ (which has no such dependency) without changing the actual blocker in any way.
+
+**Options considered:**
+
+1. Keep Phase 2 "In Progress" indefinitely until BLK-002 resolves — accurate, but provides no way to close a phase whose remaining work isn't engineering work
+2. Mark Phase 2 "Complete" and silently drop the remaining 8 tasks — inaccurate, loses track of real unfinished work
+3. Mark Phase 2 "Complete" on an explicit code/config basis, carry the infra-dependent tasks forward as BLK-002 (unchanged, still open, still tracked) — closes the phase honestly while keeping the real gap visible
+
+**Decision:** Option 3. Applied retroactively to Phase 2 (see the 2026-07-25 entries in Completed Tasks, Blockers, and Status Update History). This is the standing policy for any future phase in the same position — Phase 14 (Production Deployment) is the most likely candidate, since it also depends entirely on infrastructure existing.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -822,6 +848,42 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-005 — `brace-expansion` High-Severity CVE via ESLint's Dependency Chain (Unresolved)
+
+| Property            | Value                                    |
+| ------------------- | ---------------------------------------- |
+| **Logged**          | 2026-07-25                               |
+| **Severity**        | High (per `npm audit`), dev-tooling only |
+| **Phases affected** | All (root `devDependencies`)             |
+| **Status**          | Accepted (temporarily, monitored)        |
+
+**Description:** `npm audit` reports a high-severity DoS vulnerability in `brace-expansion` (GHSA-mh99-v99m-4gvg), reached transitively via `minimatch` → `@eslint/config-array`/`eslint-plugin-import`/`eslint-plugin-jsx-a11y`/`eslint-plugin-react` → `eslint@9.39.5`. The suggested fix requires bumping `eslint` from `^9` to `^10`, a major version.
+
+**Why not fixed:** Attempted the bump directly and via `npm update`/explicit exact-version installs targeting `typescript-eslint`. All attempts hit an unresolvable `ERESOLVE` conflict: some part of the `@typescript-eslint/*` chain (pulled in via `eslint-config-next@16.2.11`'s own `typescript-eslint: ^8.46.0` requirement) still resolves an older `@typescript-eslint/eslint-plugin@8.64.0`/`@typescript-eslint/utils@8.64.0` pair that conflicts with `eslint@10` in npm's strict peer resolution, even though `typescript-eslint@8.65.0` (latest, satisfies the same `^8.46.0` range) declares peer support for `eslint@^10.0.0`. `npm audit fix --force`'s own suggested resolution path for the _other_ findings was to downgrade `next` to `9.3.3` — a clear sign its automated resolver isn't reliable here either, so `--force`/`--legacy-peer-deps` were deliberately not used to avoid a silently broken install.
+
+**Risk assessment:** `eslint` is a dev-time/CI-time tool only — this vulnerability cannot be reached by anything in the deployed application or by an external attacker; it would require malicious input specifically crafted to trigger unbounded brace expansion during a lint run on attacker-controlled config/glob input, which doesn't apply to our own trusted, internally-authored codebase. Real-world risk is low despite the "High" severity label.
+
+**Resolution plan:** Revisit when `eslint-config-next` (or the `@typescript-eslint/*` chain generally) ships a release that cleanly resolves against `eslint@10` without manual intervention — likely within weeks given how fast this ecosystem moves. Re-run `npm audit` at that point; a plain `npm install` after bumping `eslint` to `^10` should then succeed without conflict.
+
+---
+
+### TD-006 — `postcss` / `sharp` High-Severity CVEs Vendored Inside Next.js (Unresolved, Upstream)
+
+| Property            | Value                          |
+| ------------------- | ------------------------------ |
+| **Logged**          | 2026-07-25                     |
+| **Severity**        | High (per `npm audit`)         |
+| **Phases affected** | `apps/web`                     |
+| **Status**          | Accepted (blocked on upstream) |
+
+**Description:** `npm audit` reports high-severity `postcss` (XSS, path traversal, source map disclosure) and `sharp`/libvips CVEs. Both are bundled internally by `next` itself (`node_modules/next/node_modules/postcss@8.4.31`, `sharp@0.34.5`), not top-level dependencies we control directly.
+
+**Why not fixed:** `next@16.2.11` is confirmed the latest stable release (`npm view next@latest version`) — no newer stable version exists yet that vendors patched `postcss`/`sharp` versions. The only versions beyond it are `16.3.0` canary/preview prereleases, which are not appropriate to run in this project per normal stability standards.
+
+**Resolution plan:** Monitor for the next stable Next.js patch release and upgrade promptly per `PROJECT_RULES.md` §4.5's 48-hour CVE policy — this is an upstream-blocked exception to that policy, not a decision to ignore it. Until then, exposure is limited to `postcss`'s CSS-processing and `sharp`'s image-processing code paths in the framework's own build tooling, not directly attacker-reachable at runtime by a typical request.
+
+---
+
 ## 13. Known Issues
 
 _No known issues have been logged yet. Development has not started._
@@ -858,16 +920,18 @@ When a known issue is identified, log it in this format:
 | 🟡 P3    | Review/refine the provisional design token palette with actual brand guidelines | Designer         | Palette is a Phase 1 placeholder (DEC-007-adjacent); refine when brand exists |
 | 🟡 P3    | Set up project management tooling (Linear, Jira, or GitHub Projects)            | Project Lead     | Needed to track Phase 2+ tasks                                                |
 
-### This Week (Week of 2026-07-22) — resolve BLK-002
+### Ongoing (Background — BLK-002, non-blocking for Phase 3+)
 
 | Priority | Task                                                                            | Owner      | Notes                                                                |
 | -------- | ------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
-| 🔴 P1    | Provision a VPS and install Coolify                                             | DevOps     | Unblocks the remaining ~8 Phase 2 tasks (BLK-002)                    |
-| 🔴 P1    | Register a domain, point DNS through Cloudflare                                 | DevOps     | Required for Traefik + Let's Encrypt to actually issue a certificate |
-| 🟠 P2    | Create a Cloudflare R2 bucket + API credentials                                 | DevOps     | Storage code is ready; just needs real credentials (BLK-002)         |
-| 🟠 P2    | Open a PR to confirm `ci.yml`/`security.yml`/`build.yml` actually run on GitHub | Engineer 1 | Written and locally verified, but never exercised by a live PR/merge |
+| 🟠 P2    | Provision a VPS and install Coolify                                             | DevOps     | Unblocks the 8 carried-forward Phase 2 tasks (BLK-002)               |
+| 🟠 P2    | Register a domain, point DNS through Cloudflare                                 | DevOps     | Required for Traefik + Let's Encrypt to actually issue a certificate |
+| 🟡 P3    | Create a Cloudflare R2 bucket + API credentials                                 | DevOps     | Storage code is ready; just needs real credentials (BLK-002)         |
+| 🟡 P3    | Open a PR to confirm `ci.yml`/`security.yml`/`build.yml` actually run on GitHub | Engineer 1 | Written and locally verified, but never exercised by a live PR/merge |
 
-### Next Week (Phase 3 Start)
+Target this before Phase 9 (Stripe webhook testing needs a real staging URL) and before Phase 14 (Production Deployment) — see BLK-002.
+
+### This Week (Phase 3 Start — critical path)
 
 | Priority | Task                                           | Owner        | Notes                                            |
 | -------- | ---------------------------------------------- | ------------ | ------------------------------------------------ |
@@ -878,9 +942,9 @@ When a known issue is identified, log it in this format:
 
 ### Backlog (Next 4 Weeks)
 
-- Resolve BLK-002, complete the remaining Phase 2 tasks
-- Begin Phase 3 (Database Schema) — no dependency on BLK-002, can start immediately
+- Begin Phase 3 (Database Schema) now — critical path, no dependency on BLK-002
 - Begin Phase 4 (Auth) immediately after Phase 3 core schema is complete
+- Resolve BLK-002 in the background (VPS/Coolify/domain/R2) — not on the critical path, but needed before Phase 9/14
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
 ---
@@ -895,6 +959,8 @@ When a known issue is identified, log it in this format:
 | 2026-07-22 | Engineering (Phase 2 implementation)     | **Phase 2 substantially complete (22/32, corrected from an inaccurate 28-task total).** `docker-compose.dev.yml` verified end-to-end: all 12 containers healthy, `/health`/`/ready`/`/metrics` confirmed, storage roundtrip (put/get/delete/signed-URL) passed against live MinIO, Prometheus 5/5 targets up, Grafana dashboard rendering real data, Promtail confirmed shipping logs from every container. Both production Dockerfiles built successfully (caught and fixed a real `--ignore-scripts` bug in the process). Remaining ~8 tasks need real infrastructure that doesn't exist — logged as **BLK-002** (VPS/Coolify/domain/R2). Alertmanager/PagerDuty deferred to Stage 2 per `INFRASTRUCTURE_GROWTH_PLAN.md` (resolves a doc conflict with `ROADMAP.md`). Added DEC-010 (PagerDuty deferral), DEC-011 (pinned official images vs. custom Dockerfiles), DEC-012 (plain Postgres in Phase 2), DEC-013 (minimal Fastify bootstrap). Phase 3 — Database & Core Schema can start in parallel; it has no dependency on BLK-002.                                                                                                                                                                                     |
 | 2026-07-25 | Engineering (architecture + docs review) | Architecture review of Phase 2 surfaced two real, unfixed findings: `/metrics` is publicly routable in `docker-compose.prod.yml`'s Traefik config (no path restriction), and `infra/traefik/dynamic/middlewares.yml` is missing a CSP header required by `PROJECT_RULES.md` §4.4 / `PRD.md` §7.4 — both left unfixed pending explicit approval, per instruction not to modify code during review. Documentation consistency pass across `ROADMAP.md`/`PROJECT_STATUS.md`/`README.md`/`CHANGELOG.md`/`PRD.md`/`REPOSITORY_STRUCTURE.md` found `README.md` incorrectly claimed Phase 2 was "completed" (corrected to match this document's "22/32, in progress"), a stale `54322` port reference, a stale `/health` example version string, and placeholder repo URLs (badge, clone command) not updated to the real `KevinG1456/viralscopes.io` repo — all fixed. Also caught a latent bug in `build.yml`: `ghcr.io/${{ github.repository }}` will fail because the repo owner (`KevinG1456`) contains uppercase characters, which OCI registries reject — logged in `CHANGELOG.md`, not yet fixed (never exercised by a live merge, so previously undetected).                                                              |
 | 2026-07-25 | Engineering (fix pass)                   | **All three architecture-review findings fixed**, on explicit request. `docker-compose.prod.yml`: added a higher-priority `api-metrics` Traefik router matching `PathPrefix(/metrics)`, gated by a new `deny-external` middleware (`ipAllowList: 127.0.0.1/32`) — blocks public access; Prometheus is unaffected since it scrapes over the internal Docker network, not through Traefik. `infra/traefik/dynamic/middlewares.yml`: added the missing `contentSecurityPolicy` header (baseline policy, flagged for tightening once Phase 8 builds the real frontend). `build.yml`: added a step to lowercase `github.repository` before use in the GHCR image tag; verified the shell logic directly (`KevinG1456/viralscopes.io` → `keving1456/viralscopes.io`). Restored the now-correct concrete GHCR example in `README.md`'s Manual Deployment section. All three files validated via Prettier's YAML/YAML-adjacent parser (Docker daemon was down for live testing — noted, not blocking, since these are config corrections with no runtime dependency on Docker being up). Phase 2's task count/status is unchanged by these fixes — they harden already-`BLK-002`-blocked templates, not resolve the blocker itself. |
+| 2026-07-25 | Engineering (phase closure, on request)  | **Phase 2 marked Complete**, on explicit request, reconciled against the known-open BLK-002. Added **DEC-014**: a phase whose remaining tasks require real external infrastructure (VPS, domain, third-party accounts) closes on a code/config-complete basis once everything buildable without that infrastructure is done; the infra-dependent tasks carry forward as a standing, separately-tracked blocker rather than gating closure. Applied here: 22/32 tasks remain verified-done, 2 remain deferred to Stage 2 (DEC-010), and the 8 BLK-002 tasks are unchanged and still open — only the phase-level label changed, not the underlying task counts. Also corrected a structural bug found while updating this document: BLK-002 was misfiled under "Blocker Log (Historical)" (reserved for resolved blockers) despite being open — moved to "Active Blockers". Critical path moves to Phase 3 — Database & Core Schema, which has no dependency on BLK-002.                                                                                                                                                                                                                                                      |
+| 2026-07-25 | Engineering (`npm audit`)                | Ran `npm audit`: 12 high-severity findings across 4 packages. Fixed cleanly: bumped `next` (`16.2.10` → `16.2.11`, also bumped matching `eslint-config-next`) — resolves all 9 `next`-specific CVEs (middleware bypass, SSRF, DoS, cache confusion, unauthenticated endpoint disclosure); verified via a forced clean rebuild (`turbo run build lint type-check --force`, 12/12 pass). Two findings remain, both logged as accepted technical debt rather than forced through a risky fix: **TD-005** (`brace-expansion` DoS via ESLint's dependency chain — the suggested `eslint@9→10` bump hits a genuine, unresolvable `ERESOLVE` conflict in the current `@typescript-eslint`/`eslint-config-next` ecosystem; dev-tooling-only, low real-world risk) and **TD-006** (`postcss`/`sharp` CVEs vendored inside `next@16.2.11` itself — no newer stable Next.js release exists yet; upstream-blocked, not a policy exception). `--force`/`--legacy-peer-deps` deliberately not used — `--force`'s own suggested fix for the other findings was to downgrade `next` to `9.3.3`, confirming its automated resolution isn't reliable here.                                                                                    |
 
 ---
 

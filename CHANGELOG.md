@@ -128,6 +128,30 @@ Three real issues found during the Phase 2 architecture review, all fixed and ve
 - `infra/traefik/dynamic/middlewares.yml`: added the `contentSecurityPolicy` header that `PROJECT_RULES.md` §4.4 and `PRD.md` §7.4 both require and which was missing. Baseline policy for Phase 2; flagged for tightening (nonce-based `script-src`) once Phase 8 builds the real frontend.
 - `build.yml`: fixed the GHCR case-sensitivity bug — `github.repository` (`KevinG1456/viralscopes.io`) contains uppercase characters, which OCI registries reject. Added a step to lowercase it before use in the image tag. Restored the concrete (now-correct) GHCR example in `README.md`'s Manual Deployment section.
 
+### Phase 2 — Infrastructure & DevOps: marked Complete (2026-07-25)
+
+Phase 2 is closed on a **code/config-complete** basis (see DEC-014 in `PROJECT_STATUS.md`): every
+deliverable buildable without real external infrastructure is done and verified. The 8 tasks that
+require a VPS, domain, Coolify instance, or Cloudflare R2 account (**BLK-002**) are unchanged and
+carry forward as a standing, separately-tracked item rather than gating this phase's closure —
+they still need doing, just not by engineering work. Task-level counts are unchanged: 22/32
+verified, 2 deferred to Stage 2 (DEC-010), 8 open under BLK-002.
+
+Also corrected while updating the tracking docs: `PROJECT_STATUS.md`'s "Active Blockers" section
+claimed none existed while BLK-002 sat, unresolved, under "Blocker Log (Historical)" (reserved for
+resolved items) — moved to Active Blockers. `M1` (Project Ready) had never been marked done despite
+Phase 1 completing on 2026-07-21; `M2` (Infrastructure Live) marked "Partial" rather than done,
+since its "CI/CD deployed to staging" criterion is exactly the part BLK-002 blocks.
+
+**Critical path moves to Phase 3 — Database & Core Schema**, which has no dependency on BLK-002.
+
+### Security
+
+- Bumped `next` `16.2.10` → `16.2.11` (and matching `eslint-config-next`) — resolves 9 high-severity CVEs (`npm audit`): middleware/proxy bypass, Server Actions DoS and SSRF, cache confusion (2 variants), unbounded Server Action payload, rewrites SSRF, Image Optimization DoS, and unauthenticated Server Function endpoint disclosure. Verified via a forced clean rebuild across all 4 packages.
+- Two `npm audit` findings remain, logged as accepted technical debt rather than forced through a risky fix (see TD-005, TD-006 in `PROJECT_STATUS.md`):
+  - `brace-expansion` (via ESLint's dependency chain) — the suggested `eslint@9→10` fix hits an unresolvable `ERESOLVE` conflict in the current ecosystem; dev-tooling-only exposure, low real-world risk
+  - `postcss`/`sharp` (vendored inside `next@16.2.11` itself) — no newer stable Next.js release exists yet; upstream-blocked
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

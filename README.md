@@ -5,7 +5,9 @@
 > **AI-powered content intelligence for creators, agencies, and media teams.**
 > Understand why content goes viral. Create originally.
 
-[![CI](https://github.com/viralscopes/viralscopes/actions/workflows/ci.yml/badge.svg)](https://github.com/viralscopes/viralscopes/actions/workflows/ci.yml)
+[![CI](https://github.com/KevinG1456/viralscopes.io/actions/workflows/ci.yml/badge.svg)](https://github.com/KevinG1456/viralscopes.io/actions/workflows/ci.yml)
+<!-- Badge will not render while the repo is private; update if/when it goes public. -->
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-22.x_LTS-green)](https://nodejs.org/)
@@ -243,9 +245,10 @@ introduced, since Tailwind's default scale already meets the project's needs.
 
 ## 5. Installation
 
-> **Current implementation status:** This repository has completed **Phase 2 — Infrastructure &
-> DevOps** (see [PROJECT_STATUS.md](./PROJECT_STATUS.md)). `docker compose -f docker-compose.dev.yml
-up` genuinely works today — it brings up Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki,
+> **Current implementation status:** This repository is **in progress** on **Phase 2 —
+> Infrastructure & DevOps** (22/32 tasks verified; see [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+> for the full breakdown and BLK-002). `docker compose -f docker-compose.dev.yml up` genuinely
+> works today — it brings up Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki,
 > and a minimal `apps/api` (Fastify, `/health` + `/ready` + `/metrics` only — no business routes
 > yet) alongside `apps/web`. `packages/shared` and `packages/db` are still empty workspace
 > skeletons; Fastify's full layered API, the database schema, and n8n workflows land in Phases
@@ -265,8 +268,8 @@ up` genuinely works today — it brings up Postgres, Redis, MinIO, n8n, Promethe
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/viralscopes/viralscopes.git
-cd viralscopes
+git clone https://github.com/KevinG1456/viralscopes.io.git
+cd viralscopes.io
 ```
 
 ### Install Dependencies
@@ -289,7 +292,7 @@ The minimum required variables to start the application locally are:
 
 ```bash
 # Database (Supabase local or hosted)
-DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:15432/postgres
 SUPABASE_URL=http://localhost:54321
 SUPABASE_ANON_KEY=your-local-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
@@ -592,7 +595,7 @@ Once running, verify all services are healthy:
 ```bash
 # API health
 curl http://localhost:3001/health
-# Expected: { "status": "ok", "uptime": 42, "version": "1.0.0" }
+# Expected: { "status": "ok", "uptime": 42, "version": "0.1.0" }
 
 # API readiness (checks DB + Redis)
 curl http://localhost:3001/ready
@@ -742,8 +745,10 @@ Manual approval on GitHub
 
 ```bash
 # 1. Build and push Docker images manually
-docker build -f infra/docker/Dockerfile.api -t ghcr.io/viralscopes/api:latest .
-docker push ghcr.io/viralscopes/api:latest
+# (matches what build.yml computes -- github.repository lowercased, since GHCR
+# rejects uppercase in image paths)
+docker build -f infra/docker/Dockerfile.api -t ghcr.io/keving1456/viralscopes.io/api:latest .
+docker push ghcr.io/keving1456/viralscopes.io/api:latest
 
 # 2. Trigger Coolify redeploy via webhook
 curl -X POST https://coolify.viralscopes.io/api/v1/deploy   -H "Authorization: Bearer $COOLIFY_WEBHOOK_TOKEN"   -d '{"serviceId": "viralscopes-api"}'

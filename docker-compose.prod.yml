@@ -76,6 +76,15 @@ services:
       - 'traefik.http.routers.api.entrypoints=websecure'
       - 'traefik.http.routers.api.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.api.middlewares=security-headers@file'
+      # /metrics must never be reachable from the public internet -- Prometheus
+      # scrapes it directly over the internal Docker network instead (see
+      # infra/monitoring/prometheus/prometheus.yml). Higher priority than the
+      # router above so this wins for any request path starting with /metrics.
+      - 'traefik.http.routers.api-metrics.rule=Host(`${API_DOMAIN}`) && PathPrefix(`/metrics`)'
+      - 'traefik.http.routers.api-metrics.entrypoints=websecure'
+      - 'traefik.http.routers.api-metrics.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.api-metrics.middlewares=deny-external@file'
+      - 'traefik.http.routers.api-metrics.priority=100'
 
   redis:
     image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99

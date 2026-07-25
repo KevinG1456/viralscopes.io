@@ -116,6 +116,18 @@ Each version entry uses the following change categories:
 - Alertmanager/PagerDuty alerting rules deferred to Stage 2 (DEC-010) — no automated alert routing exists yet, only Grafana dashboards and ad hoc Loki queries
 - `deploy-staging.yml`/`deploy-production.yml`, Traefik/Let's Encrypt, and Cloudflare R2 production credentials are untested — no deployment infrastructure exists (BLK-002 in `PROJECT_STATUS.md`)
 
+### Changed — Documentation consistency review (2026-07-25)
+
+- `README.md`: corrected a claim that Phase 2 was "completed" (it's 22/32, in progress) to match `PROJECT_STATUS.md`; fixed a stale `DATABASE_URL` example still showing port `54322` instead of `15432`; corrected the `/health` example response's version string (`1.0.0` → `0.1.0`, matching actual behaviour); updated the CI badge and clone URL from a placeholder org to the real repository (`KevinG1456/viralscopes.io`)
+
+### Fixed — Architecture review findings (2026-07-25)
+
+Three real issues found during the Phase 2 architecture review, all fixed and verified (YAML/workflow syntax validated via Prettier; Docker daemon was down for live testing, see `PROJECT_STATUS.md`):
+
+- `docker-compose.prod.yml`: `/metrics` was publicly routable via the `api` service's Traefik router with no restriction. Added a higher-priority `api-metrics` router matching `PathPrefix(/metrics)`, gated by a new `deny-external` middleware (`ipAllowList` restricted to `127.0.0.1/32`) — Prometheus never needs this, since it scrapes `api:3001/metrics` directly over the internal Docker network, not through Traefik.
+- `infra/traefik/dynamic/middlewares.yml`: added the `contentSecurityPolicy` header that `PROJECT_RULES.md` §4.4 and `PRD.md` §7.4 both require and which was missing. Baseline policy for Phase 2; flagged for tightening (nonce-based `script-src`) once Phase 8 builds the real frontend.
+- `build.yml`: fixed the GHCR case-sensitivity bug — `github.repository` (`KevinG1456/viralscopes.io`) contains uppercase characters, which OCI registries reject. Added a step to lowercase it before use in the image tag. Restored the concrete (now-correct) GHCR example in `README.md`'s Manual Deployment section.
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

@@ -1,0 +1,20 @@
+# infra/monitoring/prometheus/prometheus.yml
+#
+# Scoped to what actually exists right now: Prometheus scraping itself.
+# Service-specific scrape targets (fastify-api, nextjs-web, redis-exporter,
+# postgres-exporter, traefik) are added as each service actually exposes a
+# /metrics endpoint or gets an exporter sidecar — adding them here now would
+# just be permanently-red targets pointing at endpoints that don't exist.
+# See Monitoring_and_Operations.md §2 for the full target design.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: development
+    service: viralscopes
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

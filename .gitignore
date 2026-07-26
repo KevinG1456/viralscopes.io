@@ -18,6 +18,7 @@ build/
 
 # Turborepo
 .turbo/
+out/
 
 # Testing
 coverage/

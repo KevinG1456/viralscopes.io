@@ -1,6 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Overrides the base's Bundler-oriented resolution: apps/api runs
+    // `tsc` directly and executes the output with plain Node (no bundler
+    // in between), so it needs Node's actual ESM resolution rules —
+    // which require explicit .js extensions on relative imports.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src",
     "noEmit": false

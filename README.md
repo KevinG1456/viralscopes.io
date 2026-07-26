@@ -287,21 +287,29 @@ External service keys (YouTube API, OpenAI, Anthropic, Stripe, SendGrid) are req
 
 ### Starting the Full Stack
 
-The entire development environment starts with a single command:
+The supporting infrastructure (everything except the app code itself) starts with a single command:
 
 ```bash
-docker compose -f docker-compose.dev.yml up
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 This starts:
-- **PostgreSQL** (Supabase local) on port `54322`
-- **Supabase Studio** on port `54323`
 - **Redis** on port `6379`
 - **n8n** on port `5678`
 - **MinIO** (local S3) on port `9000` (console on `9001`)
 - **Prometheus** on port `9090`
 - **Grafana** on port `3002`
 - **Loki** on port `3100`
+
+> **PostgreSQL is not part of this file.** Local Postgres is provisioned via the Supabase CLI, added in Phase 3 — Database & Core Schema. `DATABASE_URL` in `.env.local` won't resolve to anything until then.
+
+Check everything came up healthy:
+
+```bash
+docker compose -f docker-compose.dev.yml ps
+```
+
+`redis` and `minio` report a Docker-level health status; the rest are considered up once their container status shows `Up`.
 
 Then, in separate terminals:
 
@@ -325,32 +333,50 @@ npm run dev
 |---|---|
 | Next.js Frontend | http://localhost:3000 |
 | Fastify API | http://localhost:3001 |
-| API Documentation (Swagger) | http://localhost:3001/api/v1/docs |
 | n8n Workflow Editor | http://localhost:5678 |
-| Supabase Studio | http://localhost:54323 |
 | MinIO Console | http://localhost:9001 |
 | Grafana Dashboards | http://localhost:3002 |
 | Prometheus | http://localhost:9090 |
+| Loki | http://localhost:3100 |
+
+> API Swagger docs and Supabase Studio aren't live yet — those land with the API endpoints (Phase 5) and the local Supabase setup (Phase 3) respectively.
+
+### Health Checks
+
+```bash
+# Liveness — is the process up?
+curl http://localhost:3001/health
+curl http://localhost:3000/api/health
+
+# Readiness — are dependencies actually wired up and working?
+curl http://localhost:3001/ready
+```
+
+`/ready` currently reports `not_ready` with a `checks` object explaining which dependencies (database, Redis, queue) aren't wired into the API yet — that's expected until later phases add real clients for them. It's not a bug; it's the API being honest about its own state.
 
 ### Database Setup
 
-Run migrations to set up the database schema:
+Not available yet — `packages/db` is an empty stub until Phase 3 (Database & Core Schema) adds the schema, migrations, and `db:*` scripts.
+
+### Building the Production Docker Images
+
+The build context is always the repository root (not `apps/api` or `apps/web`) — both Dockerfiles need access to the whole workspace:
 
 ```bash
-npm run db:migrate
+docker build -f infra/docker/Dockerfile.api -t viralscopes/api .
+docker build -f infra/docker/Dockerfile.web -t viralscopes/web .
 ```
 
-Seed the database with development data:
+`Dockerfile.api` uses `turbo prune` internally to build a sub-monorepo containing only `apps/api` and the workspace packages it actually imports — this keeps the API image from bundling `apps/web`'s entire Next.js dependency tree (a naive `npm ci` at the root would otherwise hoist everything into one shared `node_modules`). `Dockerfile.web` relies on Next.js's `output: 'standalone'` build mode for the same kind of automatic pruning.
+
+Run a built image directly:
 
 ```bash
-npm run db:seed
+docker run -p 3001:3001 -e PORT=3001 viralscopes/api
+docker run -p 3000:3000 viralscopes/web
 ```
 
-Reset the database (drop + migrate + seed):
-
-```bash
-npm run db:reset
-```
+`docker-compose.prod.yml` is written and validated (`docker compose -f docker-compose.prod.yml config`) but not deployed anywhere — it needs a provisioned server, a real domain, and a `.env.production` file with real secrets, none of which exist yet.
 
 ### Useful Development Commands
 
@@ -681,8 +707,8 @@ Manual approval on GitHub
 
 ```bash
 # 1. Build and push Docker images manually
-docker build -f infra/docker/Dockerfile.api -t ghcr.io/viralscopes/api:latest .
-docker push ghcr.io/viralscopes/api:latest
+docker build -f infra/docker/Dockerfile.api -t ghcr.io/keving1456/viralscopes-api:latest .
+docker push ghcr.io/keving1456/viralscopes-api:latest
 
 # 2. Trigger Coolify redeploy via webhook
 curl -X POST https://coolify.viralscopes.io/api/v1/deploy   -H "Authorization: Bearer $COOLIFY_WEBHOOK_TOKEN"   -d '{"serviceId": "viralscopes-api"}'

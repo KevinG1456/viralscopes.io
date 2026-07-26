@@ -1,0 +1,59 @@
+# infra/docker/Dockerfile.api — Fastify backend API
+# Build context must be the repository root:
+#   docker build -f infra/docker/Dockerfile.api -t viralscopes/api .
+#
+# Uses `turbo prune` to generate a sub-monorepo containing only apps/api
+# and the workspace packages it actually depends on. Without this, plain
+# `npm ci` at the root hoists every workspace's dependencies (including
+# apps/web's entire Next.js tree) into one shared node_modules, and a
+# naive `COPY node_modules` would bloat this image with ~300MB of
+# frontend dependencies the API never uses.
+
+FROM node:22-alpine AS base
+RUN npm install -g turbo@^2
+
+# ---- Stage 1: prune the monorepo down to apps/api's actual dependency graph ----
+FROM base AS pruner
+WORKDIR /app
+COPY . .
+RUN turbo prune @viralscopes/api --docker
+
+# ---- Stage 2: install pruned deps and build ----
+FROM base AS builder
+WORKDIR /app
+
+# Pruned package.json files first — cached independently of source changes.
+COPY --from=pruner /app/out/json/ .
+COPY tsconfig.base.json ./tsconfig.base.json
+RUN npm ci
+
+# Pruned full source (only the packages apps/api depends on).
+COPY --from=pruner /app/out/full/ .
+RUN npm run build --workspace=apps/api
+
+# Strip devDependencies from the already-resolved node_modules tree in
+# place, rather than re-running `npm ci` in the runner stage.
+RUN npm prune --omit=dev
+
+# ---- Stage 3: production runtime ----
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/package.json
+
+USER nodejs
+EXPOSE 3001
+
+# Liveness only — is the process up? Whether it's ready for production
+# traffic (DB/Redis/queue wired up) is a separate, stricter check that
+# docker-compose.prod.yml applies against /ready at the orchestrator level.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3001/health || exit 1
+
+CMD ["node", "apps/api/dist/index.js"]

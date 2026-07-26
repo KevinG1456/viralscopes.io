@@ -1,0 +1,17 @@
+# Points Grafana at infra/monitoring/grafana/dashboards/ for auto-loaded
+# dashboard JSON. The folder is intentionally empty right now — building
+# dashboards (API Performance, Queue Health, etc. — see
+# Monitoring_and_Operations.md §5) before the metrics they query exist
+# would just be broken panels. They get added starting Phase 5, as each
+# service is actually instrumented.
+apiVersion: 1
+
+providers:
+  - name: default
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards/files

@@ -1,0 +1,23 @@
+# infra/traefik/dynamic/middlewares.yml — edge-level security headers
+#
+# Transport-level headers only (HSTS, frame options). Content-Security-Policy
+# and the rest of the application-level header set (Security_Architecture.md
+# §14) are set by Helmet.js in the API itself — that's Phase 5 scope, once
+# the API has real routes to protect.
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        frameDeny: true
+        contentTypeNosniff: true
+        referrerPolicy: 'strict-origin-when-cross-origin'
+
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true

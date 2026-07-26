@@ -1,0 +1,40 @@
+# Dependencies (installed fresh inside the image)
+node_modules
+**/node_modules
+
+# Build outputs (rebuilt inside the image)
+dist
+**/dist
+.next
+**/.next
+.turbo
+**/.turbo
+
+# Version control
+.git
+.gitignore
+.husky
+
+# Env files (never bake secrets into an image)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docs (not needed at runtime, keeps build context small)
+*.md
+Design_System
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+*.tsbuildinfo
+.eslintcache
+coverage

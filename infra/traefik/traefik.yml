@@ -1,0 +1,32 @@
+# infra/traefik/traefik.yml — Traefik static configuration
+#
+# NOT deployed anywhere yet — this is config-as-code for Phase 2, ready to
+# use once a real domain and server exist. Let's Encrypt's HTTP-01
+# challenge requires a publicly reachable domain on port 80, which this
+# project doesn't have provisioned yet (see PROJECT_STATUS.md).
+
+providers:
+  docker:
+    exposedByDefault: false
+
+entryPoints:
+  web:
+    address: ':80'
+  websecure:
+    address: ':443'
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: security@viralscopes.io
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+
+api:
+  dashboard: false

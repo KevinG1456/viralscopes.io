@@ -1,0 +1,122 @@
+# Local development infrastructure only.
+#
+# apps/web and apps/api run natively on the host (`npm run dev`) for fast
+# hot reload — see README.md §6. This file starts everything they and the
+# workflow engine depend on: Redis, n8n, MinIO (local S3), and the
+# Prometheus/Grafana/Loki monitoring stack.
+#
+# PostgreSQL is deliberately not included here — local Postgres is
+# provisioned via the Supabase CLI in Phase 3 (Database & Core Schema),
+# not via this compose file.
+#
+# Usage: docker compose -f docker-compose.dev.yml up -d
+
+networks:
+  viralscopes:
+    driver: bridge
+
+volumes:
+  n8n-data:
+  minio-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    networks:
+      - viralscopes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    # No volume: Stage 1 dev Redis is intentionally non-persistent
+    # (see INFRASTRUCTURE_GROWTH_PLAN.md §8.3) — cache misses on restart
+    # are acceptable at this stage.
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-admin}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-dev-only-encryption-key-change-me}
+      N8N_HOST: localhost
+      N8N_PORT: '5678'
+      N8N_PROTOCOL: http
+    ports:
+      - '5678:5678'
+    volumes:
+      - n8n-data:/home/node/.n8n
+    networks:
+      - viralscopes
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio-data:/data
+    networks:
+      - viralscopes
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    volumes:
+      - ./infra/monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '9090:9090'
+    networks:
+      - viralscopes
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - '3002:3000'
+    networks:
+      - viralscopes
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./infra/monitoring/loki:/etc/loki:ro
+      - loki-data:/loki
+    ports:
+      - '3100:3100'
+    networks:
+      - viralscopes

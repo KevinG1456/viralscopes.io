@@ -1,0 +1,2 @@
+Dashboard JSON files go here. Empty until services expose real metrics to
+build dashboards against (see Monitoring_and_Operations.md §5).

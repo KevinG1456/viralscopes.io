@@ -39,12 +39,12 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-3 of 6 done) |
-| **Overall MVP completion** | ~9% |
+| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-4 of 6 done) |
+| **Overall MVP completion** | ~10% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 2 Milestone 4 — Environment & Secrets |
+| **Critical path item** | Phase 2 Milestone 5 — Monitoring & Health Checks |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
 | **Last status update** | 2026-07-26 |
@@ -91,7 +91,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          ███████████░░░░░░░░░   55%  🚧 In progress (Milestones 1-3 of 6 done)
+Phase 2          █████████████░░░░░░░   67%  🚧 In progress (Milestones 1-4 of 6 done)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -105,7 +105,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      █░░░░░░░░░░░░░░░░░░░    9%  🚧 In progress
+Overall MVP      █░░░░░░░░░░░░░░░░░░░   10%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -114,7 +114,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|
 | Pre-Development (docs) | 8 | 8 | 0 | 0 |
 | Phase 1 — Foundation | 14 | 14 | 0 | 0 |
-| Phase 2 — Infrastructure | 28 | 16 | 0 | 12 |
+| Phase 2 — Infrastructure | 28 | 19 | 0 | 9 |
 | Phase 3 — Database | 42 | 0 | 0 | 42 |
 | Phase 4 — Auth | 26 | 0 | 0 | 26 |
 | Phase 5 — Backend API | 58 | 0 | 0 | 58 |
@@ -127,7 +127,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **444** | **38** | **0** | **406** |
+| **Total** | **444** | **41** | **0** | **403** |
 
 ---
 
@@ -137,7 +137,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|---|
 | Pre-Dev | Documentation | ✅ Complete | 100% | Week 0 | All 8 documents authored |
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
-| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 55% | Week 1–3 | Docker, CI, Security done; Env/Secrets, Monitoring, Docs remain |
+| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 67% | Week 1–3 | Docker, CI, Security, Env/Secrets done; Monitoring, Docs remain |
 | Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Parallel with Phase 2 |
 | Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Depends on Phase 3 |
 | Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
@@ -572,6 +572,20 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-010 — Zod schema for environment variable validation (apps/api)
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | Validate every environment variable `apps/api` reads through a single Zod schema (`apps/api/src/config.ts`), failing fast with a specific error rather than booting on an invalid or silently-defaulted value |
+| **Decided by** | Engineering Lead (approved) |
+
+**Context:** Phase 2 Milestone 4 requires startup validation for required configuration without inventing placeholder requirements for variables nothing reads yet. Only `APP_ENV`, `PORT`, and `APP_VERSION` are consumed by any code today.
+
+**Decision:** `zod` (already the project's documented validation standard — `PROJECT_RULES.md`, `Security_Architecture.md`) added as a real dependency of `apps/api`, not a devDependency-only or aspirational one. Verified locally: invalid `PORT` and `APP_ENV` values both fail immediately with a field-specific error message; valid values (including a custom `APP_VERSION`) flow through correctly to `GET /health`. Each future phase that wires in a new dependency (database, Redis, JWT, ...) extends this same schema rather than reading `process.env` ad hoc elsewhere in the codebase.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -697,13 +711,12 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 2 Milestone 4: Environment & Secrets
+### Next Up — Phase 2 Milestone 5: Monitoring & Health Checks
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🟠 P2 | Validate `.env.example` completeness against everything shipped so far | Engineer | Milestone 4 |
-| 🟠 P2 | Document required variables per service | Engineer | Milestone 4 |
-| 🟡 P3 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Milestone 5, once services expose `/metrics` |
+| 🟠 P2 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Milestone 5, once services expose `/metrics` |
+| 🟠 P2 | Extend the `apps/api` config schema as new dependencies land | Engineer | Ongoing, per DEC-010 — not a one-time task |
 | 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items from Milestone 1 |
 
 ### Backlog (Next 4 Weeks)
@@ -722,6 +735,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-20 | Engineering Lead | Initial document created. Pre-development phase complete. All 8 project documents authored. Development not yet started. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 1 — Foundation & Project Setup: 14/14 tasks complete (monorepo scaffold, tooling, design tokens, brand assets, env vars, README, branch protection). BLK-001 (branch protection unenforceable without GitHub Pro) resolved as an accepted limitation. BLK-002 (`main` deleted from remote, default branch pointed at stale `develop`) discovered and resolved same day — `main` restored, `develop` fast-forwarded to match. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 — Infrastructure & DevOps: Milestones 1-3 of 6 complete. M1 Docker (Dockerfiles, docker-compose dev/prod, health checks, monitoring config — all verified running, not just written). M2 GitHub Actions CI (lint/type-check/build/format/secretlint, verified on real push, PR, and branch runs). M3 Security (production-aware npm audit policy with a reviewed allowlist; CodeQL and Dependency Review built, tested, found blocked by GitHub Advanced Security on the then-private repo, then re-verified working after the repo owner made the repo public — DEC-008). BLK-003 (branch protection enforcement conflicting with solo-maintainer self-approval) discovered and resolved via admin bypass, already present on the rulesets. |
+| 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 4 (Environment & Secrets) complete: `.env.example` reorganised into required-now/optional-now/required-starting-phase-N categories, restored `S3_FORCE_PATH_STYLE` and added `PORT`/`APP_VERSION` (both real, previously undocumented). Zod-based startup validation added to `apps/api/src/config.ts` — verified to fail fast with a specific error on invalid `PORT`/`APP_ENV`, and to pass a custom `APP_VERSION` through to `GET /health` (DEC-010). `.gitignore`'s env-file pattern replaced with a catch-all (`.env.*` + explicit `.env.example` exception), verified against 4 real cases. `.env.example` removed from `.secretlintignore` and confirmed it still passes secretlint — it's now actually scanned, not exempted. README §5/§7/§8 corrected: no environment variables are actually required to boot the app shell today (previously claimed `DATABASE_URL`/`JWT_SECRET`/etc. were required — they aren't, nothing reads them yet), and a second stale "PostgreSQL" reference in §8 (missed in Milestone 1) fixed. |
 
 ---
 

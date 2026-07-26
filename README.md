@@ -255,29 +255,9 @@ This installs dependencies for all workspaces in the monorepo via npm workspaces
 cp .env.example .env.local
 ```
 
-Open `.env.local` and fill in the required values. See [Environment Variables](#7-environment-variables) for the full reference.
+Open `.env.local` and fill in the required values. See [Environment Variables](#7-environment-variables) for the full required-now/future breakdown.
 
-The minimum required variables to start the application locally are:
-
-```bash
-# Database (Supabase local or hosted)
-DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
-SUPABASE_URL=http://localhost:54321
-SUPABASE_ANON_KEY=your-local-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
-
-# Auth
-JWT_SECRET=your-local-jwt-secret-minimum-32-chars
-JWT_REFRESH_SECRET=your-local-refresh-secret-minimum-32-chars
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Application
-APP_ENV=development
-APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
+At this phase, nothing is actually required to start the application shell — `apps/api` boots with its built-in defaults (`APP_ENV=development`, `PORT=3001`) even with an empty `.env.local`. `DATABASE_URL`, `JWT_SECRET`, and the rest do nothing yet; they become load-bearing once the phase that reads them (3, 4, ...) lands.
 
 External service keys (YouTube API, OpenAI, Anthropic, Stripe, SendGrid) are required for full functionality but not for running the application shell locally.
 
@@ -411,105 +391,91 @@ npm run workflows:import # Import workflows from /infra/n8n-workflows/ into n8n
 
 ## 7. Environment Variables
 
-All environment variables are documented in `.env.example`. Below is the full reference.
+All environment variables are documented in `.env.example`, organised into four categories:
 
-> **Security:** Never commit `.env.local`, `.env.staging`, or `.env.production` to version control. Only `.env.example` (with placeholder values) is committed.
+| Category | Meaning |
+|---|---|
+| **Required now** | Read by code (`apps/api/src/config.ts`) or by `docker-compose.dev.yml`/`docker-compose.prod.yml` today. Missing or invalid values fail fast at API startup, or break `docker compose up`. |
+| **Optional now** | Read today, but has a safe, documented default. |
+| **Required starting Phase N** | Not read by any code yet — reserved for a specific upcoming phase (e.g. `DATABASE_URL` does nothing until Phase 3 adds a database client). Setting these early has no effect and isn't necessary. |
+| **Development-only** | Meaningful only in local dev (e.g. MinIO credentials, dev-mode defaults) — production uses different values or a different service entirely. |
 
-### Application
+Create your local environment file:
 
-| Variable | Required | Description | Example |
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` is gitignored (see `.gitignore`) and never committed. Fill in only the "Required now" section to get the app running locally — everything else can stay blank until the phase that needs it lands.
+
+> **Security:** Never commit `.env.local`, `.env.production`, or any file containing real secrets. Only `.env.example` (placeholder values only, itself scanned by secretlint) is committed.
+
+### Startup Validation
+
+`apps/api` validates its environment variables at startup using a Zod schema (`apps/api/src/config.ts`). An invalid value fails immediately with a specific error — it never falls back to a value that would silently mask a misconfiguration:
+
+```
+$ PORT=not-a-number npm run start --workspace=apps/api
+Error: Invalid environment configuration:
+  - PORT: Expected number, received nan
+```
+
+Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the only environment variables any code actually reads yet. Each phase that wires in a new dependency (database, Redis, JWT, ...) adds its variables to this same schema rather than reading `process.env` ad hoc elsewhere.
+
+### Required Now
+
+| Variable | Read by | Description | Default |
 |---|---|---|---|
-| `APP_ENV` | Yes | Environment name | `development` / `staging` / `production` |
-| `APP_URL` | Yes | Public URL of the application | `https://app.viralscopes.io` |
-| `LOG_LEVEL` | No | Pino log level | `info` (default) |
+| `APP_ENV` | apps/api | `development` \| `staging` \| `production` \| `test` | `development` |
+| `PORT` | apps/api | API listen port | `3001` |
+| `APP_VERSION` | apps/api | Version string shown by `GET /health`; CI sets this to the git SHA in built images | `unknown` |
+| `APP_URL` | Docker Compose | Public URL of the frontend | — |
+| `LOG_LEVEL` | Docker Compose | Pino log level | `info` |
+| `N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD` / `N8N_ENCRYPTION_KEY` | Docker Compose | n8n admin credentials | dev-only defaults in `docker-compose.dev.yml`; no default in prod |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Docker Compose | MinIO (dev) / Cloudflare R2 (prod) credentials | dev-only defaults (`minioadmin`) |
+| `GRAFANA_ADMIN_PASSWORD` | Docker Compose | Grafana admin password | `admin` in dev only |
+| `REDIS_PASSWORD` | Docker Compose | Redis auth password | none in dev (see `INFRASTRUCTURE_GROWTH_PLAN.md` §8.3); required in prod |
+| `APP_DOMAIN` / `API_DOMAIN` / `N8N_DOMAIN` / `GRAFANA_DOMAIN` | `docker-compose.prod.yml` | Traefik routing rules | example `viralscopes.io` subdomains — not deployed anywhere yet |
+| `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_APP_URL` | apps/web (public) | Frontend build-time public URLs | — |
 
-### Database (Supabase)
+### Required Starting Phase 3 — Database & Core Schema
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `DATABASE_POOL_SIZE` | No | PgBouncer pool size | `10` (default) |
-| `SUPABASE_URL` | Yes | Supabase project URL | `https://xyz.supabase.co` |
-| `SUPABASE_ANON_KEY` | Yes | Supabase anon/public key | `eyJ...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-side only) | `eyJ...` |
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_POOL_SIZE` | PgBouncer pool size (default `10`) |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Supabase project credentials |
 
-### Redis
+### Required Starting Phase 5 — Core Backend API
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `REDIS_URL` | Yes | Redis connection URL | `redis://localhost:6379` |
-| `REDIS_PASSWORD` | No | Redis password (if auth enabled) | `your-redis-password` |
+| Variable | Description |
+|---|---|
+| `REDIS_URL` | Redis connection URL (the container already runs; no client reads this yet) |
+| `S3_BUCKET` / `S3_REGION` / `S3_ENDPOINT` | Object storage location |
+| `S3_FORCE_PATH_STYLE` | `true` for MinIO (path-style addressing); `false` for Cloudflare R2 / AWS S3 (virtual-hosted style) |
+| `YOUTUBE_API_KEY` / `YOUTUBE_QUOTA_LIMIT` / `RAPIDAPI_YOUTUBE_KEY` | Video discovery |
 
-### Authentication
+### Required Starting Phase 4 — Authentication & Authorisation
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `JWT_SECRET` | Yes | JWT access token signing secret (min 32 chars) | `your-secret-minimum-32-characters` |
-| `JWT_REFRESH_SECRET` | Yes | JWT refresh token signing secret (min 32 chars) | `your-refresh-secret-min-32-chars` |
-| `JWT_ACCESS_EXPIRY` | No | Access token expiry | `15m` (default) |
-| `JWT_REFRESH_EXPIRY` | No | Refresh token expiry | `30d` (default) |
-| `GOOGLE_CLIENT_ID` | No | Google OAuth Client ID | `123456.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | No | Google OAuth Client Secret | `GOCSPX-...` |
-| `GITHUB_CLIENT_ID` | No | GitHub OAuth App Client ID | `Iv1.abc123` |
-| `GITHUB_CLIENT_SECRET` | No | GitHub OAuth App Client Secret | `abc123def456` |
+| Variable | Description |
+|---|---|
+| `JWT_SECRET` / `JWT_REFRESH_SECRET` | Token signing secrets (min 32 chars) |
+| `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` | Token lifetimes (defaults `15m` / `30d`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth |
+| `SENDGRID_API_KEY` / `EMAIL_FROM_ADDRESS` / `EMAIL_FROM_NAME` | Transactional email |
 
-### YouTube Data API
+### Required Starting Phase 6 — n8n Workflow Engine
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `YOUTUBE_API_KEY` | Yes (for discovery) | YouTube Data API v3 key | `AIza...` |
-| `YOUTUBE_QUOTA_LIMIT` | No | Daily quota unit limit | `10000` (default) |
-| `RAPIDAPI_YOUTUBE_KEY` | No | RapidAPI YouTube fallback key | `abc123...` |
+| Variable | Description |
+|---|---|
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | AI analysis pipeline |
 
-### AI APIs
+### Required Starting Phase 9 — Subscription & Billing
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes (for AI analysis) | Anthropic Claude API key | `sk-ant-...` |
-| `OPENAI_API_KEY` | Yes (for AI analysis) | OpenAI API key | `sk-...` |
-
-### Stripe
-
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `STRIPE_SECRET_KEY` | Yes (for billing) | Stripe secret key | `sk_live_...` / `sk_test_...` |
-| `STRIPE_WEBHOOK_SECRET` | Yes (for billing) | Stripe webhook signing secret | `whsec_...` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes (for billing) | Stripe publishable key (frontend) | `pk_live_...` |
-
-### Email
-
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `SENDGRID_API_KEY` | Yes (for email) | SendGrid API key | `SG.abc...` |
-| `EMAIL_FROM_ADDRESS` | Yes (for email) | Sender email address | `hello@viralscopes.io` |
-| `EMAIL_FROM_NAME` | No | Sender display name | `ViralScopes` |
-
-### Object Storage
-
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `S3_BUCKET` | Yes | Storage bucket name | `viralscopes-production` |
-| `S3_REGION` | Yes | Storage region | `auto` (R2) / `eu-west-2` (S3) |
-| `S3_ENDPOINT` | Yes | Storage endpoint URL | `https://xxx.r2.cloudflarestorage.com` |
-| `S3_ACCESS_KEY` | Yes | Storage access key ID | `abc123` |
-| `S3_SECRET_KEY` | Yes | Storage secret access key | `secret123` |
-
-### Frontend (Public Variables)
-
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `NEXT_PUBLIC_API_URL` | Yes | Backend API base URL | `https://api.viralscopes.io` |
-| `NEXT_PUBLIC_APP_URL` | Yes | Frontend public URL | `https://app.viralscopes.io` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key | `pk_live_...` |
-
-### n8n
-
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `N8N_BASIC_AUTH_USER` | Yes | n8n admin username | `admin` |
-| `N8N_BASIC_AUTH_PASSWORD` | Yes | n8n admin password | `secure-password` |
-| `N8N_ENCRYPTION_KEY` | Yes | n8n credentials encryption key | `random-32-char-string` |
-| `N8N_WEBHOOK_URL` | Yes | n8n public webhook base URL | `https://n8n.viralscopes.io` |
+| Variable | Description |
+|---|---|
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe billing |
 
 ---
 
@@ -518,7 +484,7 @@ All environment variables are documented in `.env.example`. Below is the full re
 ### Development Mode
 
 ```bash
-# Start infrastructure (PostgreSQL, Redis, n8n, MinIO, monitoring)
+# Start infrastructure (Redis, n8n, MinIO, monitoring — see §6 for why PostgreSQL isn't here)
 docker compose -f docker-compose.dev.yml up -d
 
 # Start the API with hot reload

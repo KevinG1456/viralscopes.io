@@ -12,7 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "fastify": "^5"
+    "fastify": "^5",
+    "zod": "^3"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -32,22 +32,29 @@ jobs:
       - name: Run production-aware audit policy
         run: node .github/scripts/check-audit.mjs
 
-  # actions/dependency-review-action and CodeQL are deliberately not
-  # included here. Both were built, wired in, and tested against real
-  # GitHub Actions runs on 2026-07-26 -- not assumed:
-  #
-  # - Dependency Review failed immediately with: "Dependency review is
-  #   not supported on this repository. Please ensure that Dependency
-  #   graph is enabled along with GitHub Advanced Security."
-  # - CodeQL's analysis step actually succeeded (scanned all
-  #   TypeScript/JavaScript files, generated SARIF), but the
-  #   results-upload step failed with "Resource not accessible by
-  #   integration" -- GitHub's own annotation on that run states plainly:
-  #   "Code scanning is not enabled for this repository."
-  #
-  # Both require GitHub Advanced Security, which isn't available on this
-  # private repo under the current plan -- the same gating that already
-  # blocked secret scanning and classic branch protection (see
-  # PROJECT_STATUS.md BLK-001). A job that can never pass on this plan
-  # would just be permanent, unactionable red. Revisit if the plan
-  # changes (GitHub Pro/Team, or the repo goes public).
+  dependency-review:
+    name: Dependency Review (PR diff only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3

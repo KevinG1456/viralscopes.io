@@ -32,6 +32,15 @@ jobs:
       - name: Run production-aware audit policy
         run: node .github/scripts/check-audit.mjs
 
+  # Both dependency-review and codeql require GitHub Advanced Security.
+  # First tested while the repo was private (2026-07-26): both failed
+  # immediately -- "Dependency review is not supported on this
+  # repository" and "Code scanning is not enabled for this repository" --
+  # confirming Advanced Security isn't available for private repos on
+  # this plan (same gating that blocked secret scanning and branch
+  # protection, see PROJECT_STATUS.md BLK-001). Re-tested after the repo
+  # was made public: both pass, since Advanced Security is free on
+  # public repos.
   dependency-review:
     name: Dependency Review (PR diff only)
     runs-on: ubuntu-latest
@@ -53,8 +62,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
 
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4

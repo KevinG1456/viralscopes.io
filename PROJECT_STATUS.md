@@ -39,12 +39,12 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 1 — Foundation & Project Setup (complete) |
-| **Overall MVP completion** | ~5% |
+| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-3 of 6 done) |
+| **Overall MVP completion** | ~9% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 2 — Infrastructure & DevOps |
+| **Critical path item** | Phase 2 Milestone 4 — Environment & Secrets |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
 | **Last status update** | 2026-07-26 |
@@ -91,7 +91,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 2          ███████████░░░░░░░░░   55%  🚧 In progress (Milestones 1-3 of 6 done)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -105,7 +105,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      █░░░░░░░░░░░░░░░░░░░    5%  🚧 In progress
+Overall MVP      █░░░░░░░░░░░░░░░░░░░    9%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -114,7 +114,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|
 | Pre-Development (docs) | 8 | 8 | 0 | 0 |
 | Phase 1 — Foundation | 14 | 14 | 0 | 0 |
-| Phase 2 — Infrastructure | 28 | 0 | 0 | 28 |
+| Phase 2 — Infrastructure | 28 | 16 | 0 | 12 |
 | Phase 3 — Database | 42 | 0 | 0 | 42 |
 | Phase 4 — Auth | 26 | 0 | 0 | 26 |
 | Phase 5 — Backend API | 58 | 0 | 0 | 58 |
@@ -127,7 +127,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **444** | **22** | **0** | **422** |
+| **Total** | **444** | **38** | **0** | **406** |
 
 ---
 
@@ -137,7 +137,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|---|
 | Pre-Dev | Documentation | ✅ Complete | 100% | Week 0 | All 8 documents authored |
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
-| Phase 2 | Infrastructure & DevOps | ⏳ Not started | 0% | Week 1–3 | Parallel with Phase 1 |
+| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 55% | Week 1–3 | Docker, CI, Security done; Env/Secrets, Monitoring, Docs remain |
 | Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Parallel with Phase 2 |
 | Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Depends on Phase 3 |
 | Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
@@ -253,6 +253,24 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - **Owner:** Repo owner (Kevin Gates) — confirmed option 1
 - **Status:** Resolved
 - **Resolution:** `git push origin main` restored `origin/main` at the current tip (`b747f97`); GitHub default branch reset to `main` via `gh api`; `origin/develop` fast-forwarded to match `main`'s tip (`0cb7a44` confirmed as an ancestor, so no unique work was on the old `develop`). Both branches now point to the same, current commit on the remote.
+- **Resolved:** 2026-07-26
+
+---
+
+### BLK-003 — Branch protection enforced, but solo maintainer can't approve own PRs
+- **Raised:** 2026-07-26
+- **Raised by:** Engineering (AI-assisted), discovered during Phase 2 Milestone 3
+- **Severity:** Medium
+- **Phases affected:** Phase 2
+- **Description:** The repository was made public (owner's decision, to unblock GitHub Advanced Security features — see DEC-008). This lifted BLK-001's plan limitation: the rulesets configured in Phase 1 became actively enforced, including `required_approving_review_count: 1` on both `main` and `develop`. The first PR opened afterward (#10) could not be merged: GitHub rejects self-approval outright ("Can not approve your own pull request"), and no bypass actor was configured, so even a repo-admin merge attempt (`gh pr merge --admin`) was rejected.
+- **Impact:** No PR could be merged to `main` or `develop` without a second human reviewer, who doesn't exist on this solo project.
+- **Resolution options:**
+  1. Add the repository-admin role to each ruleset's bypass list — protection still applies to any future non-admin collaborator.
+  2. Set `required_approving_review_count` to 0, removing the human-review requirement entirely.
+  3. Merge manually via the GitHub UI through some other means.
+- **Owner:** Repo owner (Kevin Gates) — confirmed option 1
+- **Status:** Resolved
+- **Resolution:** Confirmed all three active rulesets ("Protected Branches", "Protected Branches main", "Protected Branches develop") already had `bypass_actors: [{actor_id: 5, actor_type: RepositoryRole, bypass_mode: always}]` (Admin role) configured with `current_user_can_bypass: always`. The blocker was specifically `gh pr merge --admin`'s GraphQL path not invoking the bypass correctly — merging via the REST API directly (`PUT /repos/.../pulls/10/merge`) respected it and succeeded. Direct `git push` to a bypass-covered branch also correctly bypasses (used to sync `develop`).
 - **Resolved:** 2026-07-26
 
 ---
@@ -517,6 +535,43 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-008 — Repository made public
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | Switch the GitHub repository from private to public |
+| **Decided by** | Repo owner (Kevin Gates) |
+
+**Context:** GitHub Advanced Security features (secret scanning, CodeQL/code scanning, Dependency Review, enforced branch protection rulesets) are unavailable for private repositories on this account's plan — confirmed repeatedly via real API calls and workflow runs (BLK-001; Phase 2 Milestone 3). Advanced Security is free on public repositories.
+
+**Options considered:**
+1. Upgrade to GitHub Pro — unblocks these features while staying private.
+2. Make the repository public — free, but exposes every file, including strategy docs (`Business_Model.md`, `Pricing_Strategy.md`, `Commercial_Strategy.md`, `Competitive_Analysis.md`, etc.).
+3. Leave private, accept the feature gap indefinitely.
+
+**Decision:** Public. The owner made this call directly (flagged as a significant, hard-to-reverse decision before proceeding — see chat log 2026-07-26). Confirmed working immediately after: CodeQL and Dependency Review both passed on the next real workflow run, and branch-protection rulesets became actively enforced (see BLK-003 for the solo-maintainer follow-on issue that surfaced and was resolved).
+
+---
+
+### DEC-009 — Production-aware npm audit policy (custom script, not a third-party tool)
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | Replace the naive `npm audit --audit-level=high` CI gate with a custom policy: production dependencies only, plus a reviewed, dated allowlist for advisories with no available fix |
+| **Decided by** | Engineering Lead (approved) |
+
+**Context:** The literal gate documented in `Security_Architecture.md` §20 and `Deployment_Guide.md` §9 fails on devDependency-only advisories (no runtime risk) and on advisories with no non-breaking fix (Next.js's bundled `sharp`/`postcss`) — exactly the failure that blocked the old CI before the Phase 1 reset.
+
+**Options considered:**
+1. `audit-ci` (npm package) — battle-tested, but still needed custom logic for the allowlist-with-review-dates requirement, so it wouldn't actually remove much custom code.
+2. Custom script (`.github/scripts/check-audit.mjs`) — full control, no new dependency, matches the small scale of the check.
+
+**Decision:** Custom script. Verified against all three logic paths (clean pass, unaddressed vulnerability, expired review date) before shipping. See `.github/security/audit-allowlist.json` for the current accepted exceptions (all four current findings trace to the same root cause: Next.js's bundled `sharp`/`postcss`, reviewBy `2026-10-26`).
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -598,13 +653,13 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 | **Logged** | 2026-07-26 |
 | **Severity** | Medium |
 | **Phases affected** | Phase 1, Phase 2 |
-| **Status** | Accepted (intentional, tracked) |
+| **Status** | Mitigated — production-aware CI gate live (Phase 2 Milestone 3) |
 
-**Description:** `npm audit` reports 9 high-severity CVEs: (1) `sharp`/`postcss` vulnerabilities bundled *inside* `next@16.2.12`'s own dependency tree (not something our `package.json` controls directly — no newer Next.js patch resolves it as of this writing), and (2) a `brace-expansion`/`minimatch` DoS reachable via `eslint@9.x`'s internal `@eslint/config-array`/`@eslint/eslintrc` — fixed only in `eslint@10`, which `eslint-plugin-import`'s latest release doesn't yet support as a peer dependency.
+**Description:** `npm audit` reports high-severity CVEs: (1) `sharp`/`postcss` vulnerabilities bundled *inside* `next@16.2.12`'s own dependency tree (not something our `package.json` controls directly — no newer Next.js patch resolves it as of this writing), and (2) (originally) a `brace-expansion`/`minimatch` DoS reachable via `eslint@9.x`'s internals — fixed only in `eslint@10`, which `eslint-plugin-import` didn't support as a peer dependency at the time.
 
 **Why accepted:** Both are dev-time-only or upstream-vendored issues with low practical exploitability in our context (ESLint runs locally over trusted source, not attacker input; the affected Next.js code paths are image-optimisation internals not currently exercised — no image processing exists yet). Forcing `npm audit fix --force` would downgrade to much older, more-vulnerable major versions (`next@9.3.3`, ancient `eslint`), which is a worse trade.
 
-**Resolution plan:** Re-check on each dependency bump. Revisit when Phase 2 wires up CI's `npm audit` gate (`PROJECT_RULES.md` §4.5) — if still unresolved upstream at that point, document an explicit CI exception rather than silently failing the build.
+**Resolution:** `.github/workflows/security.yml`'s `dependency-audit` job now runs `npm audit --omit=dev`, which excludes the ESLint/devDependency chain from blocking entirely (it's dev-only). The 4 remaining production findings (all traced to Next.js's bundled `sharp`/`postcss`) are recorded in `.github/security/audit-allowlist.json` with a reason and a `reviewBy: 2026-10-26` date — the CI job fails if that date passes without re-evaluation, so this cannot silently persist forever. See DEC-009.
 
 ---
 
@@ -642,14 +697,14 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 2: Infrastructure & DevOps
+### Next Up — Phase 2 Milestone 4: Environment & Secrets
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Write Dockerfiles + `docker-compose.dev.yml`/`docker-compose.prod.yml` | Engineer | Phase 2 critical path |
-| 🔴 P1 | Set up GitHub Actions CI/CD pipeline (lint, test, build, deploy) | Engineer | Also resolves TD-005's CI-gate follow-up |
-| 🟠 P2 | Deploy Prometheus + Grafana + Loki monitoring stack | Engineer | Phase 2 deliverable |
-| 🟠 P2 | Implement `/health` and `/ready` endpoints | Engineer | Phase 2 deliverable (deliberately deferred out of Phase 1) |
+| 🟠 P2 | Validate `.env.example` completeness against everything shipped so far | Engineer | Milestone 4 |
+| 🟠 P2 | Document required variables per service | Engineer | Milestone 4 |
+| 🟡 P3 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Milestone 5, once services expose `/metrics` |
+| 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items from Milestone 1 |
 
 ### Backlog (Next 4 Weeks)
 
@@ -666,6 +721,7 @@ When a known issue is identified, log it in this format:
 |---|---|---|
 | 2026-07-20 | Engineering Lead | Initial document created. Pre-development phase complete. All 8 project documents authored. Development not yet started. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 1 — Foundation & Project Setup: 14/14 tasks complete (monorepo scaffold, tooling, design tokens, brand assets, env vars, README, branch protection). BLK-001 (branch protection unenforceable without GitHub Pro) resolved as an accepted limitation. BLK-002 (`main` deleted from remote, default branch pointed at stale `develop`) discovered and resolved same day — `main` restored, `develop` fast-forwarded to match. |
+| 2026-07-26 | Engineering (AI-assisted) | Phase 2 — Infrastructure & DevOps: Milestones 1-3 of 6 complete. M1 Docker (Dockerfiles, docker-compose dev/prod, health checks, monitoring config — all verified running, not just written). M2 GitHub Actions CI (lint/type-check/build/format/secretlint, verified on real push, PR, and branch runs). M3 Security (production-aware npm audit policy with a reviewed allowlist; CodeQL and Dependency Review built, tested, found blocked by GitHub Advanced Security on the then-private repo, then re-verified working after the repo owner made the repo public — DEC-008). BLK-003 (branch protection enforcement conflicting with solo-maintainer self-approval) discovered and resolved via admin bypass, already present on the rulesets. |
 
 ---
 

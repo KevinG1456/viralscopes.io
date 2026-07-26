@@ -7,9 +7,25 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "type-check": "tsc --noEmit",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate.ts",
+    "db:check": "drizzle-kit check",
+    "db:seed": "tsx src/seeds/run.ts",
+    "db:reset": "tsx src/reset.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:erd": "mmdc -i ../../docs/database-erd.mmd -o ../../docs/database-erd.png -b white"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "eslint-plugin-import": "^2"
+    "@mermaid-js/mermaid-cli": "^11",
+    "@viralscopes/shared": "*",
+    "dotenv": "^17",
+    "drizzle-kit": "^0.31.10",
+    "eslint-plugin-import": "^2",
+    "tsx": "^4"
   }
 }

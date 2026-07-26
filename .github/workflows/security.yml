@@ -40,21 +40,18 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
 
-  codeql:
-    name: CodeQL
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-
-      - uses: github/codeql-action/analyze@v3
+  # CodeQL is deliberately not included here. Verified via a real run
+  # (2026-07-26): the analysis step itself succeeds (scanned all
+  # TypeScript/JavaScript files, generated SARIF), but the results-upload
+  # step fails with "Resource not accessible by integration" — GitHub's
+  # own annotation on that run states plainly: "Code scanning is not
+  # enabled for this repository." This is the same GitHub Advanced
+  # Security gating on private repos under the current plan that already
+  # blocked secret scanning and classic branch protection (see
+  # PROJECT_STATUS.md BLK-001). A job that can never succeed on this plan
+  # would just be a permanently-red, unactionable check — revisit if the
+  # plan changes (GitHub Pro/Team, or the repo goes public).

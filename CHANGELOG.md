@@ -126,6 +126,17 @@ Each version entry uses the following change categories:
 - A second stale reference to a PostgreSQL container in `docker-compose.dev.yml` (which doesn't include one) — missed in the Milestone 1 README fix — corrected in README.md §8
 - Restored `S3_FORCE_PATH_STYLE` to `.env.example` (present in the pre-reset implementation, dropped during the Phase 1 rewrite; genuinely required for MinIO's path-style addressing)
 
+### Added (Phase 2 Milestone 5 — Monitoring & Health Checks)
+
+- Structured Pino logging for `apps/api` (`apps/api/src/plugins/logger.plugin.ts`): JSON output with `service`/`version`/`environment` base fields and ISO timestamps
+- Redaction of `password`, `password_hash`, `token`, `apiKey`/`api_key`, `secret`, `authorization` (incl. the `Authorization`/`Cookie` headers), `email`, `name`, and `ip_address` from all log output
+- A deliberate one-time `warn`-level log at boot listing unimplemented dependencies (database, Redis, queue), alongside `info` for normal request/lifecycle events and `error` for unexpected failures
+- `LOG_LEVEL` added to the `apps/api` Zod config schema — invalid values fail fast like every other validated variable
+
+### Security (Phase 2 Milestone 5)
+
+- Log redaction verified directly against real output (not assumed): a test log call with `password`/`email`/`name`/`ip_address` fields produces `[REDACTED]`; confirmed this doesn't affect Pino's own error serialization (`err.type`, not `err.name`)
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

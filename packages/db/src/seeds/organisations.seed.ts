@@ -1,4 +1,4 @@
-import { sql, type InferSelectModel } from 'drizzle-orm';
+import { and, eq, isNull, sql, type InferSelectModel } from 'drizzle-orm';
 
 import type { Database } from '../client.js';
 import { organizations, organizationMembers, workspaces } from '../schema/index.js';
@@ -14,7 +14,7 @@ export async function seedOrganisations(db: Database, seededUsers: SeededUsers) 
     throw new Error('seedUsers must run before seedOrganisations');
   }
 
-  const [org] = await db
+  const [inserted] = await db
     .insert(organizations)
     .values({
       name: 'Dev Organisation',
@@ -28,7 +28,22 @@ export async function seedOrganisations(db: Database, seededUsers: SeededUsers) 
     })
     .returning();
 
-  if (org && seededUsers.member) {
+  const org =
+    inserted ??
+    (
+      await db
+        .select()
+        .from(organizations)
+        .where(and(eq(organizations.slug, 'dev-organisation'), isNull(organizations.deletedAt)))
+    )[0];
+
+  if (!org) {
+    throw new Error(
+      'Seed insert for dev-organisation conflicted, but no active row was found on fallback lookup.',
+    );
+  }
+
+  if (seededUsers.member) {
     await db
       .insert(organizationMembers)
       .values([

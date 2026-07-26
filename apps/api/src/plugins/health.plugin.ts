@@ -1,4 +1,10 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
+
+import type { AppConfig } from '../config.js';
+
+interface HealthPluginOptions extends FastifyPluginOptions {
+  config: AppConfig;
+}
 
 interface DependencyCheck {
   status: 'ok' | 'not_implemented';
@@ -31,14 +37,17 @@ function checkQueue(): DependencyCheck {
   };
 }
 
-export async function healthPlugin(fastify: FastifyInstance): Promise<void> {
+export async function healthPlugin(
+  fastify: FastifyInstance,
+  opts: HealthPluginOptions,
+): Promise<void> {
   // Liveness: only confirms the process is up and handling requests.
   // Never checks dependencies — that is /ready's job.
   fastify.get('/health', async (_request, reply) => {
     return reply.code(200).send({
       status: 'ok',
       uptime: Math.floor(process.uptime()),
-      version: process.env.APP_VERSION ?? 'unknown',
+      version: opts.config.version,
       timestamp: new Date().toISOString(),
     });
   });

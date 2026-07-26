@@ -110,6 +110,22 @@ Each version entry uses the following change categories:
 - Repository switched from private to public (repo owner's decision) to unblock GitHub Advanced Security features
 - Branch protection rulesets on `main`/`develop` now actively enforced (1 required approving review, required status checks, no force-push/deletion), with a repository-admin bypass so the solo maintainer isn't blocked by the self-approval restriction GitHub enforces
 
+### Added (Phase 2 Milestone 4 — Environment & Secrets)
+
+- Zod-based startup validation for `apps/api`'s environment variables (`apps/api/src/config.ts`) — invalid `PORT` or `APP_ENV` values fail immediately with a specific error instead of booting on a silently-wrong config; verified locally
+- `.env.example` reorganised into four explicit categories (required now / optional now / required starting Phase N / development-only) instead of an undifferentiated list
+
+### Security (Phase 2 Milestone 4)
+
+- `.env.example` removed from `.secretlintignore` — it's now actually scanned by secretlint like every other file, rather than exempted
+- `.gitignore`'s environment-file exclusion replaced with a catch-all (`.env.*`, with `.env.example` as the one explicit exception) so a new variant (`.env.test`, `.env.staging.local`, ...) can't slip through by omission — verified against 4 real cases
+
+### Fixed (Phase 2 Milestone 4)
+
+- README.md no longer claims `DATABASE_URL`, `JWT_SECRET`, and similar Phase 3/4 variables are required to run the application shell locally — nothing reads them yet, and the app boots fine with an empty `.env.local`
+- A second stale reference to a PostgreSQL container in `docker-compose.dev.yml` (which doesn't include one) — missed in the Milestone 1 README fix — corrected in README.md §8
+- Restored `S3_FORCE_PATH_STYLE` to `.env.example` (present in the pre-reset implementation, dropped during the Phase 1 rewrite; genuinely required for MinIO's path-style addressing)
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

@@ -82,13 +82,33 @@ Each version entry uses the following change categories:
 ### Infrastructure (Phase 1)
 
 - Turborepo build pipeline (`build`, `dev`, `lint`, `type-check`, `test` tasks)
-- GitHub repository ruleset configuration created for `main` and `develop` per `PROJECT_RULES.md` §5.2; active enforcement is currently limited by GitHub's private-repo plan requirements (see `PROJECT_STATUS.md` BLK-001)
+- GitHub repository ruleset configuration created for `main` and `develop` per `PROJECT_RULES.md` §5.2; enforcement became active once the repository was made public in Phase 2 (see DEC-008 in `PROJECT_STATUS.md` — originally limited by GitHub's private-repo plan requirements, BLK-001)
 
 ### Documentation (Phase 1)
 
 - `README.md` setup instructions corrected to match the actual repository layout (docs at root, not under `docs/`) and the real GitHub remote
 - `PROJECT_RULES.md` §4.3 updated to name `secretlint` explicitly (was generic "git-secrets or detect-secrets")
 - `REPOSITORY_STRUCTURE.md` §9 annotated to note its `docs/` folder tree is a target convention, not the current layout
+
+### Added (Phase 2 — Infrastructure & DevOps, Milestones 1-3)
+
+- Multi-stage Dockerfiles for `apps/api` (using `turbo prune` to avoid bundling unrelated workspace dependencies) and `apps/web` (Next.js `standalone` output)
+- `docker-compose.dev.yml` — Redis, n8n, MinIO, Prometheus, Grafana, Loki for local development (PostgreSQL intentionally excluded; that's Phase 3's Supabase CLI setup)
+- `docker-compose.prod.yml` and Traefik configuration — written and validated, not yet deployed (no server/domain provisioned)
+- `GET /health` (liveness) and `GET /ready` (readiness) on both `apps/api` and `apps/web`; `/ready` honestly reports unimplemented dependencies (database, Redis, queue) rather than faking success
+- `.github/workflows/ci.yml` — lint, type-check, build, format check, secret scan on every push/PR to `main`/`develop`
+- `.github/workflows/security.yml` — production-aware dependency audit (`.github/scripts/check-audit.mjs` + `.github/security/audit-allowlist.json`), CodeQL, and Dependency Review
+
+### Security (Phase 2 Milestone 3)
+
+- Production-aware `npm audit` policy: production dependencies only gate the build; any high/critical finding must be fixed or explicitly allowlisted with a reason and a review-by date (currently 4 findings, all traced to Next.js's bundled `sharp`/`postcss`, reviewBy 2026-10-26)
+- Dependabot vulnerability alerts and Dependabot security updates enabled
+- CodeQL and Dependency Review evaluated: both require GitHub Advanced Security, unavailable on this repo while private; both verified working after the repository was made public
+
+### Infrastructure (Phase 2 Milestones 1-3)
+
+- Repository switched from private to public (repo owner's decision) to unblock GitHub Advanced Security features
+- Branch protection rulesets on `main`/`develop` now actively enforced (1 required approving review, required status checks, no force-push/deletion), with a repository-admin bypass so the solo maintainer isn't blocked by the self-approval restriction GitHub enforces
 
 ---
 

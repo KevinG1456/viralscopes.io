@@ -857,6 +857,8 @@ git push origin feature/VS-123-your-feature-name
 - [ ] At least 1 approving review
 - [ ] PR checklist completed (see [PROJECT_RULES.md](./PROJECT_RULES.md))
 
+> **This is enforced, not just documented.** `main` and `develop` both require a PR (no direct pushes) and 1 approving review — GitHub rejects self-approval, so as a solo maintainer without a second reviewer yet, the repo owner merges via repo-admin bypass (configured on the ruleset) rather than the normal review flow. Every PR runs two required workflows automatically: `.github/workflows/ci.yml` (lint, type-check, build, format check, secret scan) and `.github/workflows/security.yml` (production-aware dependency audit, CodeQL, Dependency Review).
+
 ### Code Standards (Summary)
 
 - TypeScript strict mode — no `any`, no `console.log`, no hardcoded strings

@@ -39,12 +39,12 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-5 of 6 done) |
+| **Current phase** | Phase 2 — Infrastructure & DevOps (complete, all 6 milestones) |
 | **Overall MVP completion** | ~10% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 2 Milestone 6 — Deployment & Release Readiness |
+| **Critical path item** | Phase 3 — Database & Core Schema |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
 | **Last status update** | 2026-07-26 |
@@ -78,9 +78,35 @@ All 8 core project documents have been authored and are ready for engineering ha
 - ✅ `.env.example` populated with all required variables
 - ✅ Git repository with branch protection rules configured — ruleset config in place; enforcement is a GitHub Pro plan limitation on this private repo, accepted per BLK-001
 
-### Next Phase: Phase 2 — Infrastructure & DevOps
+### Complete: Phase 2 — Infrastructure & DevOps (6/6 milestones)
 
-**Start condition:** Phase 1 fully complete (branch protection applied).
+**Key deliverables:**
+- ✅ Milestone 1 — Docker: multi-stage Dockerfiles, `docker-compose.dev.yml`/`.prod.yml`, `/health`+`/ready` on both apps, Prometheus/Grafana/Loki (dev, optional)
+- ✅ Milestone 2 — GitHub Actions CI: lint/type-check/build/format/secretlint, verified on real push/PR/branch runs
+- ✅ Milestone 3 — Security: production-aware `npm audit` policy, CodeQL, Dependency Review (both required the repo to go public — GitHub Advanced Security isn't available for private repos on this plan)
+- ✅ Milestone 4 — Environment & Secrets: Zod-validated startup config, reorganised `.env.example`, `.env.example` now actually scanned by secretlint
+- ✅ Milestone 5 — Monitoring & Health Checks: structured Pino logging with verified PII/secret redaction, full re-verification of Docker/Compose health
+- ✅ Milestone 6 — Deployment & Release Readiness: verified a genuinely fresh clone builds cleanly end-to-end; `.gitattributes` added to fix a recurring Windows line-ending false-positive; broken-reference audit; TD-006/TD-007 logged for intentionally deferred work
+
+**Deferred (not silently dropped — see TD-006, TD-007):** live Traefik/SSL, Coolify staging/production deploy, Alertmanager/PagerDuty, Grafana dashboards against real metrics, 5 missing ADR documents.
+
+### Phase 2 Retrospective
+
+**What was accomplished:** A working, verified local development environment (Docker Compose infra + native app dev), a CI/CD foundation that actually enforces quality (not just documents it), a security posture built from real, tested constraints rather than the literally-documented-but-untested naive policy, and an environment/logging strategy that's honest about what the API does and doesn't do yet.
+
+**Lessons learned:**
+- Documented specs (`Deployment_Guide.md`, `Security_Architecture.md`, `Monitoring_and_Operations.md`) were written aspirationally and drifted from reality in several concrete, verifiable ways — a stale Loki config schema (Milestone 1), a naive `npm audit` gate that fails on unactionable findings (Milestone 3), and branch-protection assumptions that turned out to be plan-gated (Phase 1, then again in Milestone 3 as the repo went public). Every one of these was only caught by actually running the thing, not by reading the docs and trusting them.
+- GitHub Advanced Security (secret scanning, CodeQL, Dependency Review, enforced rulesets) is unavailable for private repos on this account's plan — confirmed repeatedly, not assumed once and generalised. The repo going public was a real, consequential decision made explicitly by the repo owner, not a side effect.
+- A solo maintainer conflicts with `required_approving_review_count: 1` in a way GitHub doesn't warn about upfront (self-approval is silently rejected) — resolved via a repo-admin bypass that, in retrospect, was already configured and just needed the REST merge endpoint instead of `gh pr merge --admin`'s GraphQL path.
+- Windows `core.autocrlf` silently corrupts local Prettier verification on every fresh checkout until `.gitattributes` forces LF — a low-severity but recurring source of false-positive noise across three milestones before being fixed at the root cause in Milestone 6.
+
+**Architecture decisions made this phase:** DEC-007 (secretlint), DEC-008 (repo made public), DEC-009 (custom production-aware audit script over a third-party tool), DEC-010 (Zod env validation), DEC-011 (structured Pino logging with redaction) — see §11 for full detail on each.
+
+**What Phase 3 builds on:** `packages/db` is still an empty stub — Phase 3 initialises the actual Supabase project, Drizzle schema, migrations, and RLS policies. The `apps/api` config schema (DEC-010) and `/ready` endpoint are already structured to accept a real database check the moment a client exists — no rework needed, just an addition to `envSchema` and `checkDatabase()`. Docker Compose deliberately has no Postgres service (Phase 3 owns that via the Supabase CLI, not `docker-compose.dev.yml`).
+
+### Next Phase: Phase 3 — Database & Core Schema
+
+**Start condition:** Phase 2 fully complete.
 
 ---
 
@@ -91,7 +117,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          ████████████████░░░░   83%  🚧 In progress (Milestones 1-5 of 6 done)
+Phase 2          ████████████████████  100%  ✅ Complete (see TD-006 for deferred infra items)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -137,8 +163,8 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|---|
 | Pre-Dev | Documentation | ✅ Complete | 100% | Week 0 | All 8 documents authored |
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
-| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 83% | Week 1–3 | Docker, CI, Security, Env/Secrets, Monitoring done; Deployment/Release remains |
-| Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Parallel with Phase 2 |
+| Phase 2 | Infrastructure & DevOps | ✅ Complete | 23/28 tasks | Week 1–3 | All 6 milestones done; 5 tasks deferred to Phase 14/ongoing (TD-006), not silently dropped |
+| Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Ready to begin |
 | Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Depends on Phase 3 |
 | Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
 | Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 |
@@ -187,7 +213,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 
 ## 6. In-Progress Tasks
 
-*No tasks are currently in progress. Phase 1 is complete; Phase 2 has not yet started.*
+*No tasks are currently in progress. Phase 2 is complete; Phase 3 has not yet started.*
 
 ---
 
@@ -691,6 +717,44 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-006 — Deferred Phase 2 infrastructure (needs real accounts/servers that don't exist yet)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-26 |
+| **Severity** | Low |
+| **Phases affected** | Phase 2, Phase 14 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** A handful of ROADMAP Phase 2 line items are written as config-as-code but never deployed or exercised live, because they depend on infrastructure that doesn't exist yet:
+- Traefik + Let's Encrypt SSL (`infra/traefik/`) — untestable without a real public domain (ACME HTTP-01 challenge needs one)
+- CI build-and-push to GHCR, deploy-to-Coolify-staging, deploy-to-Coolify-production — no Coolify server provisioned
+- Alertmanager + PagerDuty routing — no PagerDuty account
+- Prometheus scraping real service metrics / Grafana business dashboards — no service exposes `/metrics` yet (no routes/business logic exist before Phase 5)
+
+**Why accepted:** This was scoped explicitly at the Phase 2 approval gate (before Milestone 1) rather than discovered late — see the chat log 2026-07-26. Building and testing any of these now would mean either faking the infrastructure they depend on or shipping unverifiable config.
+
+**Resolution plan:** Traefik/SSL, GHCR push, and Coolify deploy activate naturally in Phase 14 (Production Deployment) once a server and domain are provisioned. Alertmanager/PagerDuty is a Stage 2 infrastructure trigger (`INFRASTRUCTURE_GROWTH_PLAN.md` §13.2), not an MVP blocker. Grafana dashboards get built incrementally as each phase's services actually expose `/metrics` (Phase 5 onward) — building them now against nonexistent metrics would just be broken panels.
+
+---
+
+### TD-007 — ADR files referenced but never created (pre-existing, not introduced by Phase 2)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-26 |
+| **Severity** | Low |
+| **Phases affected** | Pre-Development |
+| **Status** | Accepted (deferred) |
+
+**Description:** `README.md` and this document's DEC-001 through DEC-005 entries link to `docs/decisions/ADR-00N-*.md` files that were never written — these references predate Phase 1 (authored during Pre-Development) and Phase 2 didn't introduce or touch them. Found during Milestone 6's broken-reference audit.
+
+**Why accepted:** Writing 5 substantive ADR documents (each requiring 2 approvals per `PROJECT_RULES.md`) is real, dedicated documentation work, not a quick fix — doing it as a side effect of Phase 2's deployment-readiness milestone would be scope creep.
+
+**Resolution plan:** Author the missing ADRs as part of Phase 13 (Documentation), or opportunistically whenever a related architecture decision is revisited.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -725,18 +789,18 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 2 Milestone 6: Deployment & Release Readiness
+### Next Up — Phase 3: Database & Core Schema
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🟠 P2 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Once services expose `/metrics` — not yet, no route/business logic exists |
-| 🟠 P2 | Extend the `apps/api` config/logger as new dependencies land | Engineer | Ongoing, per DEC-010/DEC-011 — not a one-time task |
-| 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items from Milestone 1 |
+| 🔴 P1 | Initialise Supabase project (local dev + hosted) | Engineer | Phase 3 critical path |
+| 🔴 P1 | Set up Drizzle ORM with migration tooling | Engineer | Phase 3 critical path |
+| 🟠 P2 | Define core schema (users, organisations, videos, ...) with RLS from creation | Engineer | Phase 3 deliverable |
+| 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items (TD-006) whenever it happens — not a Phase 3 blocker |
 
 ### Backlog (Next 4 Weeks)
 
-- Complete Phase 2 milestones
-- Begin Phase 3 (Database Schema) immediately after Phase 2 infrastructure is stable
+- Begin Phase 3 (Database Schema)
 - Begin Phase 4 (Auth) immediately after Phase 3 core schema is complete
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
@@ -751,6 +815,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 — Infrastructure & DevOps: Milestones 1-3 of 6 complete. M1 Docker (Dockerfiles, docker-compose dev/prod, health checks, monitoring config — all verified running, not just written). M2 GitHub Actions CI (lint/type-check/build/format/secretlint, verified on real push, PR, and branch runs). M3 Security (production-aware npm audit policy with a reviewed allowlist; CodeQL and Dependency Review built, tested, found blocked by GitHub Advanced Security on the then-private repo, then re-verified working after the repo owner made the repo public — DEC-008). BLK-003 (branch protection enforcement conflicting with solo-maintainer self-approval) discovered and resolved via admin bypass, already present on the rulesets. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 4 (Environment & Secrets) complete: `.env.example` reorganised into required-now/optional-now/required-starting-phase-N categories, restored `S3_FORCE_PATH_STYLE` and added `PORT`/`APP_VERSION` (both real, previously undocumented). Zod-based startup validation added to `apps/api/src/config.ts` — verified to fail fast with a specific error on invalid `PORT`/`APP_ENV`, and to pass a custom `APP_VERSION` through to `GET /health` (DEC-010). `.gitignore`'s env-file pattern replaced with a catch-all (`.env.*` + explicit `.env.example` exception), verified against 4 real cases. `.env.example` removed from `.secretlintignore` and confirmed it still passes secretlint — it's now actually scanned, not exempted. README §5/§7/§8 corrected: no environment variables are actually required to boot the app shell today (previously claimed `DATABASE_URL`/`JWT_SECRET`/etc. were required — they aren't, nothing reads them yet), and a second stale "PostgreSQL" reference in §8 (missed in Milestone 1) fixed. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 5 (Monitoring & Health Checks) complete: added structured Pino logging (`apps/api/src/plugins/logger.plugin.ts`) with `service`/`version`/`environment` base fields, ISO timestamps, and PII/secret redaction — all verified directly against actual log output, not assumed (redaction confirmed on `password`/`email`/`name`/`ip_address`; `LOG_LEVEL=error` confirmed to suppress `warn`/`info`; Pino's error serializer confirmed unaffected). `LOG_LEVEL` added to the Zod config schema (DEC-011). Re-verified (not just trusted from Milestone 1) that both Docker images still build and report `healthy`, and that all 6 `docker-compose.dev.yml` services (Redis, n8n, MinIO, Prometheus, Grafana, Loki) start cleanly and respond correctly — the monitoring stack remains explicitly optional, not required for `npm run dev`. |
+| 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 6 (Deployment & Release Readiness) complete — **Phase 2 is now fully complete (6/6 milestones)**. Verified a genuinely fresh `git clone` builds cleanly end-to-end (lint/type-check/build/format all pass); found and fixed a real Windows `MAX_PATH` false-negative (test location artifact, not a code defect — confirmed by retrying in a short path) and a real, recurring `core.autocrlf` false-positive affecting `format:check` on every fresh Windows checkout, root-caused and fixed with a new `.gitattributes` file (verified via a second fresh clone: 47 previously-flagged files now check out clean). Audited all core docs for broken references — found 6 pre-existing (Pre-Development-era) links to ADR documents and a GDPR guide that were never written; not introduced by Phase 2, logged as TD-007 rather than silently ignored or hastily fabricated. TD-006 logged for the infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify deploy, PagerDuty, real Grafana dashboards) so it's tracked forward, not forgotten. |
 
 ---
 

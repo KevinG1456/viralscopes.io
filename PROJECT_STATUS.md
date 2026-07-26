@@ -39,12 +39,12 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-4 of 6 done) |
+| **Current phase** | Phase 2 — Infrastructure & DevOps (in progress, Milestones 1-5 of 6 done) |
 | **Overall MVP completion** | ~10% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 2 Milestone 5 — Monitoring & Health Checks |
+| **Critical path item** | Phase 2 Milestone 6 — Deployment & Release Readiness |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
 | **Last status update** | 2026-07-26 |
@@ -91,7 +91,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 ```
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
-Phase 2          █████████████░░░░░░░   67%  🚧 In progress (Milestones 1-4 of 6 done)
+Phase 2          ████████████████░░░░   83%  🚧 In progress (Milestones 1-5 of 6 done)
 Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -114,7 +114,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|
 | Pre-Development (docs) | 8 | 8 | 0 | 0 |
 | Phase 1 — Foundation | 14 | 14 | 0 | 0 |
-| Phase 2 — Infrastructure | 28 | 19 | 0 | 9 |
+| Phase 2 — Infrastructure | 28 | 23 | 0 | 5 |
 | Phase 3 — Database | 42 | 0 | 0 | 42 |
 | Phase 4 — Auth | 26 | 0 | 0 | 26 |
 | Phase 5 — Backend API | 58 | 0 | 0 | 58 |
@@ -127,7 +127,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **444** | **41** | **0** | **403** |
+| **Total** | **444** | **45** | **0** | **399** |
 
 ---
 
@@ -137,7 +137,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 |---|---|---|---|---|---|
 | Pre-Dev | Documentation | ✅ Complete | 100% | Week 0 | All 8 documents authored |
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
-| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 67% | Week 1–3 | Docker, CI, Security, Env/Secrets done; Monitoring, Docs remain |
+| Phase 2 | Infrastructure & DevOps | 🚧 In progress | 83% | Week 1–3 | Docker, CI, Security, Env/Secrets, Monitoring done; Deployment/Release remains |
 | Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Parallel with Phase 2 |
 | Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Depends on Phase 3 |
 | Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
@@ -586,6 +586,20 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-011 — Structured Pino logging with redaction (apps/api)
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | Add `pino` as an explicit direct dependency of `apps/api` and configure Fastify's logger via `apps/api/src/plugins/logger.plugin.ts` (base fields, redaction, ISO timestamps), rather than the bare `logger: true` default |
+| **Decided by** | Engineering Lead (approved) |
+
+**Context:** `pino` was only present as an undeclared transitive dependency of `fastify`. Phase 2 Milestone 5 requires a real logging strategy (structured output, level differentiation, no secrets in logs) — relying on an undeclared transitive dependency for that would be fragile, and the bare `logger: true` default has no redaction and no base fields.
+
+**Decision:** `pino` added directly. `buildLoggerOptions()` implements the exact redact path list from `Security_Architecture.md` §9 / `Monitoring_and_Operations.md` §3 (`password`, `token`, `apiKey`, `email`, `name`, `ip_address`, auth headers, etc.) plus `service`/`version`/`environment` base fields and `pino.stdTimeFunctions.isoTime`. `LOG_LEVEL` added to the Zod schema (DEC-010) so an invalid value fails fast like every other env var. Verified directly (not assumed): a log call with `password`/`email`/`name`/`ip_address` fields produces `[REDACTED]` in the actual output; `LOG_LEVEL=error` correctly suppresses `warn`/`info` logs; Pino's own error serializer (`err.type`, not `err.name`) is unaffected by the `*.name` redaction path, so error diagnostics aren't lost.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -711,12 +725,12 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 2 Milestone 5: Monitoring & Health Checks
+### Next Up — Phase 2 Milestone 6: Deployment & Release Readiness
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🟠 P2 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Milestone 5, once services expose `/metrics` |
-| 🟠 P2 | Extend the `apps/api` config schema as new dependencies land | Engineer | Ongoing, per DEC-010 — not a one-time task |
+| 🟠 P2 | Wire Prometheus scrape targets + Grafana dashboards to real metrics | Engineer | Once services expose `/metrics` — not yet, no route/business logic exists |
+| 🟠 P2 | Extend the `apps/api` config/logger as new dependencies land | Engineer | Ongoing, per DEC-010/DEC-011 — not a one-time task |
 | 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items from Milestone 1 |
 
 ### Backlog (Next 4 Weeks)
@@ -736,6 +750,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-26 | Engineering (AI-assisted) | Phase 1 — Foundation & Project Setup: 14/14 tasks complete (monorepo scaffold, tooling, design tokens, brand assets, env vars, README, branch protection). BLK-001 (branch protection unenforceable without GitHub Pro) resolved as an accepted limitation. BLK-002 (`main` deleted from remote, default branch pointed at stale `develop`) discovered and resolved same day — `main` restored, `develop` fast-forwarded to match. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 — Infrastructure & DevOps: Milestones 1-3 of 6 complete. M1 Docker (Dockerfiles, docker-compose dev/prod, health checks, monitoring config — all verified running, not just written). M2 GitHub Actions CI (lint/type-check/build/format/secretlint, verified on real push, PR, and branch runs). M3 Security (production-aware npm audit policy with a reviewed allowlist; CodeQL and Dependency Review built, tested, found blocked by GitHub Advanced Security on the then-private repo, then re-verified working after the repo owner made the repo public — DEC-008). BLK-003 (branch protection enforcement conflicting with solo-maintainer self-approval) discovered and resolved via admin bypass, already present on the rulesets. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 4 (Environment & Secrets) complete: `.env.example` reorganised into required-now/optional-now/required-starting-phase-N categories, restored `S3_FORCE_PATH_STYLE` and added `PORT`/`APP_VERSION` (both real, previously undocumented). Zod-based startup validation added to `apps/api/src/config.ts` — verified to fail fast with a specific error on invalid `PORT`/`APP_ENV`, and to pass a custom `APP_VERSION` through to `GET /health` (DEC-010). `.gitignore`'s env-file pattern replaced with a catch-all (`.env.*` + explicit `.env.example` exception), verified against 4 real cases. `.env.example` removed from `.secretlintignore` and confirmed it still passes secretlint — it's now actually scanned, not exempted. README §5/§7/§8 corrected: no environment variables are actually required to boot the app shell today (previously claimed `DATABASE_URL`/`JWT_SECRET`/etc. were required — they aren't, nothing reads them yet), and a second stale "PostgreSQL" reference in §8 (missed in Milestone 1) fixed. |
+| 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 5 (Monitoring & Health Checks) complete: added structured Pino logging (`apps/api/src/plugins/logger.plugin.ts`) with `service`/`version`/`environment` base fields, ISO timestamps, and PII/secret redaction — all verified directly against actual log output, not assumed (redaction confirmed on `password`/`email`/`name`/`ip_address`; `LOG_LEVEL=error` confirmed to suppress `warn`/`info`; Pino's error serializer confirmed unaffected). `LOG_LEVEL` added to the Zod config schema (DEC-011). Re-verified (not just trusted from Milestone 1) that both Docker images still build and report `healthy`, and that all 6 `docker-compose.dev.yml` services (Redis, n8n, MinIO, Prometheus, Grafana, Loki) start cleanly and respond correctly — the monitoring stack remains explicitly optional, not required for `npm run dev`. |
 
 ---
 

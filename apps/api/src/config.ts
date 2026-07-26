@@ -12,14 +12,17 @@ const envSchema = z.object({
   APP_ENV: z.enum(['development', 'staging', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().max(65535).default(3001),
   APP_VERSION: z.string().optional(),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>['APP_ENV'];
+export type LogLevel = z.infer<typeof envSchema>['LOG_LEVEL'];
 
 export interface AppConfig {
   env: AppEnv;
   port: number;
   version: string;
+  logLevel: LogLevel;
 }
 
 export function loadConfig(): AppConfig {
@@ -38,5 +41,6 @@ export function loadConfig(): AppConfig {
     env: parsed.data.APP_ENV,
     port: parsed.data.PORT,
     version: parsed.data.APP_VERSION ?? 'unknown',
+    logLevel: parsed.data.LOG_LEVEL,
   };
 }

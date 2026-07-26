@@ -281,6 +281,8 @@ This starts:
 - **Grafana** on port `3002`
 - **Loki** on port `3100`
 
+> **This entire file is optional for basic frontend/API development.** `apps/web` and `apps/api` run natively (see below) and don't require any of these containers to start up, build, or serve their placeholder content. You only need this stack running if you're working on something that actually talks to Redis, n8n, or the monitoring tools — it is not a prerequisite for `npm run dev`.
+
 > **PostgreSQL is not part of this file.** Local Postgres is provisioned via the Supabase CLI, added in Phase 3 — Database & Core Schema. `DATABASE_URL` in `.env.local` won't resolve to anything until then.
 
 Check everything came up healthy:
@@ -333,6 +335,18 @@ curl http://localhost:3001/ready
 ```
 
 `/ready` currently reports `not_ready` with a `checks` object explaining which dependencies (database, Redis, queue) aren't wired into the API yet — that's expected until later phases add real clients for them. It's not a bug; it's the API being honest about its own state.
+
+### Logging
+
+`apps/api` logs structured JSON via Pino (`apps/api/src/plugins/logger.plugin.ts`) — every log line carries `service`, `version`, and `environment`, plus an ISO timestamp:
+
+```bash
+LOG_LEVEL=debug npm run dev --workspace=apps/api
+```
+
+`LOG_LEVEL` controls verbosity (`error` \| `warn` \| `info` \| `debug` \| `trace`, default `info`) and is validated at startup like every other environment variable — an invalid value fails fast rather than silently falling back. `error`/`warn`/`info` are used deliberately, not interchangeably: `app.log.warn` fires once at boot to flag unimplemented dependencies, `app.log.error` covers unexpected failures (e.g. a failed graceful shutdown), and `info` covers normal request/response and lifecycle events (Fastify logs every request automatically).
+
+The following fields are redacted (`[REDACTED]`) wherever they appear in a logged object, matching `Security_Architecture.md` §9 / `Monitoring_and_Operations.md` §3's "never log" list: `password`, `password_hash`, `token`, `apiKey`/`api_key`, `secret`, `authorization` (including the `Authorization` and `Cookie` request headers), `email`, `name`, `ip_address`. This is real, tested redaction — not aspirational configuration: logging an object containing these fields today produces `[REDACTED]` in the output, verified directly against the built logger.
 
 ### Database Setup
 
@@ -430,7 +444,7 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 | `PORT` | apps/api | API listen port | `3001` |
 | `APP_VERSION` | apps/api | Version string shown by `GET /health`; CI sets this to the git SHA in built images | `unknown` |
 | `APP_URL` | Docker Compose | Public URL of the frontend | — |
-| `LOG_LEVEL` | Docker Compose | Pino log level | `info` |
+| `LOG_LEVEL` | apps/api (validated) | Pino log level: `error` \| `warn` \| `info` \| `debug` \| `trace` | `info` |
 | `N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD` / `N8N_ENCRYPTION_KEY` | Docker Compose | n8n admin credentials | dev-only defaults in `docker-compose.dev.yml`; no default in prod |
 | `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Docker Compose | MinIO (dev) / Cloudflare R2 (prod) credentials | dev-only defaults (`minioadmin`) |
 | `GRAFANA_ADMIN_PASSWORD` | Docker Compose | Grafana admin password | `admin` in dev only |

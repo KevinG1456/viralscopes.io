@@ -1,8 +1,8 @@
 node_modules
+dist
 .next
 .turbo
-dist
-build
 coverage
 package-lock.json
-*.svg
+*.md
+next-env.d.ts

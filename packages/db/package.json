@@ -1,31 +1,15 @@
 {
   "name": "@viralscopes/db",
-  "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/migrate.ts",
-    "db:check": "drizzle-kit check",
-    "db:seed": "tsx src/seeds/run.ts",
-    "db:reset": "tsx src/reset.ts",
-    "db:studio": "drizzle-kit studio",
-    "db:erd": "mmdc -i ../../docs/database-erd.mmd -o ../../docs/database-erd.png -b white"
-  },
-  "dependencies": {
-    "drizzle-orm": "^0.45.2",
-    "postgres": "^3.4.9"
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^11",
-    "@viralscopes/shared": "*",
-    "dotenv": "^17",
-    "drizzle-kit": "^0.31.10",
-    "eslint-plugin-import": "^2",
-    "tsx": "^4"
+    "@types/node": "^22",
+    "typescript": "^5"
   }
 }

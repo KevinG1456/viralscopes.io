@@ -1,13 +1,10 @@
 # README.md
-
 # ViralScopes.io
 
 > **AI-powered content intelligence for creators, agencies, and media teams.**
 > Understand why content goes viral. Create originally.
 
 [![CI](https://github.com/KevinG1456/viralscopes.io/actions/workflows/ci.yml/badge.svg)](https://github.com/KevinG1456/viralscopes.io/actions/workflows/ci.yml)
-<!-- Badge will not render while the repo is private; update if/when it goes public. -->
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-22.x_LTS-green)](https://nodejs.org/)
@@ -52,7 +49,6 @@ It surfaces those patterns as **original, ethically generated creative guidance*
 ### What it does not do
 
 ViralScopes.io analyses **patterns**, not content. It will never:
-
 - Reproduce, paraphrase, or facilitate copying of any creator's original script
 - Help users imitate a specific creator in an identifiable way
 - Violate YouTube's Terms of Service
@@ -63,33 +59,33 @@ ViralScopes.io analyses **patterns**, not content. It will never:
 
 ### Core Platform (MVP)
 
-| Feature                           | Description                                                                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Video Discovery Engine**        | Automated 6-hour discovery cycle. Filters by views, engagement, category, language, and region.                                                         |
-| **Viral Score Engine**            | Proprietary weighted score (0–100) from 9 signals: title formula, thumbnail CTR, hook confidence, engagement velocity, trend alignment, and more.       |
-| **AI Analysis Pipeline**          | Transcript analysis, thumbnail vision analysis, hook classification, title formula detection, full content analysis with narrative structure breakdown. |
-| **Trend Detection**               | Daily AI topic clustering. Classifies topics as emerging, evergreen, or declining. Computes velocity and opportunity scores.                            |
-| **Opportunity Engine**            | Ranks content opportunities by demand × growth ÷ competition. Surfaces untapped niches before they peak.                                                |
+| Feature | Description |
+|---|---|
+| **Video Discovery Engine** | Automated 6-hour discovery cycle. Filters by views, engagement, category, language, and region. |
+| **Viral Score Engine** | Proprietary weighted score (0–100) from 9 signals: title formula, thumbnail CTR, hook confidence, engagement velocity, trend alignment, and more. |
+| **AI Analysis Pipeline** | Transcript analysis, thumbnail vision analysis, hook classification, title formula detection, full content analysis with narrative structure breakdown. |
+| **Trend Detection** | Daily AI topic clustering. Classifies topics as emerging, evergreen, or declining. Computes velocity and opportunity scores. |
+| **Opportunity Engine** | Ranks content opportunities by demand × growth ÷ competition. Surfaces untapped niches before they peak. |
 | **Ethical Recommendation Engine** | Generates original title concepts, hook ideas, content outlines, thumbnail descriptions, and keyword suggestions — structurally inspired, never copied. |
-| **Watchlists**                    | Monitor specific channels, keywords, niches, or competitors. Get notified when they upload or when tracked topics spike.                                |
-| **Alert Dispatch**                | Multi-channel alerts: Email, Discord, Slack, Telegram, custom webhook. Throttled to 1 alert/rule/hour.                                                  |
-| **Unified Search**                | Search across videos, channels, and trends with 8 filter dimensions and cursor-based pagination.                                                        |
-| **Export System**                 | Async export to CSV, Excel, JSON, and PDF. Signed download URLs.                                                                                        |
-| **Multi-Tenant Workspaces**       | Organisations, workspaces, projects, RBAC (5 roles), member invitations, session management.                                                            |
-| **Prompt Library**                | Versioned AI prompts stored in the database. Edit and deploy new prompt versions without code changes.                                                  |
-| **AI Response Caching**           | All AI outputs cached by `(prompt_version, sha256(input))`. No video is analysed twice.                                                                 |
-| **Dead-Letter Queue**             | Failed background jobs are captured, inspected, and retried via the Admin Panel.                                                                        |
-| **Super Admin Panel**             | Internal management: organisations, users, billing, job logs, prompt editing, system health.                                                            |
+| **Watchlists** | Monitor specific channels, keywords, niches, or competitors. Get notified when they upload or when tracked topics spike. |
+| **Alert Dispatch** | Multi-channel alerts: Email, Discord, Slack, Telegram, custom webhook. Throttled to 1 alert/rule/hour. |
+| **Unified Search** | Search across videos, channels, and trends with 8 filter dimensions and cursor-based pagination. |
+| **Export System** | Async export to CSV, Excel, JSON, and PDF. Signed download URLs. |
+| **Multi-Tenant Workspaces** | Organisations, workspaces, projects, RBAC (5 roles), member invitations, session management. |
+| **Prompt Library** | Versioned AI prompts stored in the database. Edit and deploy new prompt versions without code changes. |
+| **AI Response Caching** | All AI outputs cached by `(prompt_version, sha256(input))`. No video is analysed twice. |
+| **Dead-Letter Queue** | Failed background jobs are captured, inspected, and retried via the Admin Panel. |
+| **Super Admin Panel** | Internal management: organisations, users, billing, job logs, prompt editing, system health. |
 
 ### Billing & Plans
 
-| Plan             | Target user          | Key limits                                                           |
-| ---------------- | -------------------- | -------------------------------------------------------------------- |
-| **Free**         | Hobbyist creators    | 20 videos/month, 1 watchlist, email alerts only                      |
-| **Starter**      | Independent creators | 200 videos/month, 5 watchlists, all alert channels                   |
-| **Professional** | Full-time creators   | 1,000 videos/month, 20 watchlists, exports, API access               |
-| **Business**     | Agencies             | 5,000 videos/month, unlimited watchlists, 5 seats, scheduled reports |
-| **Enterprise**   | Media companies      | Custom limits, unlimited seats, SLA, dedicated support               |
+| Plan | Target user | Key limits |
+|---|---|---|
+| **Free** | Hobbyist creators | 20 videos/month, 1 watchlist, email alerts only |
+| **Starter** | Independent creators | 200 videos/month, 5 watchlists, all alert channels |
+| **Professional** | Full-time creators | 1,000 videos/month, 20 watchlists, exports, API access |
+| **Business** | Agencies | 5,000 videos/month, unlimited watchlists, 5 seats, scheduled reports |
+| **Enterprise** | Media companies | Custom limits, unlimited seats, SLA, dedicated support |
 
 ### Post-MVP (v1.5 / v2.0)
 
@@ -106,66 +102,66 @@ ViralScopes.io analyses **patterns**, not content. It will never:
 
 ### Frontend
 
-| Technology                                      | Version | Purpose                                                                                    |
-| ----------------------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
-| [Next.js](https://nextjs.org/)                  | 16+     | React framework with App Router, SSR, ISR                                                  |
-| [TypeScript](https://www.typescriptlang.org/)   | 5.x     | Type-safe JavaScript across the entire stack                                               |
-| [Tailwind CSS](https://tailwindcss.com/)        | 4.x     | Utility-first CSS with design system tokens (CSS-native `@theme`, no `tailwind.config.ts`) |
-| [shadcn/ui](https://ui.shadcn.com/)             | Latest  | Accessible component library built on Radix UI                                             |
-| [TanStack Query](https://tanstack.com/query)    | 5.x     | Server state management, caching, background refetch                                       |
-| [next-intl](https://next-intl-docs.vercel.app/) | Latest  | Internationalisation (i18n)                                                                |
-| [Recharts](https://recharts.org/)               | Latest  | Data visualisation (charts, heatmaps, histograms)                                          |
+| Technology | Version | Purpose |
+|---|---|---|
+| [Next.js](https://nextjs.org/) | 14+ | React framework with App Router, SSR, ISR |
+| [TypeScript](https://www.typescriptlang.org/) | 5.x | Type-safe JavaScript across the entire stack |
+| [Tailwind CSS](https://tailwindcss.com/) | 3.x | Utility-first CSS with design system tokens |
+| [shadcn/ui](https://ui.shadcn.com/) | Latest | Accessible component library built on Radix UI |
+| [TanStack Query](https://tanstack.com/query) | 5.x | Server state management, caching, background refetch |
+| [next-intl](https://next-intl-docs.vercel.app/) | Latest | Internationalisation (i18n) |
+| [Recharts](https://recharts.org/) | Latest | Data visualisation (charts, heatmaps, histograms) |
 
 ### Backend
 
-| Technology                                    | Version | Purpose                                     |
-| --------------------------------------------- | ------- | ------------------------------------------- |
-| [Fastify](https://fastify.dev/)               | 4.x     | High-performance Node.js HTTP framework     |
-| [TypeScript](https://www.typescriptlang.org/) | 5.x     | Type-safe server-side code                  |
-| [Zod](https://zod.dev/)                       | 3.x     | Runtime input validation and type inference |
-| [Drizzle ORM](https://orm.drizzle.team/)      | Latest  | Type-safe SQL queries and schema migrations |
-| [Pino](https://getpino.io/)                   | Latest  | Structured JSON logging                     |
-| [BullMQ](https://docs.bullmq.io/)             | Latest  | Redis-backed job queue                      |
+| Technology | Version | Purpose |
+|---|---|---|
+| [Fastify](https://fastify.dev/) | 4.x | High-performance Node.js HTTP framework |
+| [TypeScript](https://www.typescriptlang.org/) | 5.x | Type-safe server-side code |
+| [Zod](https://zod.dev/) | 3.x | Runtime input validation and type inference |
+| [Drizzle ORM](https://orm.drizzle.team/) | Latest | Type-safe SQL queries and schema migrations |
+| [Pino](https://getpino.io/) | Latest | Structured JSON logging |
+| [BullMQ](https://docs.bullmq.io/) | Latest | Redis-backed job queue |
 
 ### Data
 
-| Technology                                | Version | Purpose                                    |
-| ----------------------------------------- | ------- | ------------------------------------------ |
-| [PostgreSQL](https://www.postgresql.org/) | 15+     | Primary relational database                |
-| [Supabase](https://supabase.com/)         | Latest  | PostgreSQL hosting, Auth, RLS, PgBouncer   |
-| [Redis](https://redis.io/)                | 7.x     | Cache, rate limiting, BullMQ queue backend |
-| [Drizzle ORM](https://orm.drizzle.team/)  | Latest  | Schema definition and migrations           |
+| Technology | Version | Purpose |
+|---|---|---|
+| [PostgreSQL](https://www.postgresql.org/) | 15+ | Primary relational database |
+| [Supabase](https://supabase.com/) | Latest | PostgreSQL hosting, Auth, RLS, PgBouncer |
+| [Redis](https://redis.io/) | 7.x | Cache, rate limiting, BullMQ queue backend |
+| [Drizzle ORM](https://orm.drizzle.team/) | Latest | Schema definition and migrations |
 
 ### Infrastructure & DevOps
 
-| Technology                                            | Version | Purpose                                         |
-| ----------------------------------------------------- | ------- | ----------------------------------------------- |
-| [Docker](https://www.docker.com/)                     | Latest  | Containerisation for all services               |
-| [Docker Compose](https://docs.docker.com/compose/)    | v2      | Multi-container orchestration                   |
-| [Coolify](https://coolify.io/)                        | Latest  | Self-hosted PaaS for deployment                 |
-| [Traefik](https://traefik.io/)                        | v3      | Reverse proxy, SSL termination, service routing |
-| [GitHub Actions](https://github.com/features/actions) | —       | CI/CD pipeline                                  |
-| [Turborepo](https://turbo.build/)                     | Latest  | Monorepo task orchestration and build caching   |
+| Technology | Version | Purpose |
+|---|---|---|
+| [Docker](https://www.docker.com/) | Latest | Containerisation for all services |
+| [Docker Compose](https://docs.docker.com/compose/) | v2 | Multi-container orchestration |
+| [Coolify](https://coolify.io/) | Latest | Self-hosted PaaS for deployment |
+| [Traefik](https://traefik.io/) | v3 | Reverse proxy, SSL termination, service routing |
+| [GitHub Actions](https://github.com/features/actions) | — | CI/CD pipeline |
+| [Turborepo](https://turbo.build/) | Latest | Monorepo task orchestration and build caching |
 
 ### AI & External Services
 
-| Service                                                           | Purpose                                               |
-| ----------------------------------------------------------------- | ----------------------------------------------------- |
-| [Anthropic Claude API](https://anthropic.com/)                    | Strategic analysis, recommendations (reasoning tasks) |
-| [OpenAI API](https://openai.com/)                                 | Structured data extraction, vision analysis           |
-| [YouTube Data API v3](https://developers.google.com/youtube/v3)   | Video discovery and metadata                          |
-| [n8n](https://n8n.io/) (self-hosted)                              | Workflow automation for the AI pipeline               |
-| [Stripe](https://stripe.com/)                                     | Subscription billing, Customer Portal                 |
-| [SendGrid](https://sendgrid.com/) / [Resend](https://resend.com/) | Transactional email                                   |
-| [Cloudflare](https://cloudflare.com/)                             | CDN, DDoS protection, WAF, R2 object storage          |
+| Service | Purpose |
+|---|---|
+| [Anthropic Claude API](https://anthropic.com/) | Strategic analysis, recommendations (reasoning tasks) |
+| [OpenAI API](https://openai.com/) | Structured data extraction, vision analysis |
+| [YouTube Data API v3](https://developers.google.com/youtube/v3) | Video discovery and metadata |
+| [n8n](https://n8n.io/) (self-hosted) | Workflow automation for the AI pipeline |
+| [Stripe](https://stripe.com/) | Subscription billing, Customer Portal |
+| [SendGrid](https://sendgrid.com/) / [Resend](https://resend.com/) | Transactional email |
+| [Cloudflare](https://cloudflare.com/) | CDN, DDoS protection, WAF, R2 object storage |
 
 ### Monitoring
 
-| Technology                            | Purpose                 |
-| ------------------------------------- | ----------------------- |
-| [Prometheus](https://prometheus.io/)  | Metrics collection      |
-| [Grafana](https://grafana.com/)       | Dashboards and alerting |
-| [Loki](https://grafana.com/oss/loki/) | Log aggregation         |
+| Technology | Purpose |
+|---|---|
+| [Prometheus](https://prometheus.io/) | Metrics collection |
+| [Grafana](https://grafana.com/) | Dashboards and alerting |
+| [Loki](https://grafana.com/oss/loki/) | Log aggregation |
 
 ---
 
@@ -224,46 +220,19 @@ Every organisation's data is isolated using **Row Level Security (RLS)** at the 
 
 All AI calls are **asynchronous** — triggered by the n8n workflow engine, never blocking API request handlers. All prompts are **versioned in the database**. All AI outputs are **validated against Zod schemas** before storage.
 
-### Design Tokens (Phase 1)
-
-`apps/web` defines a semantic design token system in `src/app/globals.css`, using Tailwind v4's
-CSS-native `@theme` configuration (no `tailwind.config.ts` file — see [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md)).
-Components should use the semantic utility classes (`bg-background`, `text-foreground`,
-`bg-surface`, `border-border`, `text-muted`, `bg-primary`, `bg-accent`, `bg-success` /
-`bg-warning` / `bg-danger` / `bg-info`) rather than raw Tailwind colours, so the palette can be
-swapped without touching component code.
-
-The current palette (light + dark, defined via CSS custom properties) is a **provisional**
-neutral + single-accent set — not final brand colours. It is expected to be refined once brand
-guidelines exist; see the decision log in [PROJECT_STATUS.md](./PROJECT_STATUS.md).
-
-Typography adopts Tailwind's default type scale (`text-xs` – `text-9xl`) paired with **Geist
-Sans** (UI/body copy) and **Geist Mono** (code, metrics, tabular data) — no custom scale was
-introduced, since Tailwind's default scale already meets the project's needs.
-
 ---
 
 ## 5. Installation
 
-> **Current implementation status:** This repository is **in progress** on **Phase 2 —
-> Infrastructure & DevOps** (22/32 tasks verified; see [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-> for the full breakdown and BLK-002). `docker compose -f docker-compose.dev.yml up` genuinely
-> works today — it brings up Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki,
-> and a minimal `apps/api` (Fastify, `/health` + `/ready` + `/metrics` only — no business routes
-> yet) alongside `apps/web`. `packages/shared` and `packages/db` are still empty workspace
-> skeletons; Fastify's full layered API, the database schema, and n8n workflows land in Phases
-> 3–6. `docker-compose.prod.yml` and the Traefik/Coolify deploy pipeline are **templates only** —
-> no VPS or domain exists yet (see BLK-002 in `PROJECT_STATUS.md`).
-
 ### Prerequisites
 
-| Tool           | Version  | Install                                                |
-| -------------- | -------- | ------------------------------------------------------ |
-| Node.js        | 22.x LTS | [nodejs.org](https://nodejs.org/) or `nvm install 22`  |
-| npm            | 10.x+    | Bundled with Node.js                                   |
-| Docker         | Latest   | [docs.docker.com](https://docs.docker.com/get-docker/) |
-| Docker Compose | v2.x     | Bundled with Docker Desktop                            |
-| Git            | Latest   | [git-scm.com](https://git-scm.com/)                    |
+| Tool | Version | Install |
+|---|---|---|
+| Node.js | 22.x LTS | [nodejs.org](https://nodejs.org/) or `nvm install 22` |
+| npm | 10.x+ | Bundled with Node.js |
+| Docker | Latest | [docs.docker.com](https://docs.docker.com/get-docker/) |
+| Docker Compose | v2.x | Bundled with Docker Desktop |
+| Git | Latest | [git-scm.com](https://git-scm.com/) |
 
 ### Clone the Repository
 
@@ -292,7 +261,7 @@ The minimum required variables to start the application locally are:
 
 ```bash
 # Database (Supabase local or hosted)
-DATABASE_URL=postgresql://postgres:postgres@localhost:15432/postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
 SUPABASE_URL=http://localhost:54321
 SUPABASE_ANON_KEY=your-local-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
@@ -316,67 +285,52 @@ External service keys (YouTube API, OpenAI, Anthropic, Stripe, SendGrid) are req
 
 ## 6. Local Development
 
-### Docker Workflow (Phase 2)
+### Starting the Full Stack
 
-The entire development environment — frontend, API, database, cache, object storage, workflow
-engine, and the full monitoring stack — starts with a single command from the repository root:
+The entire development environment starts with a single command:
 
 ```bash
 docker compose -f docker-compose.dev.yml up
 ```
 
-This is a genuinely working stack (verified, not aspirational): `web` and `api` run via a
-`node:22-alpine` container with the repo bind-mounted for hot reload (each gets its own named
-volume for `node_modules` so host/container native-binary mismatches aren't an issue); everything
-else runs its official, digest-pinned image. First boot runs `npm install` inside the `web`/`api`
-containers, which takes a few minutes — subsequent starts are fast since `node_modules` persists
-in the named volume.
+This starts:
+- **PostgreSQL** (Supabase local) on port `54322`
+- **Supabase Studio** on port `54323`
+- **Redis** on port `6379`
+- **n8n** on port `5678`
+- **MinIO** (local S3) on port `9000` (console on `9001`)
+- **Prometheus** on port `9090`
+- **Grafana** on port `3002`
+- **Loki** on port `3100`
 
-**What's included and what isn't (Phase 2 scope):**
-
-- `apps/api` is a **minimal** Fastify bootstrap — `/health`, `/ready`, `/metrics` only. The full
-  layered API (routes/controllers/services/repositories, auth, business endpoints) is Phase 5.
-- Postgres here is a **plain** database + named volume — no Supabase Studio, Auth, PostgREST, or
-  RLS yet. Full Supabase project setup is Phase 3.
-- `docker-compose.prod.yml` and the Traefik/Coolify pieces are **templates only** — see
-  [Deployment](#10-deployment) and BLK-002 in `PROJECT_STATUS.md`.
-
-**Bringing the stack down:**
+Then, in separate terminals:
 
 ```bash
-docker compose -f docker-compose.dev.yml down        # stop, keep volumes (data persists)
-docker compose -f docker-compose.dev.yml down -v      # stop and wipe all data (fresh start)
+# Terminal 1 — Start the Fastify API (with hot reload)
+npm run dev --workspace=apps/api
+
+# Terminal 2 — Start the Next.js frontend (with hot reload)
+npm run dev --workspace=apps/web
 ```
 
-**Rebuilding after a dependency change:** the `web`/`api` containers run `npm install` every time
-they start, so a `docker compose restart web api` picks up new dependencies without needing to
-rebuild an image (there's nothing to rebuild — these aren't the production Dockerfiles).
+Or run both simultaneously:
 
-**Common gotchas:**
-
-- If port `5432`/`54322` binding fails on Windows, it's very likely inside a Windows dynamic port
-  exclusion range (`netsh interface ipv4 show excludedportrange protocol=tcp`) — this is why
-  Postgres is mapped to `15432` here instead.
-- `docker compose logs -f api` (or `web`, `n8n`, etc.) tails a single service's logs directly; all
-  container logs are also shipped into Loki via Promtail and queryable from Grafana Explore.
+```bash
+npm run dev
+```
 
 ### Service URLs (Development)
 
-| Service                                    | URL                                  |
-| ------------------------------------------ | ------------------------------------ |
-| Next.js Frontend                           | http://localhost:3000                |
-| Fastify API                                | http://localhost:3001                |
-| API health / readiness                     | http://localhost:3001/health, /ready |
-| API metrics (Prometheus scrape target)     | http://localhost:3001/metrics        |
-| n8n Workflow Editor                        | http://localhost:5678                |
-| Postgres (plain, Phase 3 sets up Supabase) | localhost:15432                      |
-| MinIO Console                              | http://localhost:9001                |
-| Grafana Dashboards                         | http://localhost:3002 (admin/admin)  |
-| Prometheus                                 | http://localhost:9090                |
-| Loki                                       | http://localhost:3100                |
-
-> Once Phase 3 adds Supabase project setup, Supabase Studio will be added here on its own port —
-> it does not exist in the Phase 2 stack.
+| Service | URL |
+|---|---|
+| Next.js Frontend | http://localhost:3000 |
+| Fastify API | http://localhost:3001 |
+| API Documentation (Swagger) | http://localhost:3001/api/v1/docs |
+| n8n Workflow Editor | http://localhost:5678 |
+| Supabase Studio | http://localhost:54323 |
+| MinIO Console | http://localhost:9001 |
+| Grafana Dashboards | http://localhost:3002 |
+| Prometheus | http://localhost:9090 |
 
 ### Database Setup
 
@@ -437,99 +391,99 @@ All environment variables are documented in `.env.example`. Below is the full re
 
 ### Application
 
-| Variable    | Required | Description                   | Example                                  |
-| ----------- | -------- | ----------------------------- | ---------------------------------------- |
-| `APP_ENV`   | Yes      | Environment name              | `development` / `staging` / `production` |
-| `APP_URL`   | Yes      | Public URL of the application | `https://app.viralscopes.io`             |
-| `LOG_LEVEL` | No       | Pino log level                | `info` (default)                         |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `APP_ENV` | Yes | Environment name | `development` / `staging` / `production` |
+| `APP_URL` | Yes | Public URL of the application | `https://app.viralscopes.io` |
+| `LOG_LEVEL` | No | Pino log level | `info` (default) |
 
 ### Database (Supabase)
 
-| Variable                    | Required | Description                                  | Example                               |
-| --------------------------- | -------- | -------------------------------------------- | ------------------------------------- |
-| `DATABASE_URL`              | Yes      | PostgreSQL connection string                 | `postgresql://user:pass@host:5432/db` |
-| `DATABASE_POOL_SIZE`        | No       | PgBouncer pool size                          | `10` (default)                        |
-| `SUPABASE_URL`              | Yes      | Supabase project URL                         | `https://xyz.supabase.co`             |
-| `SUPABASE_ANON_KEY`         | Yes      | Supabase anon/public key                     | `eyJ...`                              |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes      | Supabase service role key (server-side only) | `eyJ...`                              |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `DATABASE_POOL_SIZE` | No | PgBouncer pool size | `10` (default) |
+| `SUPABASE_URL` | Yes | Supabase project URL | `https://xyz.supabase.co` |
+| `SUPABASE_ANON_KEY` | Yes | Supabase anon/public key | `eyJ...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-side only) | `eyJ...` |
 
 ### Redis
 
-| Variable         | Required | Description                      | Example                  |
-| ---------------- | -------- | -------------------------------- | ------------------------ |
-| `REDIS_URL`      | Yes      | Redis connection URL             | `redis://localhost:6379` |
-| `REDIS_PASSWORD` | No       | Redis password (if auth enabled) | `your-redis-password`    |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `REDIS_URL` | Yes | Redis connection URL | `redis://localhost:6379` |
+| `REDIS_PASSWORD` | No | Redis password (if auth enabled) | `your-redis-password` |
 
 ### Authentication
 
-| Variable               | Required | Description                                     | Example                             |
-| ---------------------- | -------- | ----------------------------------------------- | ----------------------------------- |
-| `JWT_SECRET`           | Yes      | JWT access token signing secret (min 32 chars)  | `your-secret-minimum-32-characters` |
-| `JWT_REFRESH_SECRET`   | Yes      | JWT refresh token signing secret (min 32 chars) | `your-refresh-secret-min-32-chars`  |
-| `JWT_ACCESS_EXPIRY`    | No       | Access token expiry                             | `15m` (default)                     |
-| `JWT_REFRESH_EXPIRY`   | No       | Refresh token expiry                            | `30d` (default)                     |
-| `GOOGLE_CLIENT_ID`     | No       | Google OAuth Client ID                          | `123456.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | No       | Google OAuth Client Secret                      | `GOCSPX-...`                        |
-| `GITHUB_CLIENT_ID`     | No       | GitHub OAuth App Client ID                      | `Iv1.abc123`                        |
-| `GITHUB_CLIENT_SECRET` | No       | GitHub OAuth App Client Secret                  | `abc123def456`                      |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `JWT_SECRET` | Yes | JWT access token signing secret (min 32 chars) | `your-secret-minimum-32-characters` |
+| `JWT_REFRESH_SECRET` | Yes | JWT refresh token signing secret (min 32 chars) | `your-refresh-secret-min-32-chars` |
+| `JWT_ACCESS_EXPIRY` | No | Access token expiry | `15m` (default) |
+| `JWT_REFRESH_EXPIRY` | No | Refresh token expiry | `30d` (default) |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth Client ID | `123456.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | No | Google OAuth Client Secret | `GOCSPX-...` |
+| `GITHUB_CLIENT_ID` | No | GitHub OAuth App Client ID | `Iv1.abc123` |
+| `GITHUB_CLIENT_SECRET` | No | GitHub OAuth App Client Secret | `abc123def456` |
 
 ### YouTube Data API
 
-| Variable               | Required            | Description                   | Example           |
-| ---------------------- | ------------------- | ----------------------------- | ----------------- |
-| `YOUTUBE_API_KEY`      | Yes (for discovery) | YouTube Data API v3 key       | `AIza...`         |
-| `YOUTUBE_QUOTA_LIMIT`  | No                  | Daily quota unit limit        | `10000` (default) |
-| `RAPIDAPI_YOUTUBE_KEY` | No                  | RapidAPI YouTube fallback key | `abc123...`       |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `YOUTUBE_API_KEY` | Yes (for discovery) | YouTube Data API v3 key | `AIza...` |
+| `YOUTUBE_QUOTA_LIMIT` | No | Daily quota unit limit | `10000` (default) |
+| `RAPIDAPI_YOUTUBE_KEY` | No | RapidAPI YouTube fallback key | `abc123...` |
 
 ### AI APIs
 
-| Variable            | Required              | Description              | Example      |
-| ------------------- | --------------------- | ------------------------ | ------------ |
+| Variable | Required | Description | Example |
+|---|---|---|---|
 | `ANTHROPIC_API_KEY` | Yes (for AI analysis) | Anthropic Claude API key | `sk-ant-...` |
-| `OPENAI_API_KEY`    | Yes (for AI analysis) | OpenAI API key           | `sk-...`     |
+| `OPENAI_API_KEY` | Yes (for AI analysis) | OpenAI API key | `sk-...` |
 
 ### Stripe
 
-| Variable                             | Required          | Description                       | Example                       |
-| ------------------------------------ | ----------------- | --------------------------------- | ----------------------------- |
-| `STRIPE_SECRET_KEY`                  | Yes (for billing) | Stripe secret key                 | `sk_live_...` / `sk_test_...` |
-| `STRIPE_WEBHOOK_SECRET`              | Yes (for billing) | Stripe webhook signing secret     | `whsec_...`                   |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes (for billing) | Stripe publishable key (frontend) | `pk_live_...`                 |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `STRIPE_SECRET_KEY` | Yes (for billing) | Stripe secret key | `sk_live_...` / `sk_test_...` |
+| `STRIPE_WEBHOOK_SECRET` | Yes (for billing) | Stripe webhook signing secret | `whsec_...` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes (for billing) | Stripe publishable key (frontend) | `pk_live_...` |
 
 ### Email
 
-| Variable             | Required        | Description          | Example                |
-| -------------------- | --------------- | -------------------- | ---------------------- |
-| `SENDGRID_API_KEY`   | Yes (for email) | SendGrid API key     | `SG.abc...`            |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `SENDGRID_API_KEY` | Yes (for email) | SendGrid API key | `SG.abc...` |
 | `EMAIL_FROM_ADDRESS` | Yes (for email) | Sender email address | `hello@viralscopes.io` |
-| `EMAIL_FROM_NAME`    | No              | Sender display name  | `ViralScopes`          |
+| `EMAIL_FROM_NAME` | No | Sender display name | `ViralScopes` |
 
 ### Object Storage
 
-| Variable        | Required | Description               | Example                                |
-| --------------- | -------- | ------------------------- | -------------------------------------- |
-| `S3_BUCKET`     | Yes      | Storage bucket name       | `viralscopes-production`               |
-| `S3_REGION`     | Yes      | Storage region            | `auto` (R2) / `eu-west-2` (S3)         |
-| `S3_ENDPOINT`   | Yes      | Storage endpoint URL      | `https://xxx.r2.cloudflarestorage.com` |
-| `S3_ACCESS_KEY` | Yes      | Storage access key ID     | `abc123`                               |
-| `S3_SECRET_KEY` | Yes      | Storage secret access key | `secret123`                            |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `S3_BUCKET` | Yes | Storage bucket name | `viralscopes-production` |
+| `S3_REGION` | Yes | Storage region | `auto` (R2) / `eu-west-2` (S3) |
+| `S3_ENDPOINT` | Yes | Storage endpoint URL | `https://xxx.r2.cloudflarestorage.com` |
+| `S3_ACCESS_KEY` | Yes | Storage access key ID | `abc123` |
+| `S3_SECRET_KEY` | Yes | Storage secret access key | `secret123` |
 
 ### Frontend (Public Variables)
 
-| Variable                             | Required | Description            | Example                      |
-| ------------------------------------ | -------- | ---------------------- | ---------------------------- |
-| `NEXT_PUBLIC_API_URL`                | Yes      | Backend API base URL   | `https://api.viralscopes.io` |
-| `NEXT_PUBLIC_APP_URL`                | Yes      | Frontend public URL    | `https://app.viralscopes.io` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes      | Stripe publishable key | `pk_live_...`                |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Yes | Backend API base URL | `https://api.viralscopes.io` |
+| `NEXT_PUBLIC_APP_URL` | Yes | Frontend public URL | `https://app.viralscopes.io` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Stripe publishable key | `pk_live_...` |
 
 ### n8n
 
-| Variable                  | Required | Description                    | Example                      |
-| ------------------------- | -------- | ------------------------------ | ---------------------------- |
-| `N8N_BASIC_AUTH_USER`     | Yes      | n8n admin username             | `admin`                      |
-| `N8N_BASIC_AUTH_PASSWORD` | Yes      | n8n admin password             | `secure-password`            |
-| `N8N_ENCRYPTION_KEY`      | Yes      | n8n credentials encryption key | `random-32-char-string`      |
-| `N8N_WEBHOOK_URL`         | Yes      | n8n public webhook base URL    | `https://n8n.viralscopes.io` |
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `N8N_BASIC_AUTH_USER` | Yes | n8n admin username | `admin` |
+| `N8N_BASIC_AUTH_PASSWORD` | Yes | n8n admin password | `secure-password` |
+| `N8N_ENCRYPTION_KEY` | Yes | n8n credentials encryption key | `random-32-char-string` |
+| `N8N_WEBHOOK_URL` | Yes | n8n public webhook base URL | `https://n8n.viralscopes.io` |
 
 ---
 
@@ -537,26 +491,16 @@ All environment variables are documented in `.env.example`. Below is the full re
 
 ### Development Mode
 
-**Option A — everything in Docker** (simplest; `web`/`api` included in the compose file with hot
-reload via a bind mount):
-
 ```bash
+# Start infrastructure (PostgreSQL, Redis, n8n, MinIO, monitoring)
 docker compose -f docker-compose.dev.yml up -d
-```
 
-**Option B — infra in Docker, `web`/`api` natively on the host** (faster iteration if you prefer
-running Node directly rather than through the container's `npm install` step):
-
-```bash
-# Start everything except web/api
-docker compose -f docker-compose.dev.yml up -d postgres redis minio minio-init n8n prometheus grafana loki promtail postgres-exporter redis-exporter
-
-# Then run web/api on the host
+# Start the API with hot reload
 npm run dev --workspace=apps/api
+
+# Start the frontend with hot reload
 npm run dev --workspace=apps/web
 ```
-
-Don't run both options for `web`/`api` at once — they'll fight over ports 3000/3001.
 
 ### Production Mode (Local)
 
@@ -595,7 +539,7 @@ Once running, verify all services are healthy:
 ```bash
 # API health
 curl http://localhost:3001/health
-# Expected: { "status": "ok", "uptime": 42, "version": "0.1.0" }
+# Expected: { "status": "ok", "uptime": 42, "version": "1.0.0" }
 
 # API readiness (checks DB + Redis)
 curl http://localhost:3001/ready
@@ -612,14 +556,14 @@ curl http://localhost:3000
 
 ### Test Stack
 
-| Type              | Tool                | Command                    |
-| ----------------- | ------------------- | -------------------------- |
-| Unit tests        | Vitest              | `npm run test:unit`        |
-| Integration tests | Vitest + Supertest  | `npm run test:integration` |
-| E2E tests         | Playwright          | `npm run test:e2e`         |
-| Load tests        | k6                  | `npm run test:load`        |
-| All tests         | Vitest + Playwright | `npm run test`             |
-| Coverage report   | Vitest v8           | `npm run test:coverage`    |
+| Type | Tool | Command |
+|---|---|---|
+| Unit tests | Vitest | `npm run test:unit` |
+| Integration tests | Vitest + Supertest | `npm run test:integration` |
+| E2E tests | Playwright | `npm run test:e2e` |
+| Load tests | k6 | `npm run test:load` |
+| All tests | Vitest + Playwright | `npm run test` |
+| Coverage report | Vitest v8 | `npm run test:coverage` |
 
 ### Running Tests
 
@@ -654,9 +598,9 @@ npx vitest run apps/api/__tests__/unit/services/viral-score.service.unit.test.ts
 
 ### Coverage Targets
 
-| Layer             | Target                  |
-| ----------------- | ----------------------- |
-| Unit tests        | ≥ 80% line coverage     |
+| Layer | Target |
+|---|---|
+| Unit tests | ≥ 80% line coverage |
 | Integration tests | ≥ 70% endpoint coverage |
 
 Coverage is enforced in CI. Pull requests that decrease coverage below the target are blocked from merging.
@@ -671,7 +615,6 @@ apps/api/__tests__/unit/services/viral-score.service.unit.test.ts
 ```
 
 Test file naming convention:
-
 - `*.unit.test.ts` — unit tests (all dependencies mocked)
 - `*.integration.test.ts` — integration tests (real DB and Redis, mocked external APIs)
 - `*.e2e.test.ts` — end-to-end tests (full browser, Playwright)
@@ -680,24 +623,24 @@ Example unit test:
 
 ```typescript
 // apps/api/__tests__/unit/services/viral-score.service.unit.test.ts
-import { describe, it, expect } from 'vitest';
-import { computeViralScore } from '../../../src/services/viral-score.service';
-import { mockVideoSignals } from '../../fixtures/video.fixture';
+import { describe, it, expect } from "vitest";
+import { computeViralScore } from "../../../src/services/viral-score.service";
+import { mockVideoSignals } from "../../fixtures/video.fixture";
 
-describe('computeViralScore', () => {
-  it('returns a score between 0 and 100 for valid inputs', () => {
+describe("computeViralScore", () => {
+  it("returns a score between 0 and 100 for valid inputs", () => {
     const score = computeViralScore(mockVideoSignals.highPerforming);
     expect(score.value).toBeGreaterThanOrEqual(0);
     expect(score.value).toBeLessThanOrEqual(100);
   });
 
-  it('returns a lower score for videos with low engagement velocity', () => {
+  it("returns a lower score for videos with low engagement velocity", () => {
     const high = computeViralScore(mockVideoSignals.highPerforming);
     const low = computeViralScore(mockVideoSignals.lowEngagement);
     expect(high.value).toBeGreaterThan(low.value);
   });
 
-  it('is deterministic — same inputs always produce the same score', () => {
+  it("is deterministic — same inputs always produce the same score", () => {
     const first = computeViralScore(mockVideoSignals.highPerforming);
     const second = computeViralScore(mockVideoSignals.highPerforming);
     expect(first.value).toBe(second.value);
@@ -708,13 +651,6 @@ describe('computeViralScore', () => {
 ---
 
 ## 10. Deployment
-
-> **Current implementation status:** `ci.yml` (lint/type-check/build/test) and `security.yml`
-> (`npm audit`) are live and run on every PR. `build.yml` genuinely builds and pushes both Docker
-> images to GHCR on merge to `main`. `deploy-staging.yml` and `deploy-production.yml` are written
-> per the pipeline below but are **templates** — they detect the absence of
-> `COOLIFY_*_WEBHOOK_TOKEN` secrets and skip (not fail) rather than error, since no Coolify server,
-> staging URL, or production URL exists yet. See BLK-002 in `PROJECT_STATUS.md`.
 
 ViralScopes.io is deployed using **Coolify** (self-hosted PaaS) via **GitHub Actions** CI/CD.
 
@@ -745,10 +681,8 @@ Manual approval on GitHub
 
 ```bash
 # 1. Build and push Docker images manually
-# (matches what build.yml computes -- github.repository lowercased, since GHCR
-# rejects uppercase in image paths)
-docker build -f infra/docker/Dockerfile.api -t ghcr.io/keving1456/viralscopes.io/api:latest .
-docker push ghcr.io/keving1456/viralscopes.io/api:latest
+docker build -f infra/docker/Dockerfile.api -t ghcr.io/viralscopes/api:latest .
+docker push ghcr.io/viralscopes/api:latest
 
 # 2. Trigger Coolify redeploy via webhook
 curl -X POST https://coolify.viralscopes.io/api/v1/deploy   -H "Authorization: Bearer $COOLIFY_WEBHOOK_TOKEN"   -d '{"serviceId": "viralscopes-api"}'
@@ -765,11 +699,11 @@ coolify rollback --service viralscopes-api --version previous
 
 ### Environment-Specific Configuration
 
-| Environment | Branch             | Deploy trigger  | URL                              |
-| ----------- | ------------------ | --------------- | -------------------------------- |
-| Development | Any feature branch | Local only      | `http://localhost:3000`          |
-| Staging     | `develop`          | Auto on merge   | `https://staging.viralscopes.io` |
-| Production  | `main`             | Manual approval | `https://app.viralscopes.io`     |
+| Environment | Branch | Deploy trigger | URL |
+|---|---|---|---|
+| Development | Any feature branch | Local only | `http://localhost:3000` |
+| Staging | `develop` | Auto on merge | `https://staging.viralscopes.io` |
+| Production | `main` | Manual approval | `https://app.viralscopes.io` |
 
 ### Production Smoke Tests
 
@@ -780,7 +714,6 @@ npm run smoke:production
 ```
 
 This checks:
-
 - `GET /health` returns `200 OK`
 - `GET /ready` returns `200 OK` with all dependencies healthy
 - `GET /api/v1/videos` returns `401` (auth enforced)
@@ -851,6 +784,8 @@ viralscopes/
 
 For the complete annotated file tree including every file, see [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md).
 
+> **Note:** All project documentation (including this file) lives at the repository root, not under `docs/`. `REPOSITORY_STRUCTURE.md`'s folder diagram shows a `docs/` layout as a future-state convention; it hasn't been adopted yet.
+
 ---
 
 ## 12. Contributing
@@ -902,7 +837,7 @@ git push origin feature/VS-123-your-feature-name
 - Unit tests for all new service methods
 - Integration tests for all new API endpoints
 - `CHANGELOG.md` updated for user-facing changes
-- Inline comments for non-obvious logic (explain _why_, not _what_)
+- Inline comments for non-obvious logic (explain *why*, not *what*)
 
 For the full standards, see [PROJECT_RULES.md](./PROJECT_RULES.md).
 
@@ -1037,4 +972,4 @@ SOFTWARE.
 
 ---
 
-**Documentation:** [PROJECT_RULES.md](./PROJECT_RULES.md) · [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) · [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md) · [PROJECT_STATUS.md](./PROJECT_STATUS.md) · [CHANGELOG.md](./CHANGELOG.md)
+**Documentation:** [PROJECT_RULES.md](./docs/PROJECT_RULES.md) · [ROADMAP.md](./docs/ROADMAP.md) · [PRD.md](./docs/PRD.md) · [REPOSITORY_STRUCTURE.md](./docs/REPOSITORY_STRUCTURE.md) · [INFRASTRUCTURE_GROWTH_PLAN.md](./docs/INFRASTRUCTURE_GROWTH_PLAN.md) · [PROJECT_STATUS.md](./docs/PROJECT_STATUS.md) · [CHANGELOG.md](./docs/CHANGELOG.md)

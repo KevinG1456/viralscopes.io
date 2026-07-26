@@ -1,8 +1,3 @@
-// Package barrel export for @viralscopes/db.
-//
-// This package is scaffolded in Phase 1 (Foundation & Project Setup) as an
-// empty workspace member. The Drizzle ORM schema, migrations, RLS policies,
-// and seed scripts are added starting Phase 3 (Database & Core Schema) per
-// ROADMAP.md — introducing the Drizzle dependency now would be out of scope
-// for this phase.
+// Package barrel export. Schema, migrations, RLS, and seeds are added in
+// Phase 3 — Database & Core Schema (see ROADMAP.md §5, Phase 3).
 export {};

@@ -1,5 +1,4 @@
 # ROADMAP.md
-
 # ViralScopes.io — Development Roadmap
 
 > **Version:** 1.0
@@ -34,18 +33,18 @@
 
 > **ViralScopes.io is the intelligence layer between a creator and their next breakthrough.**
 
-An AI-powered content intelligence platform that helps creators, agencies, and media teams understand _why_ content goes viral — and how to create original content with the same structural characteristics, without copying anyone.
+An AI-powered content intelligence platform that helps creators, agencies, and media teams understand *why* content goes viral — and how to create original content with the same structural characteristics, without copying anyone.
 
 ### Strategic Goals
 
-| #   | Goal                                                   | Timeframe | Success Metric           |
-| --- | ------------------------------------------------------ | --------- | ------------------------ |
-| G1  | Launch a production-ready MVP serving paying customers | Month 5   | 100 paying customers     |
-| G2  | Achieve initial product-market fit                     | Month 8   | NPS > 40, churn < 5%     |
-| G3  | Reach £75,000 MRR                                      | Month 12  | Stripe dashboard         |
-| G4  | Expand to two additional platforms (TikTok, Instagram) | Month 18  | v2.0 live                |
-| G5  | Launch public API enabling developer ecosystem         | Month 24  | 50+ API integrations     |
-| G6  | Reach enterprise tier with white-label capability      | Month 30  | 10+ Enterprise customers |
+| # | Goal | Timeframe | Success Metric |
+|---|---|---|---|
+| G1 | Launch a production-ready MVP serving paying customers | Month 5 | 100 paying customers |
+| G2 | Achieve initial product-market fit | Month 8 | NPS > 40, churn < 5% |
+| G3 | Reach £75,000 MRR | Month 12 | Stripe dashboard |
+| G4 | Expand to two additional platforms (TikTok, Instagram) | Month 18 | v2.0 live |
+| G5 | Launch public API enabling developer ecosystem | Month 24 | 50+ API integrations |
+| G6 | Reach enterprise tier with white-label capability | Month 30 | 10+ Enterprise customers |
 
 ### Non-Goals (Explicitly Out of Scope Forever)
 
@@ -72,68 +71,68 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 
 ### MVP Includes
 
-| Feature Area      | What is included                                                                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Content Discovery | YouTube video discovery (6-hour cycle), metadata extraction, transcript pipeline                                                                            |
-| AI Analysis       | Thumbnail analysis, full video AI analysis, title formula detection, hook classification                                                                    |
-| Viral Scoring     | Proprietary weighted Viral Score (0–100) with confidence level                                                                                              |
-| Trend Detection   | Daily topic clustering, emerging/evergreen/declining classification, opportunity ranking                                                                    |
-| Recommendations   | Ethically-generated original title, hook, outline, thumbnail concept, keywords                                                                              |
-| Dashboard         | All core pages: Home, Trending, Videos, Video Detail, Channels, Trends, Opportunities, Recommendations, Watchlists, Alerts, Search, Export, Settings, Admin |
-| Watchlists        | Channel, keyword, niche, and competitor watchlists                                                                                                          |
-| Alerts            | Email, Discord, Slack, Telegram, and custom webhook alert dispatch                                                                                          |
-| Search            | Unified search with advanced filters and cursor-based pagination                                                                                            |
-| Export            | CSV, Excel, JSON, PDF exports with async generation                                                                                                         |
-| Authentication    | Email/password, Google OAuth, GitHub OAuth, email verification, RBAC                                                                                        |
-| Multi-Tenancy     | Organisations, workspaces, projects, member invitations, role management                                                                                    |
-| Onboarding        | 3-step onboarding flow with product tour                                                                                                                    |
-| Billing           | Stripe Checkout, Customer Portal, plan enforcement, usage tracking                                                                                          |
-| Security          | HTTPS, security headers, CSRF, GDPR (deletion, export, consent)                                                                                             |
-| Infrastructure    | Docker, CI/CD, monitoring (Prometheus + Grafana + Loki), health checks                                                                                      |
-| Admin Panel       | Super Admin Panel for internal platform management                                                                                                          |
-| Documentation     | All 8 project documents; API reference; deployment guide                                                                                                    |
+| Feature Area | What is included |
+|---|---|
+| Content Discovery | YouTube video discovery (6-hour cycle), metadata extraction, transcript pipeline |
+| AI Analysis | Thumbnail analysis, full video AI analysis, title formula detection, hook classification |
+| Viral Scoring | Proprietary weighted Viral Score (0–100) with confidence level |
+| Trend Detection | Daily topic clustering, emerging/evergreen/declining classification, opportunity ranking |
+| Recommendations | Ethically-generated original title, hook, outline, thumbnail concept, keywords |
+| Dashboard | All core pages: Home, Trending, Videos, Video Detail, Channels, Trends, Opportunities, Recommendations, Watchlists, Alerts, Search, Export, Settings, Admin |
+| Watchlists | Channel, keyword, niche, and competitor watchlists |
+| Alerts | Email, Discord, Slack, Telegram, and custom webhook alert dispatch |
+| Search | Unified search with advanced filters and cursor-based pagination |
+| Export | CSV, Excel, JSON, PDF exports with async generation |
+| Authentication | Email/password, Google OAuth, GitHub OAuth, email verification, RBAC |
+| Multi-Tenancy | Organisations, workspaces, projects, member invitations, role management |
+| Onboarding | 3-step onboarding flow with product tour |
+| Billing | Stripe Checkout, Customer Portal, plan enforcement, usage tracking |
+| Security | HTTPS, security headers, CSRF, GDPR (deletion, export, consent) |
+| Infrastructure | Docker, CI/CD, monitoring (Prometheus + Grafana + Loki), health checks |
+| Admin Panel | Super Admin Panel for internal platform management |
+| Documentation | All 8 project documents; API reference; deployment guide |
 
 ### MVP Excludes (Explicitly Deferred)
 
-| Feature                              | Deferred to |
-| ------------------------------------ | ----------- |
-| TikTok / Instagram connectors        | v2.0        |
-| AI Chat Interface                    | v1.5        |
-| Chrome Extension                     | v1.5        |
-| Mobile Application                   | v2.0        |
-| Paddle billing                       | v1.5        |
-| Crypto billing                       | v2.0        |
-| Affiliate / referral system          | v2.0        |
-| Public API & SDKs                    | v2.0        |
-| White-label deployments              | v3.0        |
-| Scheduled PDF reports                | v1.5        |
-| Team collaboration (comments, tasks) | v2.0        |
-| Autonomous Financial AI              | v4.0+       |
+| Feature | Deferred to |
+|---|---|
+| TikTok / Instagram connectors | v2.0 |
+| AI Chat Interface | v1.5 |
+| Chrome Extension | v1.5 |
+| Mobile Application | v2.0 |
+| Paddle billing | v1.5 |
+| Crypto billing | v2.0 |
+| Affiliate / referral system | v2.0 |
+| Public API & SDKs | v2.0 |
+| White-label deployments | v3.0 |
+| Scheduled PDF reports | v1.5 |
+| Team collaboration (comments, tasks) | v2.0 |
+| Autonomous Financial AI | v4.0+ |
 
 ---
 
 ## 4. Phase Overview
 
-| Phase | Name                            | Complexity | Est. Duration           | MVP | Parallel with |
-| ----- | ------------------------------- | ---------- | ----------------------- | --- | ------------- |
-| 1     | Foundation & Project Setup      | Small      | 1 week                  | Yes | Phase 2       |
-| 2     | Infrastructure & DevOps         | Medium     | 1–2 weeks               | Yes | Phase 1       |
-| 3     | Database & Core Schema          | Medium     | 1 week                  | Yes | Phase 2       |
-| 4     | Authentication & Authorisation  | Medium     | 1–2 weeks               | Yes | Phase 3       |
-| 5     | Core Backend API                | Large      | 2–3 weeks               | Yes | Phase 8       |
-| 6     | n8n Workflow Engine             | Large      | 2–3 weeks               | Yes | Phase 5       |
-| 7     | AI Prompt Library & Versioning  | Small      | 3–5 days                | Yes | Phase 6       |
-| 8     | Frontend Dashboard              | Large      | 3–4 weeks               | Yes | Phase 5       |
-| 9     | Subscription & Billing          | Medium     | 1–2 weeks               | Yes | —             |
-| 10    | Security Hardening & Compliance | Medium     | 1 week                  | Yes | Phase 9       |
-| 11    | Super Admin Panel               | Medium     | 1–2 weeks               | No* | Phase 12      |
-| 12    | Testing                         | Medium     | Ongoing + 1-week sprint | Yes | All phases    |
-| 13    | Documentation                   | Small      | Ongoing + 3–5 days      | Yes | All phases    |
-| 14    | Production Deployment           | Medium     | 3–5 days                | Yes | —             |
-| 15    | Affiliate & Referral System     | Large      | 3–4 weeks               | No  | Post-launch   |
-| 16    | Advanced Billing                | Large      | 2–3 weeks               | No  | Post-launch   |
-| 17    | Platform Expansion              | Very Large | 8–12 weeks              | No  | Post-launch   |
-| 18    | Advanced Financial AI           | Very Large | 12+ weeks               | No  | v4+ only      |
+| Phase | Name | Complexity | Est. Duration | MVP | Parallel with |
+|---|---|---|---|---|---|
+| 1 | Foundation & Project Setup | Small | 1 week | Yes | Phase 2 |
+| 2 | Infrastructure & DevOps | Medium | 1–2 weeks | Yes | Phase 1 |
+| 3 | Database & Core Schema | Medium | 1 week | Yes | Phase 2 |
+| 4 | Authentication & Authorisation | Medium | 1–2 weeks | Yes | Phase 3 |
+| 5 | Core Backend API | Large | 2–3 weeks | Yes | Phase 8 |
+| 6 | n8n Workflow Engine | Large | 2–3 weeks | Yes | Phase 5 |
+| 7 | AI Prompt Library & Versioning | Small | 3–5 days | Yes | Phase 6 |
+| 8 | Frontend Dashboard | Large | 3–4 weeks | Yes | Phase 5 |
+| 9 | Subscription & Billing | Medium | 1–2 weeks | Yes | — |
+| 10 | Security Hardening & Compliance | Medium | 1 week | Yes | Phase 9 |
+| 11 | Super Admin Panel | Medium | 1–2 weeks | No* | Phase 12 |
+| 12 | Testing | Medium | Ongoing + 1-week sprint | Yes | All phases |
+| 13 | Documentation | Small | Ongoing + 3–5 days | Yes | All phases |
+| 14 | Production Deployment | Medium | 3–5 days | Yes | — |
+| 15 | Affiliate & Referral System | Large | 3–4 weeks | No | Post-launch |
+| 16 | Advanced Billing | Large | 2–3 weeks | No | Post-launch |
+| 17 | Platform Expansion | Very Large | 8–12 weeks | No | Post-launch |
+| 18 | Advanced Financial AI | Very Large | 12+ weeks | No | v4+ only |
 
 *Phase 11 (Super Admin Panel) is required within 30 days of launch.
 
@@ -146,11 +145,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 1 — Foundation & Project Setup
-
 **Complexity:** Small | **Duration:** ~1 week | **Parallel with:** Phase 2
 
 #### Deliverables
-
 - Initialised monorepo with all packages
 - TypeScript, ESLint, Prettier, Husky configured across all packages
 - Git repository with branch protection rules configured
@@ -161,7 +158,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - README with setup instructions
 
 #### Tasks
-
 - [ ] Initialise monorepo: `apps/web`, `apps/api`, `packages/shared`, `packages/db`
 - [ ] Configure TypeScript strict mode across all packages
 - [ ] Set up ESLint with import ordering, no-any, and no-unused-vars rules
@@ -182,11 +178,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 2 — Infrastructure & DevOps
-
 **Complexity:** Medium | **Duration:** 1–2 weeks | **Parallel with:** Phase 1
 
 #### Deliverables
-
 - All services running locally with a single `docker compose up` command
 - CI/CD pipeline deployed to GitHub Actions
 - Staging environment auto-deploying from `develop` via Coolify
@@ -197,7 +191,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Docker Setup**
-
 - [ ] Write Dockerfiles for: Next.js frontend, Node.js API, n8n, Redis, MinIO (local S3)
 - [ ] Write `docker-compose.dev.yml` (hot reload, local ports exposed)
 - [ ] Write `docker-compose.prod.yml` (health checks, restart policies, named volumes)
@@ -206,14 +199,12 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Test one-command startup: `docker compose up`
 
 **Reverse Proxy & Networking**
-
 - [ ] Configure Traefik as reverse proxy with automatic service discovery
 - [ ] Set up SSL/TLS via Let's Encrypt through Coolify
 - [ ] Define service routing rules (frontend, API, n8n, Grafana)
 - [ ] Configure per-environment CORS policies
 
 **CI/CD Pipeline**
-
 - [ ] GitHub Actions: lint + type-check on every pull request
 - [ ] GitHub Actions: run all tests on every pull request
 - [ ] GitHub Actions: build and push Docker images on merge to `main`
@@ -223,7 +214,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Configure Dependabot or Renovate for weekly dependency update PRs
 
 **Monitoring & Observability**
-
 - [ ] Deploy Prometheus with scrape targets for all services
 - [ ] Configure Grafana dashboards: API latency, queue depth, job success/failure, DB connections, memory/CPU
 - [ ] Deploy Loki for centralised log aggregation from all containers
@@ -232,7 +222,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Set up PagerDuty or email alerting for critical production failures
 
 **Health Checks**
-
 - [ ] Implement `GET /health` on API: `{ status, uptime, version }`
 - [ ] Implement `GET /ready` on API: checks DB, Redis, and queue connectivity
 - [ ] Implement equivalent health routes on n8n and background workers
@@ -240,7 +229,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Add health check status panel to Grafana
 
 **Object Storage**
-
 - [ ] Configure MinIO for local development
 - [ ] Configure Cloudflare R2 or AWS S3 for production
 - [ ] Define bucket structure: `thumbnails/`, `exports/`, `reports/`, `prompt-cache/`
@@ -251,11 +239,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 3 — Database & Core Schema
-
 **Complexity:** Medium | **Duration:** ~1 week | **Parallel with:** Phase 2
 
 #### Deliverables
-
 - All database tables created via reversible migrations
 - RLS policies active on every table from creation
 - Dead-letter queue table and data retention automation
@@ -265,7 +251,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Setup**
-
 - [ ] Initialise Supabase project (local dev + hosted)
 - [ ] Configure PgBouncer connection pooling
 - [ ] Enable RLS on all tables from creation
@@ -273,7 +258,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Add migration dry-run check to CI pipeline
 
 **Core Schema — User & Organisation**
-
 - [ ] `users`: id, email, name, avatar, role, email_verified, created_at, updated_at
 - [ ] `organizations`: id, name, plan, owner_id, created_at
 - [ ] `organization_members`: org_id, user_id, role, invited_at, joined_at
@@ -283,14 +267,12 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] `audit_logs`: id, org_id, user_id, action, resource_type, resource_id, metadata (jsonb), created_at
 
 **Core Schema — Billing & Usage**
-
 - [ ] `subscriptions`: id, org_id, plan, status, billing_provider, provider_subscription_id, period_start, period_end
 - [ ] `usage_events`: id, org_id, user_id, event_type, quantity, created_at — partitioned by month
 - [ ] `api_keys`: id, org_id, key_hash, name, scopes, last_used_at, created_at, revoked_at
 - [ ] `invoices`: id, org_id, provider, amount, currency, status, paid_at, created_at
 
 **Core Schema — Content**
-
 - [ ] `channels`: id, platform, channel_id, name, avg_views, upload_frequency, subscriber_estimate, growth_score
 - [ ] `videos`: id, platform, video_id, url, title, description, channel_id, views, likes, comments, published_at, duration, thumbnail_url, language, category, viral_score, viral_score_confidence, analysis_status
 - [ ] `transcripts`: id, video_id, raw_transcript, summary, hook, cta, ending, sections (jsonb), status
@@ -306,19 +288,16 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] `prompt_library`: id, name, version, model, system_prompt, user_template, output_schema (jsonb), active
 
 **Dead-Letter Queue**
-
 - [ ] `dead_letter_jobs`: id, workflow_name, original_payload (jsonb), error_message, retry_attempts, last_attempt_at, resolved, created_at
 - [ ] Admin endpoint to inspect, retry, and dismiss dead-letter jobs
 - [ ] Grafana panel: dead-letter queue depth over time
 
 **Data Retention**
-
 - [ ] Define retention rules: raw transcripts 90d, job_logs 60d, usage_events 13m, audit_logs 2y, dead_letter_jobs 30d post-resolution
 - [ ] Implement automated nightly purge jobs enforcing retention rules
 - [ ] Surface retention settings in organisation admin settings
 
 **Optimisation**
-
 - [ ] Define indexes on all foreign keys and frequently queried columns
 - [ ] Implement table partitioning for `usage_events` and `job_logs`
 - [ ] Write seed data scripts for development and testing
@@ -329,11 +308,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 4 — Authentication & Authorisation
-
 **Complexity:** Medium | **Duration:** 1–2 weeks | **Parallel with:** Phase 3
 
 #### Deliverables
-
 - Full auth system (email, OAuth, password reset, verification)
 - Transactional email service with all 7 email templates
 - RBAC enforced at route and service layers
@@ -343,7 +320,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Authentication**
-
 - [ ] JWT access tokens (15-min expiry) + refresh token rotation (HTTP-only cookies)
 - [ ] Email + password registration and login
 - [ ] Google OAuth integration
@@ -353,7 +329,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Account lockout after 5 consecutive failed login attempts
 
 **Transactional Email Service**
-
 - [ ] Integrate SendGrid or Resend
 - [ ] Email template: Welcome (on signup)
 - [ ] Email template: Email verification link
@@ -367,14 +342,12 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Log all sent emails to `audit_logs`
 
 **RBAC**
-
 - [ ] Define roles: Super Admin, Admin, Owner, Team Member, Viewer
 - [ ] Implement role-based middleware on all API routes
 - [ ] Implement permission checks at service layer
 - [ ] Write and publish permission matrix document
 
 **Organisation & Workspace Management**
-
 - [ ] Organisation CRUD
 - [ ] Member invitation flow (email invite → accept link → join)
 - [ ] Member removal and role change (with audit log)
@@ -383,7 +356,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Ownership transfer flow
 
 **Session Management**
-
 - [ ] Active session listing per user
 - [ ] Remote session revocation (individual + "sign out all other devices")
 - [ ] Audit log for all auth events
@@ -393,11 +365,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 5 — Core Backend API
-
 **Complexity:** Large | **Duration:** 2–3 weeks | **Parallel with:** Phase 8
 
 #### Deliverables
-
 - All MVP REST endpoints implemented and documented
 - OpenAPI spec published at `/api/v1/docs`
 - Redis-backed rate limiting per plan
@@ -408,7 +378,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **API Foundation**
-
 - [ ] Fastify + TypeScript API server
 - [ ] Zod schema validation on all request inputs
 - [ ] Standardised response format: `{ success, data, error: { code, message, details }, meta }`
@@ -418,7 +387,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] OpenAPI / Swagger auto-generated from Zod schemas via `fastify-swagger`
 
 **Rate Limiting & Quota**
-
 - [ ] Redis-backed rate limiter per API key and authenticated user
 - [ ] Per-plan limits: requests per minute and per day
 - [ ] Soft warning at 80% — trigger quota warning email
@@ -426,7 +394,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Feature flags cached in Redis — no DB hit per request
 
 **YouTube API Quota Manager**
-
 - [ ] Daily unit consumption tracking against 10,000/day limit
 - [ ] Per-org quota allocation per subscription plan
 - [ ] Cache-first strategy: serve from DB if analysed within 24h
@@ -435,42 +402,35 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Grafana panel: daily YouTube quota consumption vs limit
 
 **Endpoints — Videos**
-
 - [ ] `GET /api/v1/videos` — list with filters (date, category, language, viral score, platform)
 - [ ] `GET /api/v1/videos/:id` — full detail with all analyses
 - [ ] `POST /api/v1/videos/analyze` — trigger analysis for a URL
 - [ ] `POST /api/v1/videos/refresh` — re-analyse (bypass 24h cache)
 
 **Endpoints — Channels**
-
 - [ ] `GET /api/v1/channels` — list with filters
 - [ ] `GET /api/v1/channels/:id` — full profile and growth history
 
 **Endpoints — Trends & Opportunities**
-
 - [ ] `GET /api/v1/trends` — list with filters (status, velocity, platform)
 - [ ] `GET /api/v1/trends/opportunities` — ranked opportunity list
 
 **Endpoints — Analytics**
-
 - [ ] `GET /api/v1/analytics/overview` — org-level KPIs
 - [ ] `GET /api/v1/analytics/viral-scores` — score distribution over time
 - [ ] `GET /api/v1/analytics/engagement` — engagement trends
 
 **Endpoints — Recommendations**
-
 - [ ] `GET /api/v1/recommendations` — list for org
 - [ ] `GET /api/v1/recommendations/:videoId` — recommendations for a video
 
 **Endpoints — Watchlists**
-
 - [ ] `GET /api/v1/watchlists`
 - [ ] `POST /api/v1/watchlists`
 - [ ] `PUT /api/v1/watchlists/:id`
 - [ ] `DELETE /api/v1/watchlists/:id`
 
 **Endpoints — Alerts**
-
 - [ ] `GET /api/v1/alerts/rules`
 - [ ] `POST /api/v1/alerts/rules`
 - [ ] `PUT /api/v1/alerts/rules/:id`
@@ -478,32 +438,26 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] `GET /api/v1/alerts/events`
 
 **Endpoints — Search**
-
 - [ ] `GET /api/v1/search` — unified search, cursor-based pagination, all filter types
 
 **Endpoints — Export**
-
 - [ ] `POST /api/v1/exports` — trigger async export (CSV, Excel, JSON, PDF)
 - [ ] `GET /api/v1/exports/:id` — check status
 - [ ] `GET /api/v1/exports/:id/download` — signed S3 URL
 
 **Endpoints — API Keys**
-
 - [ ] `GET /api/v1/api-keys` — list (hashed, never plaintext)
 - [ ] `POST /api/v1/api-keys` — create (plaintext returned once)
 - [ ] `DELETE /api/v1/api-keys/:id` — revoke immediately
 
 **Endpoints — Webhooks**
-
 - [ ] Stripe webhook handler with signature verification
 - [ ] Outgoing webhook dispatch for user alert channels
 
 **Endpoints — Usage**
-
 - [ ] `GET /api/v1/usage` — current period usage, quota remaining, reset date
 
 **Endpoints — Admin**
-
 - [ ] `GET /api/v1/admin/users`
 - [ ] `GET /api/v1/admin/organizations`
 - [ ] `GET /api/v1/admin/jobs`
@@ -517,11 +471,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 6 — n8n Workflow Engine
-
 **Complexity:** Large | **Duration:** 2–3 weeks | **Parallel with:** Phase 5
 
 #### Deliverables
-
 - All 14 production workflows running and monitored
 - Dead-letter queue live with admin retry capability
 - All CRON schedules configured
@@ -530,7 +482,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Setup**
-
 - [ ] Deploy n8n in Docker with persistent named volume
 - [ ] Configure Redis queue (BullMQ) integration
 - [ ] Set up credentials store for all external services
@@ -539,7 +490,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Dead-letter handling: on max retries → write to `dead_letter_jobs` → admin notification
 
 **Workflows**
-
 - [ ] **Video Discovery** — CRON every 6h + manual trigger; 50k–300k views; duplicate prevention
 - [ ] **Metadata Pipeline** — fetch all video fields; normalise; store; enqueue next stage
 - [ ] **Transcript Pipeline** — fetch captions; handle unavailable gracefully; enqueue for AI
@@ -556,7 +506,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] **Alert Dispatch** — check alert_rules; dispatch to email/Discord/Slack/Telegram/webhook; throttle 1/hour/rule; log
 
 **Scheduler**
-
 - [ ] Every 6 hours: Video Discovery
 - [ ] Daily: Trend Detection, Channel Intelligence, Alert Sweep, Data Retention Purge
 - [ ] Weekly: Opportunity Engine full refresh
@@ -564,7 +513,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Manual trigger: `POST /api/v1/jobs/:workflow/trigger`
 
 **Version Control**
-
 - [ ] Export all workflow JSON to `/infra/n8n-workflows/`
 - [ ] Add workflow description field to every exported JSON
 - [ ] Publish workflow diagrams to `/docs/workflows/`
@@ -574,17 +522,14 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 7 — AI Prompt Library & Versioning
-
 **Complexity:** Small | **Duration:** 3–5 days | **Parallel with:** Phase 6
 
 #### Deliverables
-
 - All 8 production prompts stored, versioned, and active in the database
 - AI response caching live with hit rate monitoring
 - Prompt test harness functional in admin panel
 
 #### Tasks
-
 - [ ] `prompt_library` table with full versioning schema
 - [ ] All prompts stored in DB (not in code): transcript analysis, thumbnail analysis, title formula, hook classification, full video analysis, trend clustering, opportunity detection, ethical recommendation generation
 - [ ] AI response caching: Redis key = `(prompt_version, sha256(input))`, 24h TTL
@@ -598,11 +543,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 8 — Frontend Dashboard
-
 **Complexity:** Large | **Duration:** 3–4 weeks | **Parallel with:** Phase 5
 
 #### Deliverables
-
 - Full production dashboard with all MVP pages
 - Onboarding flow tested end-to-end
 - API key management UI
@@ -612,7 +555,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Foundation**
-
 - [ ] Next.js 14+ App Router + TypeScript
 - [ ] Tailwind CSS + design tokens from Phase 1
 - [ ] shadcn/ui component library
@@ -624,7 +566,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Responsive layout shell: collapsible sidebar + topbar
 
 **Authentication Pages**
-
 - [ ] Login: email/password + Google + GitHub OAuth buttons
 - [ ] Registration with email verification gate
 - [ ] Password reset request and confirmation pages
@@ -632,7 +573,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] OAuth callback handler
 
 **Onboarding Flow**
-
 - [ ] Step 1: Create or join organisation (invite code support)
 - [ ] Step 2: Choose plan or confirm free tier
 - [ ] Step 3: Set first watchlist
@@ -640,7 +580,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Track completion per user; never show tour again after dismissal
 
 **Dashboard Pages**
-
 - [ ] **Home** — KPI cards + recent activity feed
 - [ ] **Trending** — trending videos and topics, all filters
 - [ ] **Videos** — searchable filterable table with viral score badges
@@ -657,20 +596,17 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] **Admin** — job logs, dead-letter queue, quota, system health, prompt editor
 
 **API Key Management UI**
-
 - [ ] List keys: name, creation date, last used, scopes (never key value after creation)
 - [ ] Create key: name → generated key shown once with copy + warning
 - [ ] Revoke key with confirmation dialog
 
 **Changelog Page**
-
 - [ ] Accessible from sidebar footer and Settings
 - [ ] Reverse-chronological releases with date and summary
 - [ ] "New release" sidebar badge until visited
 - [ ] Content from Markdown file — no deploy needed to update
 
 **Charts**
-
 - [ ] Growth line chart (views, likes, viral score over time)
 - [ ] Viral Score distribution histogram
 - [ ] Trend velocity area chart
@@ -682,11 +618,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 9 — Subscription & Billing
-
 **Complexity:** Medium | **Duration:** 1–2 weeks
 
 #### Deliverables
-
 - Stripe billing live with all 5 plan tiers
 - Usage tracking real-time in Redis, persisted to PostgreSQL
 - Plan enforcement active on all quota-gated endpoints
@@ -695,13 +629,11 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Plan Definition**
-
 - [ ] Define 5 tiers: Free, Starter, Professional, Business, Enterprise
 - [ ] Define per-plan limits for all quota-gated resources
 - [ ] Feature flags: stored in DB, cached in Redis, no DB hit per request
 
 **Stripe Integration**
-
 - [ ] Stripe Checkout for new subscriptions
 - [ ] Stripe Customer Portal for plan changes, payment updates, cancellation
 - [ ] Monthly and annual billing with annual discount
@@ -714,7 +646,6 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Billing confirmation email on successful payment
 
 **Usage Tracking**
-
 - [ ] Event emission for every billable action
 - [ ] Events: `video_analyzed`, `api_request`, `export_created`, `ai_chat_message`, `alert_triggered`
 - [ ] Real-time Redis increment; async batch persist every 5 minutes
@@ -727,11 +658,9 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 10 — Security Hardening & Compliance
-
 **Complexity:** Medium | **Duration:** ~1 week | **Parallel with:** Phase 9
 
 #### Deliverables
-
 - All security headers configured
 - GDPR endpoints live (deletion, export, consent)
 - CI blocking on high-severity CVEs
@@ -761,16 +690,13 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 11 — Super Admin Panel
-
 **Complexity:** Medium | **Duration:** 1–2 weeks | **Required within 30 days of launch**
 
 #### Deliverables
-
 - Internal management tool for the ViralScopes team
 - All major admin operations accessible without database access
 
 #### Tasks
-
 - [ ] Organisation management: list, plan override, suspend, read-only impersonation (logged)
 - [ ] User management: search, force verify, force password reset, suspend
 - [ ] Billing & quota: view subscriptions, reset usage, apply credits
@@ -784,17 +710,14 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 12 — Testing
-
 **Complexity:** Medium | **Duration:** Ongoing from Phase 3; 1-week dedicated sprint before Phase 14
 
 #### Deliverables
-
 - All test suites passing in CI
 - Coverage targets met (≥80% unit, ≥70% integration)
 - Load test results documented
 
 #### Tasks
-
 - [ ] Unit tests: Viral Score, analytics, formula detection, hook classification, quota manager, data retention (≥80% coverage)
 - [ ] Integration tests: all API endpoints, auth flows, webhook signature verification, usage tracking, dead-letter (≥70% coverage)
 - [ ] Database tests: migration integrity, RLS enforcement, retention purge correctness
@@ -809,17 +732,14 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 13 — Documentation
-
 **Complexity:** Small | **Duration:** Ongoing; 3–5 days before Phase 14
 
 #### Deliverables
-
 - All 8 project documents complete and published
 - API reference auto-generated and current
 - n8n workflow diagrams published
 
 #### Tasks
-
 - [ ] Installation Guide
 - [ ] Deployment Guide (Coolify, env vars, Docker Compose prod)
 - [ ] API Reference (auto-generated + hand-written examples)
@@ -837,18 +757,15 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 ---
 
 ### Phase 14 — Production Deployment
-
 **Complexity:** Medium | **Duration:** 3–5 days
 
 #### Deliverables
-
 - All services live in production
 - Monitoring active and alerting configured
 - Daily backups verified with test restore
 - Rollback procedure documented and tested
 
 #### Tasks
-
 - [ ] Deploy all services to production via Coolify
 - [ ] Configure production Supabase (hosted, PgBouncer enabled)
 - [ ] Configure production Redis (managed or self-hosted with persistence)
@@ -892,38 +809,37 @@ Phase 14 (Deployment)     ← depends on all prior phases
 
 ## 7. Parallel Development Opportunities
 
-| Stream A                 | Stream B                  | Notes                                                      |
-| ------------------------ | ------------------------- | ---------------------------------------------------------- |
-| Phase 1 — Foundation     | Phase 2 — Infrastructure  | Fully independent until first Docker run                   |
-| Phase 2 — Infrastructure | Phase 3 — Database Schema | Schema design proceeds while infra is built                |
-| Phase 4 — Auth           | Phase 3 — Database Schema | Auth table design alongside app schema                     |
-| Phase 5 — Backend API    | Phase 8 — Frontend        | Frontend uses fixture data until API is ready              |
-| Phase 6 — n8n Workflows  | Phase 7 — Prompt Library  | Design prompts first; workflows consume them               |
-| Phase 6 — n8n Workflows  | Phase 5 — Backend API     | Both depend on Phase 3/4 but are independent of each other |
-| Phase 9 — Billing        | Phase 10 — Security       | Both depend on Phase 5; independent of each other          |
-| Phase 11 — Admin Panel   | Phase 12 — Testing        | Both proceed after Phase 5/6/9 are complete                |
-| Phase 12 — Testing       | Phase 13 — Documentation  | Fully independent; both run incrementally throughout       |
+| Stream A | Stream B | Notes |
+|---|---|---|
+| Phase 1 — Foundation | Phase 2 — Infrastructure | Fully independent until first Docker run |
+| Phase 2 — Infrastructure | Phase 3 — Database Schema | Schema design proceeds while infra is built |
+| Phase 4 — Auth | Phase 3 — Database Schema | Auth table design alongside app schema |
+| Phase 5 — Backend API | Phase 8 — Frontend | Frontend uses fixture data until API is ready |
+| Phase 6 — n8n Workflows | Phase 7 — Prompt Library | Design prompts first; workflows consume them |
+| Phase 6 — n8n Workflows | Phase 5 — Backend API | Both depend on Phase 3/4 but are independent of each other |
+| Phase 9 — Billing | Phase 10 — Security | Both depend on Phase 5; independent of each other |
+| Phase 11 — Admin Panel | Phase 12 — Testing | Both proceed after Phase 5/6/9 are complete |
+| Phase 12 — Testing | Phase 13 — Documentation | Fully independent; both run incrementally throughout |
 
 ---
 
 ## 8. Version 1 — Post-MVP Additions
 
-_Target: Months 6–9 post-launch_
+*Target: Months 6–9 post-launch*
 
 ### v1.5 Features
 
-| Feature                 | Complexity | Rationale                                                                         |
-| ----------------------- | ---------- | --------------------------------------------------------------------------------- |
-| AI Chat Interface       | Medium     | Highest-requested feature in pre-launch research; drives engagement and retention |
-| Scheduled PDF Reports   | Medium     | Key value-add for agency customers; reduces manual export workflow                |
-| Trend Prediction Engine | Large      | Differentiator over competitors; requires 3–6 months of trend history data        |
-| Chrome Extension        | Medium     | Lowers friction for ad hoc analysis; viral growth potential                       |
-| Paddle Billing          | Medium     | Required for global VAT compliance; unblocks non-US enterprise sales              |
-| Database Read Replicas  | Small      | Required when read traffic warrants separation from write traffic                 |
-| ClickHouse (analytics)  | Large      | Required when PostgreSQL query performance degrades on analytics workloads        |
+| Feature | Complexity | Rationale |
+|---|---|---|
+| AI Chat Interface | Medium | Highest-requested feature in pre-launch research; drives engagement and retention |
+| Scheduled PDF Reports | Medium | Key value-add for agency customers; reduces manual export workflow |
+| Trend Prediction Engine | Large | Differentiator over competitors; requires 3–6 months of trend history data |
+| Chrome Extension | Medium | Lowers friction for ad hoc analysis; viral growth potential |
+| Paddle Billing | Medium | Required for global VAT compliance; unblocks non-US enterprise sales |
+| Database Read Replicas | Small | Required when read traffic warrants separation from write traffic |
+| ClickHouse (analytics) | Large | Required when PostgreSQL query performance degrades on analytics workloads |
 
 ### v1.5 Tasks
-
 - [ ] AI Chat Interface: floating widget, SSE streaming, contextual answers, deep links to detail pages
 - [ ] Scheduled reports: weekly PDF digest, configurable day/time, email delivery
 - [ ] Trend Prediction Engine: momentum scoring, growth probability, "about to peak" classification
@@ -936,24 +852,23 @@ _Target: Months 6–9 post-launch_
 
 ## 9. Version 2 — Platform Expansion
 
-_Target: Months 10–18 post-launch_
+*Target: Months 10–18 post-launch*
 
 ### v2.0 Features
 
-| Feature                                  | Complexity | Rationale                                                                  |
-| ---------------------------------------- | ---------- | -------------------------------------------------------------------------- |
-| TikTok analytics connector               | Large      | Second-largest short-form video platform; major creator demand             |
-| Instagram analytics connector            | Large      | Reels growth makes this the third-priority platform                        |
-| Mobile Application (React Native)        | Very Large | Enables real-time alert consumption on mobile; reduces churn               |
-| Public API & SDKs                        | Large      | Unlocks developer ecosystem; enterprise integration stories                |
-| Team Collaboration                       | Medium     | Required for agency and enterprise retention; comments, tasks, annotations |
-| Crypto Billing                           | Medium     | Requested by international and privacy-conscious users                     |
-| Affiliate & Referral System (simplified) | Large      | Primary viral growth lever; referral codes, commissions, PayPal payouts    |
-| White-label deployment (basic)           | Large      | Agency revenue multiplier; premium pricing tier                            |
-| Multi-language content support           | Large      | Unlocks Spanish, Portuguese, German, French, Hindi markets                 |
+| Feature | Complexity | Rationale |
+|---|---|---|
+| TikTok analytics connector | Large | Second-largest short-form video platform; major creator demand |
+| Instagram analytics connector | Large | Reels growth makes this the third-priority platform |
+| Mobile Application (React Native) | Very Large | Enables real-time alert consumption on mobile; reduces churn |
+| Public API & SDKs | Large | Unlocks developer ecosystem; enterprise integration stories |
+| Team Collaboration | Medium | Required for agency and enterprise retention; comments, tasks, annotations |
+| Crypto Billing | Medium | Requested by international and privacy-conscious users |
+| Affiliate & Referral System (simplified) | Large | Primary viral growth lever; referral codes, commissions, PayPal payouts |
+| White-label deployment (basic) | Large | Agency revenue multiplier; premium pricing tier |
+| Multi-language content support | Large | Unlocks Spanish, Portuguese, German, French, Hindi markets |
 
 ### v2.0 Tasks
-
 - [ ] TikTok Data API integration and connector architecture
 - [ ] Instagram Graph API integration
 - [ ] React Native app (iOS + Android): alerts, quick analysis, trend feed
@@ -969,22 +884,21 @@ _Target: Months 10–18 post-launch_
 
 ## 10. Version 3 — Enterprise & Marketplace
 
-_Target: Months 18–30 post-launch_
+*Target: Months 18–30 post-launch*
 
 ### v3.0 Features
 
-| Feature                                      | Complexity | Rationale                                                            |
-| -------------------------------------------- | ---------- | -------------------------------------------------------------------- |
-| Plugin Marketplace                           | Very Large | Ecosystem play; third-party revenue sharing                          |
-| Custom AI Models                             | Large      | Fine-tuned viral scoring per niche; premium differentiator           |
-| Facebook / X / LinkedIn / Podcast connectors | Very Large | Full cross-platform intelligence                                     |
-| Enterprise SSO (SAML, OIDC)                  | Medium     | Required for large enterprise sales                                  |
-| Advanced Fraud Detection (ML)                | Large      | Required at scale to protect affiliate payouts and billing integrity |
-| Dynamic Pricing Intelligence                 | Large      | Rule-based first; ML-based when data volume is sufficient            |
-| Full Multi-Tier Affiliate System             | Large      | Regional rules, AI optimisation, crypto payouts                      |
+| Feature | Complexity | Rationale |
+|---|---|---|
+| Plugin Marketplace | Very Large | Ecosystem play; third-party revenue sharing |
+| Custom AI Models | Large | Fine-tuned viral scoring per niche; premium differentiator |
+| Facebook / X / LinkedIn / Podcast connectors | Very Large | Full cross-platform intelligence |
+| Enterprise SSO (SAML, OIDC) | Medium | Required for large enterprise sales |
+| Advanced Fraud Detection (ML) | Large | Required at scale to protect affiliate payouts and billing integrity |
+| Dynamic Pricing Intelligence | Large | Rule-based first; ML-based when data volume is sufficient |
+| Full Multi-Tier Affiliate System | Large | Regional rules, AI optimisation, crypto payouts |
 
 ### v3.0 Tasks
-
 - [ ] Plugin marketplace infrastructure: submission, review, publishing, revenue sharing
 - [ ] Fine-tuning pipeline for niche-specific viral scoring models
 - [ ] Facebook Graph API, X API, LinkedIn API, and podcast RSS connectors
@@ -997,17 +911,17 @@ _Target: Months 18–30 post-launch_
 
 ## 11. Version 4+ — Advanced AI Systems
 
-_Target: 24+ months post-launch — requires 2+ years of real transaction and behavioural data_
+*Target: 24+ months post-launch — requires 2+ years of real transaction and behavioural data*
 
 > ⚠️ **These features must not be built before the data exists to make them function correctly.** An AI system trained on insufficient data will make uninformed decisions, erode user trust, and introduce significant regulatory and financial risk. These are listed here for completeness, not as near-term priorities.
 
-| Feature                                     | Minimum Data Requirement                       | Estimated Complexity |
-| ------------------------------------------- | ---------------------------------------------- | -------------------- |
-| Autonomous Financial AI (pricing autopilot) | 2 years of transaction data, 10,000+ customers | Very Large           |
-| Self-Evolving Monetisation OS               | 2 years of behavioural data, A/B test history  | Very Large           |
-| Global Payment Routing AI (ML-based)        | 1M+ transactions across 3+ providers           | Very Large           |
-| Multi-Touch Attribution Engine              | 18+ months of affiliate and referral data      | Large                |
-| Reinforcement Learning Pricing              | 2 years of pricing experiment data             | Very Large           |
+| Feature | Minimum Data Requirement | Estimated Complexity |
+|---|---|---|
+| Autonomous Financial AI (pricing autopilot) | 2 years of transaction data, 10,000+ customers | Very Large |
+| Self-Evolving Monetisation OS | 2 years of behavioural data, A/B test history | Very Large |
+| Global Payment Routing AI (ML-based) | 1M+ transactions across 3+ providers | Very Large |
+| Multi-Touch Attribution Engine | 18+ months of affiliate and referral data | Large |
+| Reinforcement Learning Pricing | 2 years of pricing experiment data | Very Large |
 
 ---
 
@@ -1015,49 +929,49 @@ _Target: 24+ months post-launch — requires 2+ years of real transaction and be
 
 Tasks are prioritised using the **Impact vs Effort** framework.
 
-| Quadrant                     | Description           | Action                      |
-| ---------------------------- | --------------------- | --------------------------- |
-| **High Impact, Low Effort**  | Quick wins            | Do first                    |
-| **High Impact, High Effort** | Strategic investments | Plan and commit resources   |
-| **Low Impact, Low Effort**   | Fill-in tasks         | Do when bandwidth allows    |
-| **Low Impact, High Effort**  | Traps                 | Avoid or defer indefinitely |
+| Quadrant | Description | Action |
+|---|---|---|
+| **High Impact, Low Effort** | Quick wins | Do first |
+| **High Impact, High Effort** | Strategic investments | Plan and commit resources |
+| **Low Impact, Low Effort** | Fill-in tasks | Do when bandwidth allows |
+| **Low Impact, High Effort** | Traps | Avoid or defer indefinitely |
 
 ### Current Priority Ranking (MVP)
 
-| Priority | Task / Feature                    | Impact          | Effort    | Quadrant            |
-| -------- | --------------------------------- | --------------- | --------- | ------------------- |
-| 1        | YouTube API Quota Manager         | Critical        | Low       | ✅ Quick Win        |
-| 2        | CI/CD Pipeline                    | Critical        | Low       | ✅ Quick Win        |
-| 3        | Viral Score Engine                | Critical        | Medium    | 🎯 Strategic        |
-| 4        | Auth + RBAC                       | Critical        | Medium    | 🎯 Strategic        |
-| 5        | n8n Discovery + Analysis Pipeline | Critical        | High      | 🎯 Strategic        |
-| 6        | Core Dashboard (all pages)        | High            | High      | 🎯 Strategic        |
-| 7        | Stripe Billing                    | High            | Medium    | 🎯 Strategic        |
-| 8        | GDPR Compliance                   | High            | Low       | ✅ Quick Win        |
-| 9        | Transactional Email Service       | High            | Low       | ✅ Quick Win        |
-| 10       | Super Admin Panel                 | Medium          | Medium    | 🎯 Strategic        |
-| 11       | Trend Prediction Engine           | High            | High      | 🎯 Strategic (v1.5) |
-| 12       | Crypto Billing                    | Low             | High      | ⚠️ Defer            |
-| 13       | Autonomous Financial AI           | Low (at launch) | Very High | 🚫 Avoid until v4   |
+| Priority | Task / Feature | Impact | Effort | Quadrant |
+|---|---|---|---|---|
+| 1 | YouTube API Quota Manager | Critical | Low | ✅ Quick Win |
+| 2 | CI/CD Pipeline | Critical | Low | ✅ Quick Win |
+| 3 | Viral Score Engine | Critical | Medium | 🎯 Strategic |
+| 4 | Auth + RBAC | Critical | Medium | 🎯 Strategic |
+| 5 | n8n Discovery + Analysis Pipeline | Critical | High | 🎯 Strategic |
+| 6 | Core Dashboard (all pages) | High | High | 🎯 Strategic |
+| 7 | Stripe Billing | High | Medium | 🎯 Strategic |
+| 8 | GDPR Compliance | High | Low | ✅ Quick Win |
+| 9 | Transactional Email Service | High | Low | ✅ Quick Win |
+| 10 | Super Admin Panel | Medium | Medium | 🎯 Strategic |
+| 11 | Trend Prediction Engine | High | High | 🎯 Strategic (v1.5) |
+| 12 | Crypto Billing | Low | High | ⚠️ Defer |
+| 13 | Autonomous Financial AI | Low (at launch) | Very High | 🚫 Avoid until v4 |
 
 ---
 
 ## 13. Risk Register
 
-| ID   | Risk                         | Probability | Impact   | Phase affected | Mitigation                                             |
-| ---- | ---------------------------- | ----------- | -------- | -------------- | ------------------------------------------------------ |
-| R-01 | YouTube API quota exhaustion | High        | Critical | Phase 5, 6     | Quota manager; cache-first; RapidAPI/Apify fallback    |
-| R-02 | AI cost overrun              | High        | High     | Phase 6, 7     | Tiered analysis; aggressive caching; cost alerts       |
-| R-03 | n8n instability at volume    | Medium      | High     | Phase 6        | Dead-letter queue; idempotency; horizontal scaling     |
-| R-04 | MVP scope creep              | High        | High     | All            | Strict scope definition; post-MVP backlog              |
-| R-05 | GDPR non-compliance          | Low         | Critical | Phase 10       | Baked into pre-launch roadmap                          |
-| R-06 | Creator community backlash   | Medium      | High     | All            | Ethical constraint at product, prompt, and code levels |
-| R-07 | Stripe downtime              | Low         | High     | Phase 9        | Grace period; Paddle Post-MVP                          |
-| R-08 | Supabase degradation         | Low         | Critical | Phase 3        | PgBouncer; daily backups; tested restore               |
-| R-09 | Security breach              | Low         | Critical | Phase 10       | RLS; audit logs; key hashing; dependency scanning      |
-| R-10 | Key person risk              | Medium      | Medium   | All            | Engineering standards documented; pair programming     |
-| R-11 | YouTube API terms change     | Low         | High     | Phase 5, 6     | Multi-source strategy; platform-agnostic data model    |
-| R-12 | AI model deprecation         | Medium      | Medium   | Phase 6, 7     | Abstraction layer; dual providers; prompt versioning   |
+| ID | Risk | Probability | Impact | Phase affected | Mitigation |
+|---|---|---|---|---|---|
+| R-01 | YouTube API quota exhaustion | High | Critical | Phase 5, 6 | Quota manager; cache-first; RapidAPI/Apify fallback |
+| R-02 | AI cost overrun | High | High | Phase 6, 7 | Tiered analysis; aggressive caching; cost alerts |
+| R-03 | n8n instability at volume | Medium | High | Phase 6 | Dead-letter queue; idempotency; horizontal scaling |
+| R-04 | MVP scope creep | High | High | All | Strict scope definition; post-MVP backlog |
+| R-05 | GDPR non-compliance | Low | Critical | Phase 10 | Baked into pre-launch roadmap |
+| R-06 | Creator community backlash | Medium | High | All | Ethical constraint at product, prompt, and code levels |
+| R-07 | Stripe downtime | Low | High | Phase 9 | Grace period; Paddle Post-MVP |
+| R-08 | Supabase degradation | Low | Critical | Phase 3 | PgBouncer; daily backups; tested restore |
+| R-09 | Security breach | Low | Critical | Phase 10 | RLS; audit logs; key hashing; dependency scanning |
+| R-10 | Key person risk | Medium | Medium | All | Engineering standards documented; pair programming |
+| R-11 | YouTube API terms change | Low | High | Phase 5, 6 | Multi-source strategy; platform-agnostic data model |
+| R-12 | AI model deprecation | Medium | Medium | Phase 6, 7 | Abstraction layer; dual providers; prompt versioning |
 
 ---
 
@@ -1065,33 +979,32 @@ Tasks are prioritised using the **Impact vs Effort** framework.
 
 > All durations are estimates from project initiation (Week 0). Adjust based on actual team size and velocity.
 
-| Milestone                | Target Week | Phase    | Deliverable                                                |
-| ------------------------ | ----------- | -------- | ---------------------------------------------------------- |
-| M1 — Project Ready       | Week 1      | Phase 1  | Repo initialised, tooling configured, design system done   |
-| M2 — Infrastructure Live | Week 3      | Phase 2  | Docker running, CI/CD deployed to staging, monitoring live |
-| M3 — Schema Complete     | Week 4      | Phase 3  | All migrations applied, RLS active, ERD published          |
-| M4 — Auth Complete       | Week 6      | Phase 4  | Full auth system + email templates live in staging         |
-| M5 — API v1 Complete     | Week 9      | Phase 5  | All endpoints live, OpenAPI spec published                 |
-| M6 — Workflows Live      | Week 12     | Phase 6  | All 14 n8n workflows running, dead-letter queue active     |
-| M7 — Prompts Live        | Week 12     | Phase 7  | All 8 prompts versioned, cached, test harness working      |
-| M8 — Dashboard Complete  | Week 13     | Phase 8  | All MVP pages live in staging, onboarding tested           |
-| M9 — Billing Live        | Week 15     | Phase 9  | Stripe billing live in staging, usage tracking active      |
-| M10 — Security Complete  | Week 16     | Phase 10 | Security checklist done, GDPR endpoints live               |
-| M11 — Tests Green        | Week 18     | Phase 12 | All test suites passing, coverage targets met              |
-| M12 — Docs Complete      | Week 18     | Phase 13 | All documentation published and reviewed                   |
-| M13 — Production Launch  | Week 19–20  | Phase 14 | All services live in production 🚀                         |
-| M14 — Admin Panel        | Week 22     | Phase 11 | Super Admin Panel live (within 30 days of launch)          |
-| M15 — v1.5 Launch        | Week 36     | Post-MVP | AI Chat, Scheduled Reports, Chrome Extension, Paddle       |
-| M16 — v2.0 Launch        | Week 72     | v2.0     | TikTok, Instagram, Mobile App, Public API                  |
+| Milestone | Target Week | Phase | Deliverable |
+|---|---|---|---|
+| M1 — Project Ready | Week 1 | Phase 1 | Repo initialised, tooling configured, design system done |
+| M2 — Infrastructure Live | Week 3 | Phase 2 | Docker running, CI/CD deployed to staging, monitoring live |
+| M3 — Schema Complete | Week 4 | Phase 3 | All migrations applied, RLS active, ERD published |
+| M4 — Auth Complete | Week 6 | Phase 4 | Full auth system + email templates live in staging |
+| M5 — API v1 Complete | Week 9 | Phase 5 | All endpoints live, OpenAPI spec published |
+| M6 — Workflows Live | Week 12 | Phase 6 | All 14 n8n workflows running, dead-letter queue active |
+| M7 — Prompts Live | Week 12 | Phase 7 | All 8 prompts versioned, cached, test harness working |
+| M8 — Dashboard Complete | Week 13 | Phase 8 | All MVP pages live in staging, onboarding tested |
+| M9 — Billing Live | Week 15 | Phase 9 | Stripe billing live in staging, usage tracking active |
+| M10 — Security Complete | Week 16 | Phase 10 | Security checklist done, GDPR endpoints live |
+| M11 — Tests Green | Week 18 | Phase 12 | All test suites passing, coverage targets met |
+| M12 — Docs Complete | Week 18 | Phase 13 | All documentation published and reviewed |
+| M13 — Production Launch | Week 19–20 | Phase 14 | All services live in production 🚀 |
+| M14 — Admin Panel | Week 22 | Phase 11 | Super Admin Panel live (within 30 days of launch) |
+| M15 — v1.5 Launch | Week 36 | Post-MVP | AI Chat, Scheduled Reports, Chrome Extension, Paddle |
+| M16 — v2.0 Launch | Week 72 | v2.0 | TikTok, Instagram, Mobile App, Public API |
 
 ---
 
-_This roadmap is a living document. It is updated at every phase completion, whenever priorities change, and whenever new information invalidates an assumption. All changes require a pull request with at least one approving review._
+*This roadmap is a living document. It is updated at every phase completion, whenever priorities change, and whenever new information invalidates an assumption. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [PRD.md](./PRD.md) — Product requirements and user stories
 - [PROJECT_STATUS.md](./PROJECT_STATUS.md) — Current progress against this roadmap
 - [PROJECT_RULES.md](./PROJECT_RULES.md) — Engineering standards

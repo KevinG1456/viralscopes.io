@@ -1,5 +1,4 @@
 # PRD.md
-
 # ViralScopes.io — Product Requirements Document
 
 > **Version:** 1.0
@@ -33,7 +32,7 @@
 
 > **ViralScopes.io is the intelligence layer between a creator and their next breakthrough.**
 
-ViralScopes.io is an AI-powered content intelligence platform that helps creators, media teams, and agencies understand _why_ content goes viral — and how to create original content with the same structural characteristics, without copying anyone.
+ViralScopes.io is an AI-powered content intelligence platform that helps creators, media teams, and agencies understand *why* content goes viral — and how to create original content with the same structural characteristics, without copying anyone.
 
 The platform analyses YouTube videos at scale, extracts the patterns behind viral performance (hook structures, title formulas, thumbnail compositions, narrative arcs, engagement drivers), and surfaces those patterns as actionable, original creative guidance for the people who subscribe to it.
 
@@ -44,7 +43,6 @@ To give every content creator access to the same calibre of data-driven content 
 ### 1.3 Core Ethical Principle
 
 ViralScopes.io analyses **patterns**, not content. The platform:
-
 - **Does** identify hook structures, title formulas, narrative techniques, engagement patterns, and topic trends.
 - **Does not** reproduce, paraphrase, or facilitate copying of any creator's original scripts, titles, hooks, or creative work.
 - **Does** generate original recommendations inspired by structural patterns.
@@ -54,7 +52,7 @@ This principle is enforced at the product level, the AI prompt level, and the en
 
 ### 1.4 Tagline
 
-_"Understand why. Create originally."_
+*"Understand why. Create originally."*
 
 ---
 
@@ -65,7 +63,6 @@ _"Understand why. Create originally."_
 Content creators and media teams invest enormous time and resources into producing content with unpredictable results. The gap between a video that gets 500 views and one that gets 5 million views is rarely about production quality — it is about structural decisions made in the first 30 seconds: the hook, the title, the thumbnail, the topic timing, and the narrative arc.
 
 Most creators:
-
 - **Lack access to the data** needed to understand what made a specific video perform.
 - **Rely on gut instinct** for decisions that could be informed by pattern analysis.
 - **Discover trends too late** — after the opportunity window has closed.
@@ -74,14 +71,14 @@ Most creators:
 
 ### 2.2 Existing Solutions and Their Limitations
 
-| Existing Tool              | What it does                            | What it misses                                                          |
-| -------------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| YouTube Analytics          | Shows your own channel performance data | No competitor insight, no pattern analysis, no recommendations          |
-| TubeBuddy / VidIQ          | Basic keyword research and SEO tags     | Surface-level; no deep structural analysis; no viral pattern extraction |
-| Social Blade               | Historical channel growth statistics    | No content analysis; no actionable guidance                             |
-| Exploding Topics           | Trend discovery                         | Not YouTube-specific; no content structure analysis                     |
-| Manual competitor research | Ad hoc; creator dependent               | Time-intensive; inconsistent; no AI synthesis                           |
-| ChatGPT (direct)           | Can discuss content strategy            | No access to real video data; no proprietary analysis pipeline          |
+| Existing Tool | What it does | What it misses |
+|---|---|---|
+| YouTube Analytics | Shows your own channel performance data | No competitor insight, no pattern analysis, no recommendations |
+| TubeBuddy / VidIQ | Basic keyword research and SEO tags | Surface-level; no deep structural analysis; no viral pattern extraction |
+| Social Blade | Historical channel growth statistics | No content analysis; no actionable guidance |
+| Exploding Topics | Trend discovery | Not YouTube-specific; no content structure analysis |
+| Manual competitor research | Ad hoc; creator dependent | Time-intensive; inconsistent; no AI synthesis |
+| ChatGPT (direct) | Can discuss content strategy | No access to real video data; no proprietary analysis pipeline |
 
 **The gap:** No platform combines large-scale video data collection, deep AI structural analysis, viral scoring, trend detection, and ethically generated original recommendations in a single product.
 
@@ -98,12 +95,12 @@ Most creators:
 
 ### 3.1 Primary Markets
 
-| Segment                  | Description                                                             | Size estimate    |
-| ------------------------ | ----------------------------------------------------------------------- | ---------------- |
-| **Independent creators** | Solo creators managing their own channels, typically 10k–1M subscribers | ~50M globally    |
-| **Creator agencies**     | Agencies managing content strategy for multiple creator clients         | ~500k businesses |
-| **Media companies**      | Digital-first publishers and media brands with YouTube presences        | ~100k companies  |
-| **Marketing teams**      | In-house content teams at brands using YouTube as a marketing channel   | ~2M teams        |
+| Segment | Description | Size estimate |
+|---|---|---|
+| **Independent creators** | Solo creators managing their own channels, typically 10k–1M subscribers | ~50M globally |
+| **Creator agencies** | Agencies managing content strategy for multiple creator clients | ~500k businesses |
+| **Media companies** | Digital-first publishers and media brands with YouTube presences | ~100k companies |
+| **Marketing teams** | In-house content teams at brands using YouTube as a marketing channel | ~2M teams |
 
 ### 3.2 Secondary Markets (Post-MVP)
 
@@ -115,7 +112,6 @@ Most creators:
 ### 3.3 Geographic Focus (MVP)
 
 English-language content and English-speaking markets first:
-
 - United States
 - United Kingdom
 - Canada
@@ -136,20 +132,17 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 **Team:** Solo, occasional freelance editor
 
 **Goals:**
-
 - Identify which video topics are growing before they peak
 - Understand why her best-performing videos worked so she can replicate the structure
 - Reduce the time she spends researching competitors from 5+ hours per week to under 30 minutes
 
 **Pain Points:**
-
 - Spends Sunday evenings manually watching competitor videos to understand what is working
 - Has no systematic way to decide between 10 possible video ideas
 - Cannot afford to hire a research assistant or data analyst
 - Has tried VidIQ but finds it too focused on keyword tags rather than content strategy
 
 **How She Uses ViralScopes:**
-
 - Checks the Trending dashboard Monday morning for fast-growing topics in her niche
 - Reviews the Viral Score breakdown for her top-performing videos to understand which structural elements drove performance
 - Uses the Opportunity Engine to identify topics with high demand and low saturation
@@ -167,21 +160,18 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 **Clients:** Fashion, fitness, finance, and lifestyle creators
 
 **Goals:**
-
 - Deliver consistent, data-backed content strategy recommendations to clients every week
 - Identify breakout opportunities for clients before competitors spot them
 - Demonstrate ROI of the agency's content strategy with measurable data
 - Scale strategy delivery without proportionally scaling headcount
 
 **Pain Points:**
-
 - Creating weekly strategy reports for 8 clients requires 20+ hours of manual research
 - Client briefs are based on "what feels right" rather than pattern data
 - No systematic way to monitor what competitors of each client are doing
 - Difficult to justify strategy recommendations without supporting data
 
 **How He Uses ViralScopes:**
-
 - Sets up Watchlists for each client's 5 closest competitors
 - Gets weekly alert digests when competitors post content that scores above a threshold
 - Exports channel intelligence reports to share with clients in presentation decks
@@ -200,21 +190,18 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 **Channel size:** 320,000 subscribers
 
 **Goals:**
-
 - Produce content that competes with creator-style videos, not just corporate brand content
 - Understand what content formats and topics the brand's target audience is engaging with
 - Justify content investments to senior management with concrete data
 - Reduce time-to-decision on content calendar planning
 
 **Pain Points:**
-
 - YouTube Analytics only shows internal performance — no external benchmarking
 - Senior leadership asks "why should we make that video?" and she lacks data to answer confidently
 - Trend awareness is reactive — the team often produces content about topics that have already peaked
 - Creative briefs for producers are based on instinct, not evidence
 
 **How She Uses ViralScopes:**
-
 - Uses Viral Score Breakdown to benchmark existing videos against the niche average
 - Exports monthly competitor analysis reports for leadership presentations
 - Uses Opportunity Engine to build a data-backed content calendar
@@ -231,7 +218,6 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 **Team:** 30+ people across editorial, video, social, and data
 
 **Goals:**
-
 - Systematic competitive intelligence across 50+ competitor channels
 - Data infrastructure that the entire content team can access and act on
 - Custom reporting and data exports for internal tooling
@@ -239,14 +225,12 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 - SLA-backed uptime and priority support
 
 **Pain Points:**
-
 - No existing tool handles the scale of competitor monitoring he requires
 - Current tools don't integrate with internal BI systems
 - Cannot share access granularly — tools are either all-or-nothing
 - Lacks a dedicated account manager for onboarding and training
 
 **How He Uses ViralScopes:**
-
 - Uses the Public API (v2) to pipe data into internal dashboards
 - Creates multiple workspaces — one per editorial team (politics, culture, sport, tech)
 - Uses RBAC to control which editors see which competitor intelligence
@@ -260,86 +244,86 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ### 5.1 Content Discovery & Analysis
 
-| ID    | As a...    | I want to...                                                                      | So that...                                                    | Priority    |
-| ----- | ---------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------- |
-| US-01 | Creator    | See a feed of high-performing videos in my niche from the last 14 days            | I can quickly spot what is working without manual research    | Must Have   |
-| US-02 | Creator    | View a detailed breakdown of why a specific video scored high on viral potential  | I can understand which structural elements drove performance  | Must Have   |
-| US-03 | Creator    | See the hook type and first-60-second structure of any analysed video             | I can understand opening patterns that retain viewers         | Must Have   |
-| US-04 | Creator    | View thumbnail analysis (emotion, composition, CTR prediction) for any video      | I can understand visual patterns that drive click-through     | Must Have   |
-| US-05 | Creator    | See a transcript summary with key sections identified                             | I can learn content structure without watching the full video | Should Have |
-| US-06 | Strategist | Filter the video feed by viral score range, date, niche, language, and engagement | I can drill into the most relevant data for my clients        | Must Have   |
-| US-07 | Any user   | Search across all videos, channels, and trends with keyword filters               | I can find specific content quickly without browsing          | Must Have   |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-01 | Creator | See a feed of high-performing videos in my niche from the last 14 days | I can quickly spot what is working without manual research | Must Have |
+| US-02 | Creator | View a detailed breakdown of why a specific video scored high on viral potential | I can understand which structural elements drove performance | Must Have |
+| US-03 | Creator | See the hook type and first-60-second structure of any analysed video | I can understand opening patterns that retain viewers | Must Have |
+| US-04 | Creator | View thumbnail analysis (emotion, composition, CTR prediction) for any video | I can understand visual patterns that drive click-through | Must Have |
+| US-05 | Creator | See a transcript summary with key sections identified | I can learn content structure without watching the full video | Should Have |
+| US-06 | Strategist | Filter the video feed by viral score range, date, niche, language, and engagement | I can drill into the most relevant data for my clients | Must Have |
+| US-07 | Any user | Search across all videos, channels, and trends with keyword filters | I can find specific content quickly without browsing | Must Have |
 
 ### 5.2 Trend Detection & Opportunities
 
-| ID    | As a...    | I want to...                                                              | So that...                                                          | Priority    |
-| ----- | ---------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------- |
-| US-08 | Creator    | See which topics are growing rapidly in my niche right now                | I can create content about emerging topics before they peak         | Must Have   |
-| US-09 | Creator    | Distinguish between emerging, evergreen, and declining topics             | I can prioritise long-term content investments over fleeting trends | Must Have   |
-| US-10 | Creator    | See a ranked list of content opportunities (high demand, low competition) | I can pick the highest-leverage topics for my next videos           | Must Have   |
-| US-11 | Strategist | See how fast a trend is accelerating (velocity score)                     | I can brief clients on urgency and optimal timing                   | Should Have |
-| US-12 | Any user   | Be notified when a tracked topic spikes beyond a threshold                | I can act on trend signals in near real-time                        | Must Have   |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-08 | Creator | See which topics are growing rapidly in my niche right now | I can create content about emerging topics before they peak | Must Have |
+| US-09 | Creator | Distinguish between emerging, evergreen, and declining topics | I can prioritise long-term content investments over fleeting trends | Must Have |
+| US-10 | Creator | See a ranked list of content opportunities (high demand, low competition) | I can pick the highest-leverage topics for my next videos | Must Have |
+| US-11 | Strategist | See how fast a trend is accelerating (velocity score) | I can brief clients on urgency and optimal timing | Should Have |
+| US-12 | Any user | Be notified when a tracked topic spikes beyond a threshold | I can act on trend signals in near real-time | Must Have |
 
 ### 5.3 Watchlists & Competitive Intelligence
 
-| ID    | As a...    | I want to...                                                                      | So that...                                              | Priority    |
-| ----- | ---------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------- |
-| US-13 | Creator    | Create a watchlist of competitor channels                                         | I can monitor what they publish without manual checking | Must Have   |
-| US-14 | Creator    | Create a watchlist for a specific keyword or topic                                | I can track how the landscape for that topic evolves    | Must Have   |
-| US-15 | Strategist | Set up a watchlist per client with their specific competitors                     | I can deliver targeted weekly intelligence per client   | Must Have   |
-| US-16 | Any user   | Receive an alert when a watched channel publishes a video above a score threshold | I can respond to significant competitor content quickly | Must Have   |
-| US-17 | Any user   | See the posting cadence and average performance metrics for any watched channel   | I can benchmark upload frequency and consistency        | Should Have |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-13 | Creator | Create a watchlist of competitor channels | I can monitor what they publish without manual checking | Must Have |
+| US-14 | Creator | Create a watchlist for a specific keyword or topic | I can track how the landscape for that topic evolves | Must Have |
+| US-15 | Strategist | Set up a watchlist per client with their specific competitors | I can deliver targeted weekly intelligence per client | Must Have |
+| US-16 | Any user | Receive an alert when a watched channel publishes a video above a score threshold | I can respond to significant competitor content quickly | Must Have |
+| US-17 | Any user | See the posting cadence and average performance metrics for any watched channel | I can benchmark upload frequency and consistency | Should Have |
 
 ### 5.4 AI Recommendations
 
-| ID    | As a...  | I want to...                                                                      | So that...                                                                 | Priority    |
-| ----- | -------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------- |
-| US-18 | Creator  | Receive original title ideas inspired by high-performing title formulas           | I can start from a strong title concept rather than a blank page           | Must Have   |
-| US-19 | Creator  | Receive an original hook concept for a video topic                                | I can open my video with a proven structural pattern adapted to my niche   | Must Have   |
-| US-20 | Creator  | Receive an original content outline for a video idea                              | I can structure my video with a narrative arc that retains viewers         | Must Have   |
-| US-21 | Creator  | Receive a thumbnail concept description (visual composition, emotion, text)       | I can brief a designer or create a thumbnail with intentional CTR strategy | Should Have |
-| US-22 | Creator  | Receive keyword suggestions for a topic                                           | I can optimise my video metadata without manual keyword research           | Should Have |
-| US-23 | Any user | Be confident that recommendations are original and not copied from other creators | I can use them without ethical or legal concern                            | Must Have   |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-18 | Creator | Receive original title ideas inspired by high-performing title formulas | I can start from a strong title concept rather than a blank page | Must Have |
+| US-19 | Creator | Receive an original hook concept for a video topic | I can open my video with a proven structural pattern adapted to my niche | Must Have |
+| US-20 | Creator | Receive an original content outline for a video idea | I can structure my video with a narrative arc that retains viewers | Must Have |
+| US-21 | Creator | Receive a thumbnail concept description (visual composition, emotion, text) | I can brief a designer or create a thumbnail with intentional CTR strategy | Should Have |
+| US-22 | Creator | Receive keyword suggestions for a topic | I can optimise my video metadata without manual keyword research | Should Have |
+| US-23 | Any user | Be confident that recommendations are original and not copied from other creators | I can use them without ethical or legal concern | Must Have |
 
 ### 5.5 Alerts & Notifications
 
-| ID    | As a...  | I want to...                                                 | So that...                                                     | Priority    |
-| ----- | -------- | ------------------------------------------------------------ | -------------------------------------------------------------- | ----------- |
-| US-24 | Any user | Configure alerts to be delivered to email                    | I can receive notifications in my existing workflow            | Must Have   |
-| US-25 | Any user | Configure alerts to be delivered to a Discord channel        | I can share intelligence with my team in real-time             | Must Have   |
-| US-26 | Any user | Configure alerts to be delivered to a Slack channel          | I can integrate intelligence into my team's communication tool | Must Have   |
-| US-27 | Any user | Configure alerts to be delivered to Telegram                 | I can receive mobile notifications without email               | Should Have |
-| US-28 | Any user | Configure a custom webhook URL for alerts                    | I can pipe alerts into any external system or automation       | Should Have |
-| US-29 | Any user | Set the minimum viral score threshold that triggers an alert | I can control alert volume and relevance                       | Must Have   |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-24 | Any user | Configure alerts to be delivered to email | I can receive notifications in my existing workflow | Must Have |
+| US-25 | Any user | Configure alerts to be delivered to a Discord channel | I can share intelligence with my team in real-time | Must Have |
+| US-26 | Any user | Configure alerts to be delivered to a Slack channel | I can integrate intelligence into my team's communication tool | Must Have |
+| US-27 | Any user | Configure alerts to be delivered to Telegram | I can receive mobile notifications without email | Should Have |
+| US-28 | Any user | Configure a custom webhook URL for alerts | I can pipe alerts into any external system or automation | Should Have |
+| US-29 | Any user | Set the minimum viral score threshold that triggers an alert | I can control alert volume and relevance | Must Have |
 
 ### 5.6 Export & Reporting
 
-| ID    | As a...    | I want to...                                            | So that...                                                       | Priority     |
-| ----- | ---------- | ------------------------------------------------------- | ---------------------------------------------------------------- | ------------ |
-| US-30 | Strategist | Export video analysis data to CSV or Excel              | I can include data in client reports and spreadsheets            | Must Have    |
-| US-31 | Strategist | Export a channel intelligence report as a PDF           | I can send a polished deliverable to clients directly            | Should Have  |
-| US-32 | Any user   | Export trend data and opportunity rankings              | I can build custom analyses in external tools                    | Should Have  |
-| US-33 | Developer  | Access all platform data via a REST API with an API key | I can integrate ViralScopes data into my own tools and workflows | Nice to Have |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-30 | Strategist | Export video analysis data to CSV or Excel | I can include data in client reports and spreadsheets | Must Have |
+| US-31 | Strategist | Export a channel intelligence report as a PDF | I can send a polished deliverable to clients directly | Should Have |
+| US-32 | Any user | Export trend data and opportunity rankings | I can build custom analyses in external tools | Should Have |
+| US-33 | Developer | Access all platform data via a REST API with an API key | I can integrate ViralScopes data into my own tools and workflows | Nice to Have |
 
 ### 5.7 Team & Organisation
 
-| ID    | As a...      | I want to...                                      | So that...                                                             | Priority    |
-| ----- | ------------ | ------------------------------------------------- | ---------------------------------------------------------------------- | ----------- |
-| US-34 | Agency owner | Create multiple workspaces within my organisation | I can separate client accounts without creating separate subscriptions | Must Have   |
-| US-35 | Agency owner | Invite team members with specific roles           | I can control what each team member can see and do                     | Must Have   |
-| US-36 | Admin        | Assign Team Member or Viewer roles to colleagues  | I can give limited access to people who should not change settings     | Must Have   |
-| US-37 | Any user     | Log in with Google or GitHub                      | I can access the platform without creating a new password              | Must Have   |
-| US-38 | Any user     | Manage and revoke my API keys                     | I can control programmatic access to my organisation's data            | Should Have |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-34 | Agency owner | Create multiple workspaces within my organisation | I can separate client accounts without creating separate subscriptions | Must Have |
+| US-35 | Agency owner | Invite team members with specific roles | I can control what each team member can see and do | Must Have |
+| US-36 | Admin | Assign Team Member or Viewer roles to colleagues | I can give limited access to people who should not change settings | Must Have |
+| US-37 | Any user | Log in with Google or GitHub | I can access the platform without creating a new password | Must Have |
+| US-38 | Any user | Manage and revoke my API keys | I can control programmatic access to my organisation's data | Should Have |
 
 ### 5.8 Billing & Account
 
-| ID    | As a...  | I want to...                                                     | So that...                                                             | Priority  |
-| ----- | -------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- | --------- |
-| US-39 | Any user | Sign up for a free plan without a credit card                    | I can evaluate the platform before committing                          | Must Have |
-| US-40 | Any user | Upgrade my plan via a Stripe-hosted checkout                     | I can subscribe securely without my card details touching the platform | Must Have |
-| US-41 | Any user | Manage my subscription (change plan, cancel) via a Stripe portal | I can make billing changes without contacting support                  | Must Have |
-| US-42 | Any user | See how much of my monthly quota I have used                     | I can plan my usage and avoid hitting limits unexpectedly              | Must Have |
-| US-43 | Any user | Receive an email warning when I reach 80% of my monthly quota    | I am not surprised by a hard limit                                     | Must Have |
+| ID | As a... | I want to... | So that... | Priority |
+|---|---|---|---|---|
+| US-39 | Any user | Sign up for a free plan without a credit card | I can evaluate the platform before committing | Must Have |
+| US-40 | Any user | Upgrade my plan via a Stripe-hosted checkout | I can subscribe securely without my card details touching the platform | Must Have |
+| US-41 | Any user | Manage my subscription (change plan, cancel) via a Stripe portal | I can make billing changes without contacting support | Must Have |
+| US-42 | Any user | See how much of my monthly quota I have used | I can plan my usage and avoid hitting limits unexpectedly | Must Have |
+| US-43 | Any user | Receive an email warning when I reach 80% of my monthly quota | I am not surprised by a hard limit | Must Have |
 
 ---
 
@@ -471,17 +455,17 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ### 7.1 Performance
 
-| Requirement                    | Target                   | Critical Threshold |
-| ------------------------------ | ------------------------ | ------------------ |
-| API p50 response time          | < 100ms                  | 200ms              |
-| API p95 response time          | < 500ms                  | 1,000ms            |
-| API p99 response time          | < 1,000ms                | 2,000ms            |
-| Dashboard initial page load    | < 2.5s LCP               | 4s                 |
-| Search results returned        | < 300ms                  | 800ms              |
-| Video discovery cycle (6h)     | Completes in < 30min     | 60min              |
-| Full video analysis pipeline   | < 5 minutes per video    | 15 minutes         |
-| Alert dispatch latency         | < 2 minutes from trigger | 10 minutes         |
-| Export generation (1,000 rows) | < 60 seconds             | 5 minutes          |
+| Requirement | Target | Critical Threshold |
+|---|---|---|
+| API p50 response time | < 100ms | 200ms |
+| API p95 response time | < 500ms | 1,000ms |
+| API p99 response time | < 1,000ms | 2,000ms |
+| Dashboard initial page load | < 2.5s LCP | 4s |
+| Search results returned | < 300ms | 800ms |
+| Video discovery cycle (6h) | Completes in < 30min | 60min |
+| Full video analysis pipeline | < 5 minutes per video | 15 minutes |
+| Alert dispatch latency | < 2 minutes from trigger | 10 minutes |
+| Export generation (1,000 rows) | < 60 seconds | 5 minutes |
 
 ### 7.2 Scalability
 
@@ -535,53 +519,53 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ### 8.1 Business Metrics
 
-| Metric                          | MVP Target (Month 3) | Year 1 Target |
-| ------------------------------- | -------------------- | ------------- |
-| Monthly Active Users (MAU)      | 500                  | 5,000         |
-| Paying Customers                | 100                  | 1,000         |
-| Monthly Recurring Revenue (MRR) | £5,000               | £75,000       |
-| Annual Recurring Revenue (ARR)  | £60,000              | £900,000      |
-| Free-to-Paid Conversion Rate    | > 5%                 | > 8%          |
-| Monthly Churn Rate              | < 8%                 | < 5%          |
-| Net Revenue Retention (NRR)     | > 100%               | > 110%        |
-| Customer Acquisition Cost (CAC) | < £150               | < £100        |
-| Lifetime Value (LTV)            | > £450               | > £800        |
-| LTV:CAC Ratio                   | > 3:1                | > 8:1         |
+| Metric | MVP Target (Month 3) | Year 1 Target |
+|---|---|---|
+| Monthly Active Users (MAU) | 500 | 5,000 |
+| Paying Customers | 100 | 1,000 |
+| Monthly Recurring Revenue (MRR) | £5,000 | £75,000 |
+| Annual Recurring Revenue (ARR) | £60,000 | £900,000 |
+| Free-to-Paid Conversion Rate | > 5% | > 8% |
+| Monthly Churn Rate | < 8% | < 5% |
+| Net Revenue Retention (NRR) | > 100% | > 110% |
+| Customer Acquisition Cost (CAC) | < £150 | < £100 |
+| Lifetime Value (LTV) | > £450 | > £800 |
+| LTV:CAC Ratio | > 3:1 | > 8:1 |
 
 ### 8.2 Product Engagement Metrics
 
-| Metric                                              | Target      |
-| --------------------------------------------------- | ----------- |
-| Daily Active Users / Monthly Active Users (DAU/MAU) | > 30%       |
-| Average session duration                            | > 8 minutes |
-| Videos analysed per paying user per month           | > 20        |
-| Watchlists created per organisation                 | > 3         |
-| Alerts configured per organisation                  | > 2         |
-| Exports generated per paying user per month         | > 2         |
-| Recommendations viewed per user per session         | > 3         |
+| Metric | Target |
+|---|---|
+| Daily Active Users / Monthly Active Users (DAU/MAU) | > 30% |
+| Average session duration | > 8 minutes |
+| Videos analysed per paying user per month | > 20 |
+| Watchlists created per organisation | > 3 |
+| Alerts configured per organisation | > 2 |
+| Exports generated per paying user per month | > 2 |
+| Recommendations viewed per user per session | > 3 |
 
 ### 8.3 Technical Performance KPIs
 
-| Metric                               | Target               |
-| ------------------------------------ | -------------------- |
-| Platform uptime                      | ≥ 99.9%              |
-| API p95 response time                | < 500ms              |
-| Video analysis pipeline success rate | > 98%                |
-| Dead-letter job rate (% of jobs)     | < 0.5%               |
-| AI cache hit rate                    | > 60%                |
-| YouTube API quota utilisation        | < 80% of daily limit |
-| CI pipeline success rate             | > 95%                |
-| Mean Time to Recovery (MTTR)         | < 60 minutes         |
+| Metric | Target |
+|---|---|
+| Platform uptime | ≥ 99.9% |
+| API p95 response time | < 500ms |
+| Video analysis pipeline success rate | > 98% |
+| Dead-letter job rate (% of jobs) | < 0.5% |
+| AI cache hit rate | > 60% |
+| YouTube API quota utilisation | < 80% of daily limit |
+| CI pipeline success rate | > 95% |
+| Mean Time to Recovery (MTTR) | < 60 minutes |
 
 ### 8.4 User Satisfaction Metrics
 
-| Metric                                           | Target             |
-| ------------------------------------------------ | ------------------ |
-| Net Promoter Score (NPS)                         | > 40               |
-| Customer Satisfaction Score (CSAT)               | > 4.2 / 5          |
-| Support ticket resolution time (P1)              | < 4 hours          |
-| Support ticket resolution time (P2)              | < 24 hours         |
-| Onboarding completion rate                       | > 70%              |
+| Metric | Target |
+|---|---|
+| Net Promoter Score (NPS) | > 40 |
+| Customer Satisfaction Score (CSAT) | > 4.2 / 5 |
+| Support ticket resolution time (P1) | < 4 hours |
+| Support ticket resolution time (P2) | < 24 hours |
+| Onboarding completion rate | > 70% |
 | Feature adoption (Watchlists used within 7 days) | > 50% of new users |
 
 ---
@@ -590,28 +574,28 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ### 9.1 Technology Stack
 
-| Layer               | Technology                          | Rationale                                                           |
-| ------------------- | ----------------------------------- | ------------------------------------------------------------------- |
-| Frontend            | Next.js 14+ (App Router)            | SSR/SSG, excellent DX, App Router for server components             |
-| Frontend state      | TanStack Query (React Query)        | Best-in-class server state management                               |
-| Frontend UI         | Tailwind CSS + shadcn/ui            | Utility-first, accessible, customisable components                  |
-| Backend API         | Fastify + TypeScript                | High-performance Node.js framework with strong typing support       |
-| Input validation    | Zod                                 | Runtime validation with TypeScript type inference                   |
-| Database            | PostgreSQL via Supabase             | Reliable, scalable, with built-in auth and RLS                      |
-| ORM / Migrations    | Drizzle ORM                         | Type-safe queries, lightweight, excellent migration tooling         |
-| Cache / Queue       | Redis (Upstash or self-hosted)      | Sub-millisecond cache, BullMQ for job queuing                       |
-| Workflow automation | n8n (self-hosted)                   | Visual workflow builder, supports complex pipelines, self-hostable  |
-| Object storage      | Cloudflare R2 / AWS S3              | S3-compatible, low egress cost (R2), reliable                       |
-| Email service       | SendGrid or Resend                  | Transactional email with template support and delivery tracking     |
-| AI models           | Claude API (Anthropic) + OpenAI API | Claude for reasoning; GPT-4o for structured extraction              |
-| Payments            | Stripe                              | Industry standard, excellent webhook support, Customer Portal       |
-| Containerisation    | Docker + Docker Compose             | Consistent environments across dev, staging, production             |
-| Deployment          | Coolify (self-hosted PaaS)          | Self-hosted Heroku alternative, Traefik integration, cost-effective |
-| Reverse proxy       | Traefik                             | Automatic SSL, service discovery, health checks                     |
-| Monitoring          | Prometheus + Grafana                | Industry standard observability stack                               |
-| Logging             | Pino + Loki                         | Structured JSON logs, centralised collection                        |
-| CI/CD               | GitHub Actions                      | Native GitHub integration, extensive ecosystem                      |
-| Monorepo            | Turborepo                           | Efficient builds and caching in a monorepo                          |
+| Layer | Technology | Rationale |
+|---|---|---|
+| Frontend | Next.js 14+ (App Router) | SSR/SSG, excellent DX, App Router for server components |
+| Frontend state | TanStack Query (React Query) | Best-in-class server state management |
+| Frontend UI | Tailwind CSS + shadcn/ui | Utility-first, accessible, customisable components |
+| Backend API | Fastify + TypeScript | High-performance Node.js framework with strong typing support |
+| Input validation | Zod | Runtime validation with TypeScript type inference |
+| Database | PostgreSQL via Supabase | Reliable, scalable, with built-in auth and RLS |
+| ORM / Migrations | Drizzle ORM | Type-safe queries, lightweight, excellent migration tooling |
+| Cache / Queue | Redis (Upstash or self-hosted) | Sub-millisecond cache, BullMQ for job queuing |
+| Workflow automation | n8n (self-hosted) | Visual workflow builder, supports complex pipelines, self-hostable |
+| Object storage | Cloudflare R2 / AWS S3 | S3-compatible, low egress cost (R2), reliable |
+| Email service | SendGrid or Resend | Transactional email with template support and delivery tracking |
+| AI models | Claude API (Anthropic) + OpenAI API | Claude for reasoning; GPT-4o for structured extraction |
+| Payments | Stripe | Industry standard, excellent webhook support, Customer Portal |
+| Containerisation | Docker + Docker Compose | Consistent environments across dev, staging, production |
+| Deployment | Coolify (self-hosted PaaS) | Self-hosted Heroku alternative, Traefik integration, cost-effective |
+| Reverse proxy | Traefik | Automatic SSL, service discovery, health checks |
+| Monitoring | Prometheus + Grafana | Industry standard observability stack |
+| Logging | Pino + Loki | Structured JSON logs, centralised collection |
+| CI/CD | GitHub Actions | Native GitHub integration, extensive ecosystem |
+| Monorepo | Turborepo | Efficient builds and caching in a monorepo |
 
 ### 9.2 Data Architecture
 
@@ -624,15 +608,15 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ### 9.3 External Service Dependencies
 
-| Service                | Purpose                                | Criticality | Fallback                 |
-| ---------------------- | -------------------------------------- | ----------- | ------------------------ |
-| YouTube Data API v3    | Video discovery and metadata           | Critical    | RapidAPI YouTube / Apify |
-| Claude API (Anthropic) | Strategic AI analysis, recommendations | High        | GPT-4o (fallback model)  |
-| OpenAI API             | Structured data extraction, embeddings | High        | Claude (fallback model)  |
-| Stripe                 | Payment processing, subscriptions      | Critical    | Paddle (Post-MVP)        |
-| SendGrid / Resend      | Transactional email                    | High        | SMTP fallback            |
-| Cloudflare R2 / AWS S3 | Object storage                         | High        | MinIO (self-hosted)      |
-| Supabase               | Database hosting, auth                 | Critical    | Self-hosted PostgreSQL   |
+| Service | Purpose | Criticality | Fallback |
+|---|---|---|---|
+| YouTube Data API v3 | Video discovery and metadata | Critical | RapidAPI YouTube / Apify |
+| Claude API (Anthropic) | Strategic AI analysis, recommendations | High | GPT-4o (fallback model) |
+| OpenAI API | Structured data extraction, embeddings | High | Claude (fallback model) |
+| Stripe | Payment processing, subscriptions | Critical | Paddle (Post-MVP) |
+| SendGrid / Resend | Transactional email | High | SMTP fallback |
+| Cloudflare R2 / AWS S3 | Object storage | High | MinIO (self-hosted) |
+| Supabase | Database hosting, auth | Critical | Self-hosted PostgreSQL |
 
 ### 9.4 Infrastructure Requirements
 
@@ -647,20 +631,20 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ## 10. Risks & Mitigations
 
-| #    | Risk                                                            | Probability | Impact   | Mitigation                                                                                                     |
-| ---- | --------------------------------------------------------------- | ----------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| R-01 | YouTube API quota exhaustion (10,000 units/day free tier)       | High        | Critical | Quota manager service; cache-first strategy (24h); RapidAPI/Apify fallback; per-plan quota allocation          |
-| R-02 | AI API cost explosion at scale                                  | High        | High     | Tiered analysis (only high-score candidates get full AI); aggressive caching; batch processing; cost alerts    |
-| R-03 | n8n instability at high job volume                              | Medium      | High     | Dead-letter queue; retry logic; horizontal worker scaling; workflow idempotency                                |
-| R-04 | Scope creep delaying MVP                                        | High        | High     | Strict MVP scope definition; post-MVP backlog maintained; phase gating                                         |
-| R-05 | GDPR non-compliance                                             | Low         | Critical | GDPR phase baked into pre-launch roadmap; right to deletion; data export; DPA for Enterprise                   |
-| R-06 | Creator community backlash (perceived as tool to copy creators) | Medium      | High     | Ethical AI constraint enforced at product, prompt, and engineering levels; clear public communication          |
-| R-07 | Stripe / payment processor downtime                             | Low         | High     | Grace period on payment failure; Paddle as backup processor (Post-MVP)                                         |
-| R-08 | Supabase service degradation                                    | Low         | Critical | Connection pooling (PgBouncer); read replica planned; daily backups with tested restore procedure              |
-| R-09 | Security breach / data leak                                     | Low         | Critical | RLS on all tables; audit logging; API key hashing; secrets management; dependency scanning in CI               |
-| R-10 | Key person dependency                                           | Medium      | Medium   | Engineering standards documented; all decisions logged; pair programming on critical systems                   |
-| R-11 | YouTube changes its API terms or pricing                        | Low         | High     | Multi-source strategy (RapidAPI, Apify) as hedging; platform-agnostic data model                               |
-| R-12 | AI model deprecation or pricing change                          | Medium      | Medium   | Abstraction layer for AI providers; Claude and OpenAI as dual providers; prompt versioning for quick migration |
+| # | Risk | Probability | Impact | Mitigation |
+|---|---|---|---|---|
+| R-01 | YouTube API quota exhaustion (10,000 units/day free tier) | High | Critical | Quota manager service; cache-first strategy (24h); RapidAPI/Apify fallback; per-plan quota allocation |
+| R-02 | AI API cost explosion at scale | High | High | Tiered analysis (only high-score candidates get full AI); aggressive caching; batch processing; cost alerts |
+| R-03 | n8n instability at high job volume | Medium | High | Dead-letter queue; retry logic; horizontal worker scaling; workflow idempotency |
+| R-04 | Scope creep delaying MVP | High | High | Strict MVP scope definition; post-MVP backlog maintained; phase gating |
+| R-05 | GDPR non-compliance | Low | Critical | GDPR phase baked into pre-launch roadmap; right to deletion; data export; DPA for Enterprise |
+| R-06 | Creator community backlash (perceived as tool to copy creators) | Medium | High | Ethical AI constraint enforced at product, prompt, and engineering levels; clear public communication |
+| R-07 | Stripe / payment processor downtime | Low | High | Grace period on payment failure; Paddle as backup processor (Post-MVP) |
+| R-08 | Supabase service degradation | Low | Critical | Connection pooling (PgBouncer); read replica planned; daily backups with tested restore procedure |
+| R-09 | Security breach / data leak | Low | Critical | RLS on all tables; audit logging; API key hashing; secrets management; dependency scanning in CI |
+| R-10 | Key person dependency | Medium | Medium | Engineering standards documented; all decisions logged; pair programming on critical systems |
+| R-11 | YouTube changes its API terms or pricing | Low | High | Multi-source strategy (RapidAPI, Apify) as hedging; platform-agnostic data model |
+| R-12 | AI model deprecation or pricing change | Medium | Medium | Abstraction layer for AI providers; Claude and OpenAI as dual providers; prompt versioning for quick migration |
 
 ---
 
@@ -690,7 +674,7 @@ Multi-language expansion (Spanish, Portuguese, German, French, Hindi) is planned
 
 ## 12. Future Roadmap
 
-_This section provides a high-level product roadmap. For the detailed technical roadmap with phases, dependencies, and task checklists, see [ROADMAP.md](./ROADMAP.md)._
+*This section provides a high-level product roadmap. For the detailed technical roadmap with phases, dependencies, and task checklists, see [ROADMAP.md](./ROADMAP.md).*
 
 ### 12.1 MVP (v1.0) — Months 1–5
 
@@ -741,12 +725,11 @@ _This section provides a high-level product roadmap. For the detailed technical 
 
 ---
 
-_This PRD is a living document. It is updated when new features are added to scope, requirements change, or assumptions are validated or invalidated. All changes require a pull request with at least one approving review._
+*This PRD is a living document. It is updated when new features are added to scope, requirements change, or assumptions are validated or invalidated. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [PROJECT_RULES.md](./PROJECT_RULES.md) — Engineering standards
 - [ROADMAP.md](./ROADMAP.md) — Detailed technical roadmap with phases and tasks
 - [PROJECT_STATUS.md](./PROJECT_STATUS.md) — Current progress and blockers

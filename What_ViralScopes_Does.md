@@ -1,5 +1,4 @@
 # What_ViralScopes_Does.md
-
 # What ViralScopes.io Does — Complete Business Overview
 
 > **Version:** 1.0
@@ -82,14 +81,14 @@ Most creators have no systematic way to answer these questions. They make decisi
 
 ### The Specific Gaps
 
-| Gap                                     | Current reality                                                                                 | Impact                                                            |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| **No competitor analysis tool**         | Creators manually watch competitor videos — hours per week                                      | 5–10 hours of unstructured research weekly, with no synthesis     |
-| **No trend early-warning system**       | Trends are discovered after they peak                                                           | Creators produce content about topics that are already declining  |
-| **No structural pattern analysis**      | Creators know a video performed well but not why                                                | Cannot systematically replicate success                           |
-| **No original content ideation engine** | AI tools like ChatGPT have no access to real video data                                         | Generic suggestions with no grounding in what is actually working |
-| **No single intelligence platform**     | Creators use 4–6 separate tools (VidIQ, Social Blade, TubeBuddy, Google Trends, Notion, Sheets) | Fragmented workflow; no synthesised view                          |
-| **No ethical framework**                | Some tools encourage copying successful content                                                 | Legal risk and community backlash for creators                    |
+| Gap | Current reality | Impact |
+|---|---|---|
+| **No competitor analysis tool** | Creators manually watch competitor videos — hours per week | 5–10 hours of unstructured research weekly, with no synthesis |
+| **No trend early-warning system** | Trends are discovered after they peak | Creators produce content about topics that are already declining |
+| **No structural pattern analysis** | Creators know a video performed well but not why | Cannot systematically replicate success |
+| **No original content ideation engine** | AI tools like ChatGPT have no access to real video data | Generic suggestions with no grounding in what is actually working |
+| **No single intelligence platform** | Creators use 4–6 separate tools (VidIQ, Social Blade, TubeBuddy, Google Trends, Notion, Sheets) | Fragmented workflow; no synthesised view |
+| **No ethical framework** | Some tools encourage copying successful content | Legal risk and community backlash for creators |
 
 ### Who Suffers Most
 
@@ -109,13 +108,10 @@ Discover → Analyse → Score → Detect Trends → Recommend → Alert
 ```
 
 ### Step 1 — Discover
-
 Every 6 hours, ViralScopes crawls YouTube via the official YouTube Data API, filtering for videos that show high engagement signals relative to their age. It captures metadata, thumbnails, transcripts, and channel data.
 
 ### Step 2 — Analyse
-
 Each discovered video passes through a multi-stage AI analysis pipeline:
-
 - **Transcript analysis** — summary, hook identification, CTA, narrative structure, key sections
 - **Thumbnail vision analysis** — emotion, faces, objects, colours, composition, CTR prediction
 - **Title formula detection** — identifies the structural template (e.g. "How I Did X in Y Days", "The Truth About X", "Why You Should Never Do X")
@@ -123,17 +119,13 @@ Each discovered video passes through a multi-stage AI analysis pipeline:
 - **Full content analysis** — story structure, target audience, emotional tone, retention tactics, virality drivers, weaknesses
 
 ### Step 3 — Score
-
 A proprietary **Viral Score (0–100)** is computed for every video from 9 weighted signals: title formula strength, thumbnail CTR prediction, hook classification confidence, views-per-day velocity, likes ratio, comments ratio, topic trend score, growth rate, and publication timing. Every score includes a confidence level.
 
 ### Step 4 — Detect Trends
-
 Daily, the platform clusters all analysed videos by topic using AI and classifies each cluster as **emerging**, **evergreen**, or **declining**. It computes velocity and opportunity scores so creators know not just what is trending, but how fast and whether it is worth acting on.
 
 ### Step 5 — Recommend
-
 For each high-performing video, the platform generates **original** creative guidance:
-
 - A fresh title concept (inspired by the detected formula, not copied)
 - A fresh hook concept (inspired by the detected technique, not copied)
 - An original content outline
@@ -143,7 +135,6 @@ For each high-performing video, the platform generates **original** creative gui
 The AI is explicitly constrained from reproducing any creator's specific words, phrases, or creative choices.
 
 ### Step 6 — Alert
-
 Teams configure watchlists for channels, keywords, niches, or competitors. When a watched channel uploads a video scoring above a threshold, or when a tracked topic spikes, alerts are dispatched via Email, Discord, Slack, Telegram, or a custom webhook — within 2 minutes of the trigger event.
 
 ---
@@ -152,7 +143,7 @@ Teams configure watchlists for channels, keywords, niches, or competitors. When 
 
 ### For Independent Creators
 
-> _"Stop guessing what works. Start understanding why."_
+> *"Stop guessing what works. Start understanding why."*
 
 - Replace 5+ hours of weekly manual research with a Monday morning dashboard review
 - Know which topics are growing before they peak — not after
@@ -161,7 +152,7 @@ Teams configure watchlists for channels, keywords, niches, or competitors. When 
 
 ### For Agencies
 
-> _"Deliver data-backed content strategy at scale — without scaling headcount."_
+> *"Deliver data-backed content strategy at scale — without scaling headcount."*
 
 - Set up competitive watchlists for every client in minutes
 - Deliver weekly intelligence briefings generated from real data, not manual research
@@ -170,7 +161,7 @@ Teams configure watchlists for channels, keywords, niches, or competitors. When 
 
 ### For Brands & Media Teams
 
-> _"Content investment decisions backed by data, not instinct."_
+> *"Content investment decisions backed by data, not instinct."*
 
 - Benchmark your channel against competitors with objective viral scoring
 - Build content calendars from opportunity data, not gut feeling
@@ -179,7 +170,7 @@ Teams configure watchlists for channels, keywords, niches, or competitors. When 
 
 ### For Enterprise
 
-> _"The content intelligence infrastructure your whole team can act on."_
+> *"The content intelligence infrastructure your whole team can act on."*
 
 - Multiple workspaces — one per team, client, or product line
 - Granular RBAC — control what each team member can see and do
@@ -192,12 +183,12 @@ Teams configure watchlists for channels, keywords, niches, or competitors. When 
 
 ### Primary Markets (MVP)
 
-| Segment                 | Description                                                     | Estimated global size |
-| ----------------------- | --------------------------------------------------------------- | --------------------- |
-| Independent creators    | Solo creators managing their own channels (10k–1M subscribers)  | ~50 million           |
-| Creator agencies        | Agencies managing content strategy for multiple creator clients | ~500,000 businesses   |
-| In-house brand teams    | Brands using YouTube as a marketing and content channel         | ~2 million teams      |
-| Digital media companies | Publishers with YouTube presences managing content at scale     | ~100,000 companies    |
+| Segment | Description | Estimated global size |
+|---|---|---|
+| Independent creators | Solo creators managing their own channels (10k–1M subscribers) | ~50 million |
+| Creator agencies | Agencies managing content strategy for multiple creator clients | ~500,000 businesses |
+| In-house brand teams | Brands using YouTube as a marketing and content channel | ~2 million teams |
+| Digital media companies | Publishers with YouTube presences managing content at scale | ~100,000 companies |
 
 ### Geographic Focus (MVP)
 
@@ -213,13 +204,13 @@ Spanish, Portuguese, German, French, and Hindi language markets following multi-
 
 ### Persona 1 — Maya, the Growth-Focused Independent Creator
 
-| Property     | Detail                                               |
-| ------------ | ---------------------------------------------------- |
-| **Age**      | 28                                                   |
-| **Role**     | Full-time YouTube creator, Tech & Productivity niche |
-| **Channel**  | 180,000 subscribers                                  |
-| **Team**     | Solo, occasional freelance editor                    |
-| **Location** | London, UK                                           |
+| Property | Detail |
+|---|---|
+| **Age** | 28 |
+| **Role** | Full-time YouTube creator, Tech & Productivity niche |
+| **Channel** | 180,000 subscribers |
+| **Team** | Solo, occasional freelance editor |
+| **Location** | London, UK |
 
 **Her situation:** Maya went full-time on YouTube 18 months ago. She is growing but inconsistently — some videos get 200,000 views while similar ones get 8,000. She cannot identify why. She spends every Sunday evening watching competitor videos and making notes in Notion, which takes 4–5 hours.
 
@@ -233,13 +224,13 @@ Spanish, Portuguese, German, French, and Hindi language markets following multi-
 
 ### Persona 2 — Daniel, the Agency Content Strategist
 
-| Property     | Detail                                                |
-| ------------ | ----------------------------------------------------- |
-| **Age**      | 34                                                    |
-| **Role**     | Head of Content Strategy at a mid-size creator agency |
-| **Team**     | 12 people, 8 creator clients                          |
-| **Clients**  | Fashion, fitness, finance, lifestyle creators         |
-| **Location** | Manchester, UK                                        |
+| Property | Detail |
+|---|---|
+| **Age** | 34 |
+| **Role** | Head of Content Strategy at a mid-size creator agency |
+| **Team** | 12 people, 8 creator clients |
+| **Clients** | Fashion, fitness, finance, lifestyle creators |
+| **Location** | Manchester, UK |
 
 **His situation:** Daniel's agency manages 8 creator clients and promises weekly content strategy briefs. Each brief currently takes 2.5 hours to produce manually — 20 hours per week of research that does not directly generate revenue. He is the bottleneck.
 
@@ -253,13 +244,13 @@ Spanish, Portuguese, German, French, and Hindi language markets following multi-
 
 ### Persona 3 — Priya, the In-House Brand Content Manager
 
-| Property     | Detail                                           |
-| ------------ | ------------------------------------------------ |
-| **Age**      | 31                                               |
-| **Role**     | YouTube Content Manager at a consumer tech brand |
-| **Team**     | 4 people (herself, 2 producers, 1 editor)        |
-| **Channel**  | 320,000 subscribers                              |
-| **Location** | Dublin, Ireland                                  |
+| Property | Detail |
+|---|---|
+| **Age** | 31 |
+| **Role** | YouTube Content Manager at a consumer tech brand |
+| **Team** | 4 people (herself, 2 producers, 1 editor) |
+| **Channel** | 320,000 subscribers |
+| **Location** | Dublin, Ireland |
 
 **Her situation:** Priya's channel performs well but she struggles to justify content investment decisions to her CMO without hard data. She knows competitor channels are outperforming hers on certain formats but cannot quantify why or produce a data-backed plan to respond.
 
@@ -273,12 +264,12 @@ Spanish, Portuguese, German, French, and Hindi language markets following multi-
 
 ### Persona 4 — James, the Enterprise Media Director
 
-| Property     | Detail                                           |
-| ------------ | ------------------------------------------------ |
-| **Age**      | 45                                               |
-| **Role**     | Director of Digital Content, national publisher  |
-| **Team**     | 30+ people across editorial, video, social, data |
-| **Location** | London, UK                                       |
+| Property | Detail |
+|---|---|
+| **Age** | 45 |
+| **Role** | Director of Digital Content, national publisher |
+| **Team** | 30+ people across editorial, video, social, data |
+| **Location** | London, UK |
 
 **His situation:** James oversees YouTube strategy for a publisher with 50+ competitor channels to monitor. Current tools are either too lightweight for his scale or require dedicated data engineering to integrate. He needs enterprise-grade access control so different editorial teams can only see their relevant competitor intelligence.
 
@@ -295,14 +286,12 @@ Spanish, Portuguese, German, French, and Hindi language markets following multi-
 All features below are available at MVP launch (v1.0).
 
 ### Video Discovery Engine
-
 - Automated discovery of YouTube videos every 6 hours
 - Filters: published in the last 14 days, 50,000–300,000 views, configurable by category, language, and region
 - Deduplication prevents the same video being processed twice within 24 hours
 - Covers any niche: technology, fitness, finance, cooking, gaming, education, and more
 
 ### Viral Score Engine
-
 - Proprietary 0–100 score computed for every video
 - 9 weighted signals: title formula strength, thumbnail CTR prediction, hook confidence, views/day velocity, likes ratio, comments ratio, topic trend score, growth rate, publication timing
 - Confidence level included with every score
@@ -310,7 +299,6 @@ All features below are available at MVP launch (v1.0).
 - Score weights configurable from the Super Admin Panel without code deployment
 
 ### AI Analysis Pipeline
-
 - **Transcript analysis** — summary, hook identification, call-to-action, narrative sections, ending
 - **Thumbnail vision analysis** — emotion, faces, objects, colours, contrast, text density, CTR prediction
 - **Title formula detection** — structural pattern classification ("How I X", "The Truth About X", "Why You Should X", etc.)
@@ -318,7 +306,6 @@ All features below are available at MVP launch (v1.0).
 - **Full content analysis** — story structure, target audience, emotional tone, retention tactics, virality drivers, key themes, weaknesses
 
 ### Trend Detection
-
 - Daily topic clustering using AI across all analysed videos
 - Three-way classification: Emerging, Evergreen, Declining
 - Velocity score: how fast is this topic growing?
@@ -326,48 +313,41 @@ All features below are available at MVP launch (v1.0).
 - Actionable timeline context: how long is this window?
 
 ### Opportunity Engine
-
 - Ranked list of content opportunities combining high demand, low competition, fast growth, and low saturation
 - Filterable by niche, language, and minimum opportunity score
 - Updated weekly with a full refresh
 
 ### Ethical Recommendation Engine
-
 - Generates **original** content ideas inspired by structural patterns — never copied
 - Per video: fresh title concept, hook concept, content outline, thumbnail description, keyword suggestions, CTA idea
 - AI system prompt explicitly prohibits reproducing any creator's specific words or creative choices
 - Every recommendation is clearly labelled as AI-generated creative guidance, not a finished asset
 
 ### Watchlists
-
 - Four watchlist types: Channel, Keyword, Niche, Competitor
 - Monitor any YouTube channel or topic continuously
 - View posting cadence, average performance, and trend trajectory for any watched entity
 - Unlimited watchlists on Business and Enterprise plans
 
 ### Alert System
-
 - Five delivery channels: Email, Discord webhook, Slack webhook, Telegram bot, Custom HTTP webhook
 - Configurable trigger types: video viral score above threshold, trend spike, watched channel upload, breakout prediction
 - Notification throttling: maximum 1 alert per rule per hour
 - Full alert history with payload inspection
 
 ### Unified Search
-
 - Search across videos, channels, and trends simultaneously
 - 8 filter dimensions: keyword, channel name, topic, language, date range, viral score range, platform, category
 - Cursor-based pagination for large result sets
 - Results grouped by type
 
 ### Export System
-
 - Four export formats: CSV, Excel (XLSX), JSON, PDF
 - Exports generated asynchronously — user notified by email and in-app when ready
 - Signed download links valid for 24 hours
 - Export history with status and re-download capability
 
 ### Multi-Tenant Organisation System
-
 - Organisations with multiple workspaces and projects
 - 5 RBAC roles: Super Admin, Admin, Owner, Team Member, Viewer
 - Member invitations via email link
@@ -375,7 +355,6 @@ All features below are available at MVP launch (v1.0).
 - Audit log for all significant actions
 
 ### Dashboard
-
 - Home: KPI cards, recent activity feed
 - Trending: latest high-performing videos with all filters
 - Videos: searchable, filterable table with viral score badges
@@ -398,7 +377,6 @@ All features below are available at MVP launch (v1.0).
 Features available on higher-tier plans or as post-MVP additions.
 
 ### Business & Enterprise Plan Features (MVP)
-
 - Multiple workspaces per organisation
 - Scheduled export delivery
 - API key access (rate limits per plan)
@@ -409,14 +387,12 @@ Features available on higher-tier plans or as post-MVP additions.
 - Data Processing Agreement / DPA (Enterprise)
 
 ### v1.5 Features (Month 8)
-
 - **AI Chat Interface** — Ask natural language questions about your niche from any page
 - **Scheduled PDF Reports** — Weekly briefings auto-delivered by email
 - **Chrome Extension** — Analyse any YouTube video directly from the browser
 - **Trend Prediction Engine** — Probability score for whether a topic will continue growing
 
 ### v2.0 Features (Month 18)
-
 - **TikTok Analytics** — Full platform support for TikTok content discovery and scoring
 - **Instagram Analytics** — Reels discovery and viral scoring
 - **Mobile App** — iOS and Android companion app
@@ -547,16 +523,16 @@ Total: 30 minutes replacing 5+ hours of manual research
 
 ### Unique Differentiators
 
-| Advantage                                               | Description                                                                                                 | Competitors have this?         |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Proprietary Viral Score**                             | A single, transparent 0–100 score combining 9 signals. Explainable, not a black box.                        | No                             |
-| **Ethical AI framework**                                | Explicitly constrained to generate only original output. Documented at the product, prompt, and code level. | No                             |
-| **Structural pattern analysis**                         | Analyses hook types, title formulas, narrative arcs — not just keyword density or view counts               | No                             |
-| **Transcript + thumbnail + title + AI synthesis**       | Four independent analysis streams synthesised into one coherent output                                      | No                             |
-| **Trend classification (emerging/evergreen/declining)** | Not just "trending" — tells you if a topic is going up or coming down                                       | No                             |
-| **Opportunity Engine**                                  | Demand × growth ÷ competition ranking — finds untapped niches before saturation                             | No                             |
-| **Dead-letter queue + admin observability**             | Engineering-grade reliability with full operational transparency                                            | Not user-facing in competitors |
-| **Prompt versioning**                                   | AI prompts versioned and editable from the admin panel — no code deploy to tune AI                          | Not applicable to SaaS tools   |
+| Advantage | Description | Competitors have this? |
+|---|---|---|
+| **Proprietary Viral Score** | A single, transparent 0–100 score combining 9 signals. Explainable, not a black box. | No |
+| **Ethical AI framework** | Explicitly constrained to generate only original output. Documented at the product, prompt, and code level. | No |
+| **Structural pattern analysis** | Analyses hook types, title formulas, narrative arcs — not just keyword density or view counts | No |
+| **Transcript + thumbnail + title + AI synthesis** | Four independent analysis streams synthesised into one coherent output | No |
+| **Trend classification (emerging/evergreen/declining)** | Not just "trending" — tells you if a topic is going up or coming down | No |
+| **Opportunity Engine** | Demand × growth ÷ competition ranking — finds untapped niches before saturation | No |
+| **Dead-letter queue + admin observability** | Engineering-grade reliability with full operational transparency | Not user-facing in competitors |
+| **Prompt versioning** | AI prompts versioned and editable from the admin panel — no code deploy to tune AI | Not applicable to SaaS tools |
 
 ### Defensible Moats
 
@@ -572,16 +548,16 @@ Total: 30 minutes replacing 5+ hours of manual research
 
 ## 14. Competitive Landscape
 
-| Competitor                              | What they do                                     | What they miss                                                                                    |
-| --------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| **VidIQ**                               | Keyword research, basic SEO, tag suggestions     | No AI structural analysis; no viral scoring; no transcript analysis; no trend prediction          |
-| **TubeBuddy**                           | Browser extension for YouTube SEO and management | No deep content analysis; no recommendation engine; no multi-channel competitive intelligence     |
-| **Social Blade**                        | Historical channel growth statistics             | No content analysis; no actionable guidance; no AI                                                |
-| **Exploding Topics**                    | General trend discovery                          | Not YouTube-specific; no content structure analysis; no recommendations                           |
-| **vidIQ Boost**                         | Competitor tracking at a basic level             | View count and subscriber data only; no AI analysis                                               |
-| **ChatGPT (direct use)**                | Can discuss content strategy conversationally    | No access to real video data; no proprietary analysis; outputs not grounded in actual performance |
-| **Semrush / Ahrefs (YouTube features)** | Keyword and SEO data for YouTube                 | SEO focus only; no viral scoring; no AI narrative analysis                                        |
-| **Manual research**                     | Creator watches competitor videos manually       | Time-intensive; inconsistent; no AI synthesis; no scalability                                     |
+| Competitor | What they do | What they miss |
+|---|---|---|
+| **VidIQ** | Keyword research, basic SEO, tag suggestions | No AI structural analysis; no viral scoring; no transcript analysis; no trend prediction |
+| **TubeBuddy** | Browser extension for YouTube SEO and management | No deep content analysis; no recommendation engine; no multi-channel competitive intelligence |
+| **Social Blade** | Historical channel growth statistics | No content analysis; no actionable guidance; no AI |
+| **Exploding Topics** | General trend discovery | Not YouTube-specific; no content structure analysis; no recommendations |
+| **vidIQ Boost** | Competitor tracking at a basic level | View count and subscriber data only; no AI analysis |
+| **ChatGPT (direct use)** | Can discuss content strategy conversationally | No access to real video data; no proprietary analysis; outputs not grounded in actual performance |
+| **Semrush / Ahrefs (YouTube features)** | Keyword and SEO data for YouTube | SEO focus only; no viral scoring; no AI narrative analysis |
+| **Manual research** | Creator watches competitor videos manually | Time-intensive; inconsistent; no AI synthesis; no scalability |
 
 **The gap:** No existing product combines large-scale YouTube data collection, multi-stream AI structural analysis, proprietary viral scoring, trend detection with classification, and ethically-generated original recommendations in a single SaaS product.
 
@@ -607,15 +583,15 @@ The affiliate programme allows existing customers to earn recurring commissions 
 
 ### Plan Tiers
 
-| Plan             | Price (monthly) | Price (annual)   | Target user                           |
-| ---------------- | --------------- | ---------------- | ------------------------------------- |
-| **Free**         | £0              | £0               | Evaluation, hobbyist creators         |
-| **Starter**      | £39             | £374 (£31/mo)    | Independent creators, getting started |
-| **Professional** | £89             | £854 (£71/mo)    | Full-time creators, small teams       |
-| **Business**     | £249            | £2,390 (£199/mo) | Agencies, larger brand teams          |
-| **Enterprise**   | Custom          | Custom           | Media companies, large agencies       |
+| Plan | Price (monthly) | Price (annual) | Target user |
+|---|---|---|---|
+| **Free** | £0 | £0 | Evaluation, hobbyist creators |
+| **Starter** | £39 | £374 (£31/mo) | Independent creators, getting started |
+| **Professional** | £89 | £854 (£71/mo) | Full-time creators, small teams |
+| **Business** | £249 | £2,390 (£199/mo) | Agencies, larger brand teams |
+| **Enterprise** | Custom | Custom | Media companies, large agencies |
 
-_Prices are indicative and subject to market validation during beta._
+*Prices are indicative and subject to market validation during beta.*
 
 ### Key Financial Characteristics
 
@@ -659,7 +635,6 @@ _Prices are indicative and subject to market validation during beta._
 ## 17. Future Expansion Opportunities
 
 ### Platform Expansion
-
 - **TikTok** — The second-largest short-form video platform globally with a rapidly growing creator economy
 - **Instagram Reels** — Reels is Meta's fastest-growing feature with significant creator monetisation
 - **YouTube Shorts** — Short-form content within the YouTube ecosystem (different algorithm dynamics from long-form)
@@ -669,7 +644,6 @@ _Prices are indicative and subject to market validation during beta._
 - **Podcasts** — Podcast discovery and performance analysis via RSS feed data
 
 ### Product Expansion
-
 - **AI Research Agent** — An autonomous agent that monitors your niche 24/7 and delivers personalised daily briefings
 - **Content Calendar Integration** — Sync ViralScopes opportunity data directly into Notion, Airtable, or Google Sheets
 - **Script Assist** — AI-powered script structuring tool grounded in the platform's hook and narrative analysis data
@@ -677,14 +651,12 @@ _Prices are indicative and subject to market validation during beta._
 - **A/B Title Testing** — Predict which of two title options will score higher before publishing
 
 ### Market Expansion
-
 - **Spanish-language markets** — The Spanish-speaking creator economy is the second-largest on YouTube by content volume
 - **Portuguese (Brazil)** — One of the fastest-growing YouTube markets globally
 - **Hindi** — India represents the fastest-growing YouTube audience globally
 - **German, French** — Large Western European markets with high creator economy participation
 
 ### Distribution Expansion
-
 - **Chrome Extension** — Makes ViralScopes accessible as a utility while browsing YouTube, dramatically lowering discovery friction
 - **Slack App** — Delivers intelligence directly into team Slack workspaces without requiring a dashboard visit
 - **Notion Integration** — Pipes ViralScopes data directly into content planning databases
@@ -702,7 +674,6 @@ In five years, ViralScopes.io is the standard infrastructure layer for professio
 **The platform does not replace creative talent.** It makes creative talent more effective by removing the research burden, the guesswork, and the time wasted on content that was always unlikely to succeed — and replacing it with data that helps creators spend their creative energy on what only they can do: bring their unique perspective, voice, and experience to stories that matter to their audience.
 
 The long-term business outcome is a profitable, category-defining SaaS company with:
-
 - £10M+ ARR by Year 5
 - Multi-platform intelligence (YouTube, TikTok, Instagram, LinkedIn, Podcasts)
 - A developer ecosystem with 500+ integrations
@@ -711,12 +682,11 @@ The long-term business outcome is a profitable, category-defining SaaS company w
 
 ---
 
-_This document is maintained by the Product team and updated whenever the product vision, target audience, or business model changes significantly. All changes require a pull request with at least one approving review._
+*This document is maintained by the Product team and updated whenever the product vision, target audience, or business model changes significantly. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [PRD.md](./PRD.md) — Detailed product requirements, user stories, and functional specifications
 - [ROADMAP.md](./ROADMAP.md) — Development phases and feature delivery timeline
 - [Expected_Annual_Revenue_Target.md](./Expected_Annual_Revenue_Target.md) — Financial projections and revenue model

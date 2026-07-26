@@ -1,0 +1,44 @@
+You are a Senior Product Designer and Staff UI/UX Designer.
+Design a complete enterprise-grade UI/UX Design System for my SaaS platform.
+
+Requirements:
+
+- Modern, clean, minimal interface
+- Enterprise-quality design
+- AI-first user experience
+- Dashboard-focused
+- Responsive (Desktop, Tablet, Mobile)
+- Light and Dark themes
+- WCAG 2.2 accessibility
+- Design Tokens
+- Color System
+- Typography System
+- 8-point spacing system
+- Grid system
+- Icon guidelines
+- Motion and animation guidelines
+- Complete component library
+- Forms and validation
+- Navigation components
+- Data tables
+- Charts
+- Cards
+- AI chat components
+- Analytics dashboard components
+- Empty states
+- Loading states
+- Error states
+- Settings pages
+- Authentication pages
+- Team management
+- Billing pages
+- User profile pages
+- Documentation for every component
+- Figma organization structure
+- React + Next.js + Tailwind implementation guidance
+- Storybook structure
+- Versioning strategy
+- Design governance
+
+Generate the design system in phases, beginning with the foundations before moving on to components, layouts, and full page templates. Use industry best practices and produce documentation that can 
+be used directly by designers and developers.

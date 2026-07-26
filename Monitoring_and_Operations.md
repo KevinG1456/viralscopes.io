@@ -1,5 +1,4 @@
 # Monitoring_&_Operations.md
-
 # ViralScopes.io — Monitoring & Operations
 
 > **Version:** 1.0
@@ -101,16 +100,16 @@ All services expose a `/metrics` endpoint in Prometheus exposition format. Prome
 
 **Service exporters:**
 
-| Service       | Exporter                             | Metrics endpoint                     |
-| ------------- | ------------------------------------ | ------------------------------------ |
-| Fastify API   | Built-in (`fastify-metrics` plugin)  | `http://api:3001/metrics`            |
-| Next.js       | Built-in (custom instrumentation)    | `http://web:3000/metrics`            |
-| PostgreSQL    | `postgres_exporter` (Docker sidecar) | `http://pg-exporter:9187/metrics`    |
-| Redis         | `redis_exporter` (Docker sidecar)    | `http://redis-exporter:9121/metrics` |
-| n8n           | Custom HTTP probe                    | `http://n8n:5678/metrics`            |
-| Traefik       | Built-in                             | `http://traefik:8082/metrics`        |
-| Node.js (all) | `prom-client` library                | Included in service `/metrics`       |
-| Docker host   | `node_exporter`                      | `http://localhost:9100/metrics`      |
+| Service | Exporter | Metrics endpoint |
+|---|---|---|
+| Fastify API | Built-in (`fastify-metrics` plugin) | `http://api:3001/metrics` |
+| Next.js | Built-in (custom instrumentation) | `http://web:3000/metrics` |
+| PostgreSQL | `postgres_exporter` (Docker sidecar) | `http://pg-exporter:9187/metrics` |
+| Redis | `redis_exporter` (Docker sidecar) | `http://redis-exporter:9121/metrics` |
+| n8n | Custom HTTP probe | `http://n8n:5678/metrics` |
+| Traefik | Built-in | `http://traefik:8082/metrics` |
+| Node.js (all) | `prom-client` library | Included in service `/metrics` |
+| Docker host | `node_exporter` | `http://localhost:9100/metrics` |
 
 ### Prometheus Configuration
 
@@ -195,34 +194,27 @@ All services emit structured JSON logs to `stdout`. Docker captures `stdout` and
 
 ```typescript
 // apps/api/src/plugins/logger.plugin.ts
-import pino from 'pino';
+import pino from "pino";
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL ?? 'info',
+  level: process.env.LOG_LEVEL ?? "info",
   formatters: {
     level: (label) => ({ level: label }),
   },
   base: {
-    service: 'api',
-    version: process.env.APP_VERSION ?? 'unknown',
-    environment: process.env.APP_ENV ?? 'development',
+    service: "api",
+    version: process.env.APP_VERSION ?? "unknown",
+    environment: process.env.APP_ENV ?? "development",
   },
   redact: {
     // NEVER log these fields — PII and secrets
     paths: [
-      '*.password',
-      '*.password_hash',
-      '*.token',
-      '*.apiKey',
-      '*.api_key',
-      '*.authorization',
-      '*.email',
-      '*.name',
-      '*.ip_address',
-      'req.headers.authorization',
-      'req.headers.cookie',
+      "*.password", "*.password_hash", "*.token",
+      "*.apiKey", "*.api_key", "*.authorization",
+      "*.email", "*.name", "*.ip_address",
+      "req.headers.authorization", "req.headers.cookie",
     ],
-    censor: '[REDACTED]',
+    censor: "[REDACTED]",
   },
   timestamp: pino.stdTimeFunctions.isoTime,
 });
@@ -232,19 +224,21 @@ export const logger = pino({
 
 ```typescript
 // middleware/correlation-id.ts
-import { ulid } from 'ulid';
+import { ulid } from "ulid";
 
 export async function correlationIdMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> {
   // Use client-provided ID if valid, otherwise generate
   const correlationId =
-    request.headers['x-request-id'] ?? request.headers['x-correlation-id'] ?? ulid();
+    request.headers["x-request-id"] ??
+    request.headers["x-correlation-id"] ??
+    ulid();
 
   request.correlationId = correlationId;
   request.log = request.log.child({ correlationId });
-  reply.header('X-Request-ID', correlationId);
+  reply.header("X-Request-ID", correlationId);
 }
 ```
 
@@ -283,7 +277,7 @@ storage_config:
     directory: /loki/chunks
 
 limits_config:
-  retention_period: 720h # 30 days
+  retention_period: 720h  # 30 days
 ```
 
 ### Promtail / Docker Log Driver
@@ -293,24 +287,24 @@ limits_config:
 services:
   api:
     logging:
-      driver: 'json-file'
+      driver: "json-file"
       options:
-        max-size: '100m'
-        max-file: '3'
-        tag: '{{.Name}}/{{.ID}}'
+        max-size: "100m"
+        max-file: "3"
+        tag: "{{.Name}}/{{.ID}}"
     labels:
-      - 'logging=promtail'
-      - 'service=api'
+      - "logging=promtail"
+      - "service=api"
 ```
 
 ### Log Levels in Production
 
-| Level   | When used                                              | Example                                                         |
-| ------- | ------------------------------------------------------ | --------------------------------------------------------------- |
-| `error` | System fault, unhandled exception, failed DB operation | "Database connection failed", "n8n workflow crashed"            |
-| `warn`  | Recoverable issue, degraded state                      | "YouTube quota at 80%", "Redis cache miss rate elevated"        |
-| `info`  | Business event, significant state change               | "Video analysis complete", "Alert dispatched", "User signed up" |
-| `debug` | Disabled in production                                 | Enabled on staging for detailed debugging                       |
+| Level | When used | Example |
+|---|---|---|
+| `error` | System fault, unhandled exception, failed DB operation | "Database connection failed", "n8n workflow crashed" |
+| `warn` | Recoverable issue, degraded state | "YouTube quota at 80%", "Redis cache miss rate elevated" |
+| `info` | Business event, significant state change | "Video analysis complete", "Alert dispatched", "User signed up" |
+| `debug` | Disabled in production | Enabled on staging for detailed debugging |
 
 ### What Must Never Be Logged
 
@@ -328,64 +322,64 @@ services:
 
 ### API Metrics
 
-| Metric name                  | Type      | Labels                     | Description                                  |
-| ---------------------------- | --------- | -------------------------- | -------------------------------------------- |
-| `http_requests_total`        | Counter   | `method`, `path`, `status` | Total HTTP requests                          |
-| `http_request_duration_ms`   | Histogram | `method`, `path`, `status` | Request duration in milliseconds             |
-| `http_request_size_bytes`    | Histogram | `method`, `path`           | Request body size                            |
-| `http_response_size_bytes`   | Histogram | `method`, `path`           | Response body size                           |
-| `http_active_connections`    | Gauge     | —                          | Current active connections                   |
-| `auth_login_total`           | Counter   | `method`, `status`         | Login attempts by method and success/failure |
-| `auth_token_refresh_total`   | Counter   | `status`                   | Token refresh attempts                       |
-| `rate_limit_triggered_total` | Counter   | `plan`, `endpoint`         | Rate limit hits                              |
+| Metric name | Type | Labels | Description |
+|---|---|---|---|
+| `http_requests_total` | Counter | `method`, `path`, `status` | Total HTTP requests |
+| `http_request_duration_ms` | Histogram | `method`, `path`, `status` | Request duration in milliseconds |
+| `http_request_size_bytes` | Histogram | `method`, `path` | Request body size |
+| `http_response_size_bytes` | Histogram | `method`, `path` | Response body size |
+| `http_active_connections` | Gauge | — | Current active connections |
+| `auth_login_total` | Counter | `method`, `status` | Login attempts by method and success/failure |
+| `auth_token_refresh_total` | Counter | `status` | Token refresh attempts |
+| `rate_limit_triggered_total` | Counter | `plan`, `endpoint` | Rate limit hits |
 
 ### n8n Workflow Metrics
 
-| Metric name                      | Type      | Labels                      | Description                      |
-| -------------------------------- | --------- | --------------------------- | -------------------------------- |
-| `workflow_executions_total`      | Counter   | `workflow`, `status`        | Total workflow runs              |
-| `workflow_execution_duration_ms` | Histogram | `workflow`                  | Workflow duration                |
-| `workflow_queue_depth`           | Gauge     | `priority`                  | Pending jobs per queue priority  |
-| `dead_letter_jobs_total`         | Counter   | `workflow`                  | Jobs sent to dead-letter queue   |
-| `ai_api_calls_total`             | Counter   | `provider`, `model`, `task` | AI API calls by provider/task    |
-| `ai_cache_hits_total`            | Counter   | `task`                      | AI response cache hits           |
-| `ai_cache_misses_total`          | Counter   | `task`                      | AI response cache misses         |
-| `youtube_quota_units_used`       | Gauge     | —                           | YouTube API quota consumed today |
+| Metric name | Type | Labels | Description |
+|---|---|---|---|
+| `workflow_executions_total` | Counter | `workflow`, `status` | Total workflow runs |
+| `workflow_execution_duration_ms` | Histogram | `workflow` | Workflow duration |
+| `workflow_queue_depth` | Gauge | `priority` | Pending jobs per queue priority |
+| `dead_letter_jobs_total` | Counter | `workflow` | Jobs sent to dead-letter queue |
+| `ai_api_calls_total` | Counter | `provider`, `model`, `task` | AI API calls by provider/task |
+| `ai_cache_hits_total` | Counter | `task` | AI response cache hits |
+| `ai_cache_misses_total` | Counter | `task` | AI response cache misses |
+| `youtube_quota_units_used` | Gauge | — | YouTube API quota consumed today |
 
 ### Database Metrics (postgres_exporter)
 
-| Metric name                          | Type    | Description              |
-| ------------------------------------ | ------- | ------------------------ |
-| `pg_stat_activity_count`             | Gauge   | Active connections       |
-| `pg_stat_bgwriter_checkpoints_total` | Counter | Checkpoint count         |
-| `pg_stat_database_tup_fetched`       | Counter | Rows fetched             |
-| `pg_stat_database_deadlocks`         | Counter | Deadlocks                |
-| `pg_replication_lag_seconds`         | Gauge   | Replica lag (Stage 2+)   |
-| `pg_database_size_bytes`             | Gauge   | Database size            |
-| `pg_stat_user_tables_n_live_tup`     | Gauge   | Live row count per table |
+| Metric name | Type | Description |
+|---|---|---|
+| `pg_stat_activity_count` | Gauge | Active connections |
+| `pg_stat_bgwriter_checkpoints_total` | Counter | Checkpoint count |
+| `pg_stat_database_tup_fetched` | Counter | Rows fetched |
+| `pg_stat_database_deadlocks` | Counter | Deadlocks |
+| `pg_replication_lag_seconds` | Gauge | Replica lag (Stage 2+) |
+| `pg_database_size_bytes` | Gauge | Database size |
+| `pg_stat_user_tables_n_live_tup` | Gauge | Live row count per table |
 
 ### Redis Metrics (redis_exporter)
 
-| Metric name                      | Type    | Description                             |
-| -------------------------------- | ------- | --------------------------------------- |
-| `redis_connected_clients`        | Gauge   | Connected clients                       |
-| `redis_used_memory_bytes`        | Gauge   | Memory used                             |
-| `redis_keyspace_hits_total`      | Counter | Cache hits                              |
-| `redis_keyspace_misses_total`    | Counter | Cache misses                            |
-| `redis_commands_processed_total` | Counter | Commands processed                      |
-| `redis_blocked_clients`          | Gauge   | Blocked clients (queue depth indicator) |
+| Metric name | Type | Description |
+|---|---|---|
+| `redis_connected_clients` | Gauge | Connected clients |
+| `redis_used_memory_bytes` | Gauge | Memory used |
+| `redis_keyspace_hits_total` | Counter | Cache hits |
+| `redis_keyspace_misses_total` | Counter | Cache misses |
+| `redis_commands_processed_total` | Counter | Commands processed |
+| `redis_blocked_clients` | Gauge | Blocked clients (queue depth indicator) |
 
 ### Business Metrics
 
-| Metric name                   | Type    | Labels                    | Description                       |
-| ----------------------------- | ------- | ------------------------- | --------------------------------- |
-| `videos_analysed_total`       | Counter | `status`, `tier`          | Videos processed by analysis tier |
-| `viral_scores_computed_total` | Counter | —                         | Viral scores computed             |
-| `alerts_dispatched_total`     | Counter | `channel`, `trigger_type` | Alerts dispatched by channel      |
-| `exports_created_total`       | Counter | `format`                  | Exports generated                 |
-| `users_registered_total`      | Counter | `method`                  | New user registrations            |
-| `organisations_created_total` | Counter | —                         | New organisations                 |
-| `subscriptions_active`        | Gauge   | `plan`                    | Active subscriptions by plan      |
+| Metric name | Type | Labels | Description |
+|---|---|---|---|
+| `videos_analysed_total` | Counter | `status`, `tier` | Videos processed by analysis tier |
+| `viral_scores_computed_total` | Counter | — | Viral scores computed |
+| `alerts_dispatched_total` | Counter | `channel`, `trigger_type` | Alerts dispatched by channel |
+| `exports_created_total` | Counter | `format` | Exports generated |
+| `users_registered_total` | Counter | `method` | New user registrations |
+| `organisations_created_total` | Counter | — | New organisations |
+| `subscriptions_active` | Gauge | `plan` | Active subscriptions by plan |
 
 ---
 
@@ -395,16 +389,16 @@ services:
 
 **Purpose:** Answer "Is the API healthy right now?"
 
-| Panel                    | Visualization      | Query                                                                          |
-| ------------------------ | ------------------ | ------------------------------------------------------------------------------ |
-| Request rate (req/sec)   | Time series        | `rate(http_requests_total[1m])`                                                |
-| p50 latency              | Time series        | `histogram_quantile(0.50, rate(http_request_duration_ms_bucket[5m]))`          |
-| p95 latency              | Time series        | `histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m]))`          |
-| p99 latency              | Time series        | `histogram_quantile(0.99, rate(http_request_duration_ms_bucket[5m]))`          |
-| Error rate (5xx)         | Time series + stat | `rate(http_requests_total{status=~"5.."}[1m]) / rate(http_requests_total[1m])` |
-| Top 10 slowest endpoints | Table              | Sort by p95 per path                                                           |
-| Active connections       | Gauge              | `http_active_connections`                                                      |
-| Rate limit hits          | Counter            | `rate(rate_limit_triggered_total[5m])`                                         |
+| Panel | Visualization | Query |
+|---|---|---|
+| Request rate (req/sec) | Time series | `rate(http_requests_total[1m])` |
+| p50 latency | Time series | `histogram_quantile(0.50, rate(http_request_duration_ms_bucket[5m]))` |
+| p95 latency | Time series | `histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m]))` |
+| p99 latency | Time series | `histogram_quantile(0.99, rate(http_request_duration_ms_bucket[5m]))` |
+| Error rate (5xx) | Time series + stat | `rate(http_requests_total{status=~"5.."}[1m]) / rate(http_requests_total[1m])` |
+| Top 10 slowest endpoints | Table | Sort by p95 per path |
+| Active connections | Gauge | `http_active_connections` |
+| Rate limit hits | Counter | `rate(rate_limit_triggered_total[5m])` |
 
 **Alerts linked:** API_HIGH_ERROR_RATE, API_HIGH_LATENCY
 
@@ -414,16 +408,16 @@ services:
 
 **Purpose:** Answer "Are background jobs processing normally?"
 
-| Panel                          | Visualization | Description                                         |
-| ------------------------------ | ------------- | --------------------------------------------------- |
-| Queue depth by priority        | Time series   | High / Standard / Low priority queue depths         |
-| Workflow success rate          | Stat (%)      | `success / (success + failed)` last 1h              |
-| Workflow execution duration    | Heatmap       | Duration distribution per workflow                  |
-| Dead-letter queue depth        | Stat + alert  | Jobs in `dead_letter_jobs` where `resolved = false` |
-| AI API call rate               | Time series   | Calls per minute by provider and task               |
-| AI cache hit rate              | Stat (%)      | `hits / (hits + misses)`                            |
-| YouTube quota remaining        | Gauge         | `10000 - youtube_quota_units_used`                  |
-| Workflows by status (last 24h) | Bar chart     | Success / Failed / Retrying per workflow name       |
+| Panel | Visualization | Description |
+|---|---|---|
+| Queue depth by priority | Time series | High / Standard / Low priority queue depths |
+| Workflow success rate | Stat (%) | `success / (success + failed)` last 1h |
+| Workflow execution duration | Heatmap | Duration distribution per workflow |
+| Dead-letter queue depth | Stat + alert | Jobs in `dead_letter_jobs` where `resolved = false` |
+| AI API call rate | Time series | Calls per minute by provider and task |
+| AI cache hit rate | Stat (%) | `hits / (hits + misses)` |
+| YouTube quota remaining | Gauge | `10000 - youtube_quota_units_used` |
+| Workflows by status (last 24h) | Bar chart | Success / Failed / Retrying per workflow name |
 
 **Alerts linked:** QUEUE_BACKLOG, DEAD_LETTER_ELEVATED, YOUTUBE_QUOTA_WARNING
 
@@ -433,16 +427,16 @@ services:
 
 **Purpose:** Answer "Is the database healthy and sized correctly?"
 
-| Panel                | Visualization           | Description                                          |
-| -------------------- | ----------------------- | ---------------------------------------------------- |
-| Active connections   | Time series + threshold | Current vs max pool size                             |
-| Query latency (p95)  | Time series             | `pg_stat_statements` p95                             |
-| Database size        | Gauge                   | Total size in GB                                     |
-| Table sizes (top 10) | Table                   | Largest tables by size                               |
-| Deadlocks            | Counter                 | Should always be 0                                   |
-| Cache hit ratio      | Stat (%)                | `pg_stat_database_blks_hit / (blks_hit + blks_read)` |
-| Replication lag      | Time series             | Seconds behind primary (Stage 2+)                    |
-| Slow queries (> 1s)  | Table                   | Query text, duration, frequency                      |
+| Panel | Visualization | Description |
+|---|---|---|
+| Active connections | Time series + threshold | Current vs max pool size |
+| Query latency (p95) | Time series | `pg_stat_statements` p95 |
+| Database size | Gauge | Total size in GB |
+| Table sizes (top 10) | Table | Largest tables by size |
+| Deadlocks | Counter | Should always be 0 |
+| Cache hit ratio | Stat (%) | `pg_stat_database_blks_hit / (blks_hit + blks_read)` |
+| Replication lag | Time series | Seconds behind primary (Stage 2+) |
+| Slow queries (> 1s) | Table | Query text, duration, frequency |
 
 **Alerts linked:** DB_CONNECTIONS_HIGH, DB_REPLICATION_LAG
 
@@ -452,14 +446,14 @@ services:
 
 **Purpose:** Answer "How much YouTube API quota have we used today?"
 
-| Panel                      | Visualization       | Description                                   |
-| -------------------------- | ------------------- | --------------------------------------------- |
-| Units used today           | Gauge (0–10,000)    | Current daily consumption                     |
-| Units used over time       | Time series (today) | Consumption rate through the day              |
-| Projected daily total      | Stat                | At current rate, will we exceed quota?        |
-| Units by operation type    | Pie chart           | Search vs video detail vs channel vs captions |
-| Cache hit rate (24h)       | Stat                | % of requests served from DB cache            |
-| Fallback activation events | Counter             | Times RapidAPI/Apify fallback was used        |
+| Panel | Visualization | Description |
+|---|---|---|
+| Units used today | Gauge (0–10,000) | Current daily consumption |
+| Units used over time | Time series (today) | Consumption rate through the day |
+| Projected daily total | Stat | At current rate, will we exceed quota? |
+| Units by operation type | Pie chart | Search vs video detail vs channel vs captions |
+| Cache hit rate (24h) | Stat | % of requests served from DB cache |
+| Fallback activation events | Counter | Times RapidAPI/Apify fallback was used |
 
 **Alerts linked:** YOUTUBE_QUOTA_WARNING, YOUTUBE_QUOTA_CRITICAL
 
@@ -469,16 +463,16 @@ services:
 
 **Purpose:** Answer "How is the product performing?"
 
-| Panel                        | Visualization   | Description                                  |
-| ---------------------------- | --------------- | -------------------------------------------- |
-| Videos analysed today        | Stat            | Running total                                |
-| Viral scores computed        | Stat            | Running total                                |
-| New signups (24h)            | Stat            | User registrations                           |
-| Active subscriptions by plan | Bar chart       | Free / Starter / Pro / Business / Enterprise |
-| Alerts dispatched (24h)      | Stat by channel | Email / Discord / Slack / Telegram / Webhook |
-| Exports generated (24h)      | Stat by format  | CSV / Excel / JSON / PDF                     |
-| API key authentications      | Time series     | External API usage growth                    |
-| AI cost estimate (today)     | Stat            | Based on call counts × estimated token costs |
+| Panel | Visualization | Description |
+|---|---|---|
+| Videos analysed today | Stat | Running total |
+| Viral scores computed | Stat | Running total |
+| New signups (24h) | Stat | User registrations |
+| Active subscriptions by plan | Bar chart | Free / Starter / Pro / Business / Enterprise |
+| Alerts dispatched (24h) | Stat by channel | Email / Discord / Slack / Telegram / Webhook |
+| Exports generated (24h) | Stat by format | CSV / Excel / JSON / PDF |
+| API key authentications | Time series | External API usage growth |
+| AI cost estimate (today) | Stat | Based on call counts × estimated token costs |
 
 ---
 
@@ -486,16 +480,16 @@ services:
 
 **Purpose:** Answer "Is the server healthy?"
 
-| Panel                    | Visualization       | Description                       |
-| ------------------------ | ------------------- | --------------------------------- |
-| CPU usage per service    | Time series         | % CPU per container               |
-| Memory usage per service | Time series         | MB used per container             |
-| Disk usage               | Gauge               | Used vs available on /data volume |
-| Network I/O              | Time series         | Bytes in/out per second           |
-| Redis memory             | Gauge + time series | Used memory vs max                |
-| Redis hit rate           | Stat                | Overall cache effectiveness       |
-| Container restarts       | Counter             | Should be 0 in steady state       |
-| System load average      | Time series         | 1m, 5m, 15m averages              |
+| Panel | Visualization | Description |
+|---|---|---|
+| CPU usage per service | Time series | % CPU per container |
+| Memory usage per service | Time series | MB used per container |
+| Disk usage | Gauge | Used vs available on /data volume |
+| Network I/O | Time series | Bytes in/out per second |
+| Redis memory | Gauge + time series | Used memory vs max |
+| Redis hit rate | Stat | Overall cache effectiveness |
+| Container restarts | Counter | Should be 0 in steady state |
+| System load average | Time series | 1m, 5m, 15m averages |
 
 **Alerts linked:** HIGH_MEMORY, HIGH_CPU, DISK_SPACE_WARNING
 
@@ -564,9 +558,9 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: 'API error rate > 1%'
-          description: 'Error rate is {{ $value | humanizePercentage }} over the last 5 minutes.'
-          runbook: 'https://docs.viralscopes.io/runbooks/api-high-error-rate'
+          summary: "API error rate > 1%"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook: "https://docs.viralscopes.io/runbooks/api-high-error-rate"
 
       - alert: API_HIGH_LATENCY_P95
         expr: |
@@ -577,9 +571,9 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'API p95 latency > 1,000ms'
-          description: 'p95 response time is {{ $value }}ms.'
-          runbook: 'https://docs.viralscopes.io/runbooks/api-high-latency'
+          summary: "API p95 latency > 1,000ms"
+          description: "p95 response time is {{ $value }}ms."
+          runbook: "https://docs.viralscopes.io/runbooks/api-high-latency"
 
       - alert: API_HIGH_LATENCY_P95_CRITICAL
         expr: |
@@ -590,8 +584,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: 'API p95 latency critically high (> 2,000ms)'
-          description: 'p95 response time is {{ $value }}ms. Immediate investigation required.'
+          summary: "API p95 latency critically high (> 2,000ms)"
+          description: "p95 response time is {{ $value }}ms. Immediate investigation required."
 
       - alert: API_SERVICE_DOWN
         expr: up{job="fastify-api"} == 0
@@ -599,128 +593,128 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: 'Fastify API is down'
-          description: 'The API service has been unreachable for 1 minute.'
+          summary: "Fastify API is down"
+          description: "The API service has been unreachable for 1 minute."
 ```
 
 #### Queue Alerts
 
 ```yaml
-- alert: QUEUE_BACKLOG_HIGH
-  expr: workflow_queue_depth{priority="high"} > 100
-  for: 5m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'High-priority queue backlog > 100'
-    description: '{{ $value }} jobs pending in high-priority queue.'
+      - alert: QUEUE_BACKLOG_HIGH
+        expr: workflow_queue_depth{priority="high"} > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High-priority queue backlog > 100"
+          description: "{{ $value }} jobs pending in high-priority queue."
 
-- alert: QUEUE_BACKLOG_CRITICAL
-  expr: workflow_queue_depth{priority="standard"} > 1000
-  for: 10m
-  labels:
-    severity: critical
-  annotations:
-    summary: 'Standard queue backlog critically high'
-    description: '{{ $value }} jobs queued. n8n workers may be failing.'
+      - alert: QUEUE_BACKLOG_CRITICAL
+        expr: workflow_queue_depth{priority="standard"} > 1000
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Standard queue backlog critically high"
+          description: "{{ $value }} jobs queued. n8n workers may be failing."
 
-- alert: DEAD_LETTER_ELEVATED
-  expr: dead_letter_jobs_total > 10
-  for: 5m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'Dead-letter queue has > 10 unresolved jobs'
-    description: '{{ $value }} jobs in dead-letter queue. Review at /admin/dead-letter.'
+      - alert: DEAD_LETTER_ELEVATED
+        expr: dead_letter_jobs_total > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dead-letter queue has > 10 unresolved jobs"
+          description: "{{ $value }} jobs in dead-letter queue. Review at /admin/dead-letter."
 
-- alert: WORKFLOW_FAILURE_RATE_HIGH
-  expr: |
-    rate(workflow_executions_total{status="failed"}[15m])
-    / rate(workflow_executions_total[15m]) > 0.05
-  for: 10m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'Workflow failure rate > 5%'
-    description: '{{ $value | humanizePercentage }} of workflows failing in the last 15 minutes.'
+      - alert: WORKFLOW_FAILURE_RATE_HIGH
+        expr: |
+          rate(workflow_executions_total{status="failed"}[15m])
+          / rate(workflow_executions_total[15m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Workflow failure rate > 5%"
+          description: "{{ $value | humanizePercentage }} of workflows failing in the last 15 minutes."
 ```
 
 #### YouTube Quota Alerts
 
 ```yaml
-- alert: YOUTUBE_QUOTA_WARNING
-  expr: youtube_quota_units_used > 7500
-  for: 0m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'YouTube API quota at 75%'
-    description: '{{ $value }} / 10,000 units used today. Fallback sources activating soon.'
+      - alert: YOUTUBE_QUOTA_WARNING
+        expr: youtube_quota_units_used > 7500
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "YouTube API quota at 75%"
+          description: "{{ $value }} / 10,000 units used today. Fallback sources activating soon."
 
-- alert: YOUTUBE_QUOTA_CRITICAL
-  expr: youtube_quota_units_used > 9500
-  for: 0m
-  labels:
-    severity: critical
-  annotations:
-    summary: 'YouTube API quota at 95% — fallback active'
-    description: '{{ $value }} / 10,000 units used. RapidAPI/Apify fallback active.'
+      - alert: YOUTUBE_QUOTA_CRITICAL
+        expr: youtube_quota_units_used > 9500
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "YouTube API quota at 95% — fallback active"
+          description: "{{ $value }} / 10,000 units used. RapidAPI/Apify fallback active."
 ```
 
 #### Infrastructure Alerts
 
 ```yaml
-- alert: HIGH_MEMORY_USAGE
-  expr: |
-    (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
-    / node_memory_MemTotal_bytes > 0.85
-  for: 10m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'Server memory usage > 85%'
-    description: 'Memory at {{ $value | humanizePercentage }}. Review running containers.'
+      - alert: HIGH_MEMORY_USAGE
+        expr: |
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+          / node_memory_MemTotal_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Server memory usage > 85%"
+          description: "Memory at {{ $value | humanizePercentage }}. Review running containers."
 
-- alert: DISK_SPACE_WARNING
-  expr: |
-    (node_filesystem_size_bytes{mountpoint="/"}
-    - node_filesystem_free_bytes{mountpoint="/"})
-    / node_filesystem_size_bytes{mountpoint="/"} > 0.80
-  for: 5m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'Disk usage > 80%'
-    description: 'Disk at {{ $value | humanizePercentage }}. Expand or clean up logs.'
+      - alert: DISK_SPACE_WARNING
+        expr: |
+          (node_filesystem_size_bytes{mountpoint="/"}
+          - node_filesystem_free_bytes{mountpoint="/"})
+          / node_filesystem_size_bytes{mountpoint="/"} > 0.80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage > 80%"
+          description: "Disk at {{ $value | humanizePercentage }}. Expand or clean up logs."
 
-- alert: DISK_SPACE_CRITICAL
-  expr: |
-    (node_filesystem_size_bytes{mountpoint="/"}
-    - node_filesystem_free_bytes{mountpoint="/"})
-    / node_filesystem_size_bytes{mountpoint="/"} > 0.92
-  for: 2m
-  labels:
-    severity: critical
-  annotations:
-    summary: 'Disk usage critically high (> 92%)'
-    description: 'Immediate action required. Service degradation imminent.'
+      - alert: DISK_SPACE_CRITICAL
+        expr: |
+          (node_filesystem_size_bytes{mountpoint="/"}
+          - node_filesystem_free_bytes{mountpoint="/"})
+          / node_filesystem_size_bytes{mountpoint="/"} > 0.92
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk usage critically high (> 92%)"
+          description: "Immediate action required. Service degradation imminent."
 
-- alert: REDIS_MEMORY_HIGH
-  expr: redis_used_memory_bytes / redis_maxmemory_bytes > 0.80
-  for: 10m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'Redis memory usage > 80%'
+      - alert: REDIS_MEMORY_HIGH
+        expr: redis_used_memory_bytes / redis_maxmemory_bytes > 0.80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage > 80%"
 
-- alert: DB_CONNECTIONS_HIGH
-  expr: pg_stat_activity_count > 100
-  for: 5m
-  labels:
-    severity: warning
-  annotations:
-    summary: 'PostgreSQL connection count > 100'
-    description: '{{ $value }} active connections. Check PgBouncer pool size.'
+      - alert: DB_CONNECTIONS_HIGH
+        expr: pg_stat_activity_count > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connection count > 100"
+          description: "{{ $value }} active connections. Check PgBouncer pool size."
 ```
 
 ### Alert Review Policy
@@ -745,16 +739,13 @@ At MVP, errors are tracked via structured logs in Loki with Grafana alerts. No a
 try {
   await videoRepository.findById(videoId);
 } catch (err) {
-  logger.error(
-    {
-      correlationId: request.correlationId,
-      err, // Pino automatically serialises Error objects
-      videoId,
-      context: 'VideoService.getById',
-    },
-    'Failed to fetch video from database',
-  );
-  throw new AppError('INTERNAL_ERROR', 'An unexpected error occurred.', 500);
+  logger.error({
+    correlationId: request.correlationId,
+    err,                        // Pino automatically serialises Error objects
+    videoId,
+    context: "VideoService.getById",
+  }, "Failed to fetch video from database");
+  throw new AppError("INTERNAL_ERROR", "An unexpected error occurred.", 500);
 }
 ```
 
@@ -770,13 +761,13 @@ try {
 At Stage 2, Sentry is added for richer error tracking with stack traces, release tracking, and user impact:
 
 ```typescript
-import * as Sentry from '@sentry/node';
+import * as Sentry from "@sentry/node";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.APP_ENV,
   release: process.env.APP_VERSION,
-  tracesSampleRate: 0.1, // Sample 10% of transactions for performance
+  tracesSampleRate: 0.1,        // Sample 10% of transactions for performance
   beforeSend(event) {
     // Scrub PII before sending to Sentry
     if (event.user) {
@@ -794,23 +785,23 @@ Sentry.init({
 
 ### API Performance Targets
 
-| Metric            | Target    | Warning threshold | Critical threshold |
-| ----------------- | --------- | ----------------- | ------------------ |
-| p50 response time | < 80ms    | 150ms             | 300ms              |
-| p95 response time | < 500ms   | 800ms             | 1,500ms            |
-| p99 response time | < 1,000ms | 1,500ms           | 3,000ms            |
-| Error rate (5xx)  | < 0.1%    | 0.5%              | 1%                 |
-| Availability      | > 99.9%   | 99.5%             | 99.0%              |
+| Metric | Target | Warning threshold | Critical threshold |
+|---|---|---|---|
+| p50 response time | < 80ms | 150ms | 300ms |
+| p95 response time | < 500ms | 800ms | 1,500ms |
+| p99 response time | < 1,000ms | 1,500ms | 3,000ms |
+| Error rate (5xx) | < 0.1% | 0.5% | 1% |
+| Availability | > 99.9% | 99.5% | 99.0% |
 
 ### Frontend Performance Targets (Core Web Vitals)
 
-| Metric                         | Target  | Tool                            |
-| ------------------------------ | ------- | ------------------------------- |
-| Largest Contentful Paint (LCP) | < 2.5s  | Vercel Analytics / Lighthouse   |
-| First Input Delay (FID)        | < 100ms | Real User Monitoring            |
-| Cumulative Layout Shift (CLS)  | < 0.1   | Lighthouse CI                   |
-| Time to Interactive (TTI)      | < 3.5s  | Lighthouse CI                   |
-| Lighthouse Performance Score   | ≥ 85    | Lighthouse CI in GitHub Actions |
+| Metric | Target | Tool |
+|---|---|---|
+| Largest Contentful Paint (LCP) | < 2.5s | Vercel Analytics / Lighthouse |
+| First Input Delay (FID) | < 100ms | Real User Monitoring |
+| Cumulative Layout Shift (CLS) | < 0.1 | Lighthouse CI |
+| Time to Interactive (TTI) | < 3.5s | Lighthouse CI |
+| Lighthouse Performance Score | ≥ 85 | Lighthouse CI in GitHub Actions |
 
 **Lighthouse CI in GitHub Actions:**
 
@@ -828,14 +819,14 @@ Sentry.init({
 
 ### Background Job Performance Targets
 
-| Metric                         | Target                   | Alert threshold |
-| ------------------------------ | ------------------------ | --------------- |
-| Video discovery cycle duration | < 30 minutes             | > 45 minutes    |
-| Single video full analysis     | < 5 minutes              | > 10 minutes    |
-| Alert dispatch latency         | < 2 minutes from trigger | > 10 minutes    |
-| Daily trend detection cycle    | < 2 hours                | > 4 hours       |
-| Export generation (1,000 rows) | < 60 seconds             | > 5 minutes     |
-| Dead-letter notification delay | < 5 minutes              | > 15 minutes    |
+| Metric | Target | Alert threshold |
+|---|---|---|
+| Video discovery cycle duration | < 30 minutes | > 45 minutes |
+| Single video full analysis | < 5 minutes | > 10 minutes |
+| Alert dispatch latency | < 2 minutes from trigger | > 10 minutes |
+| Daily trend detection cycle | < 2 hours | > 4 hours |
+| Export generation (1,000 rows) | < 60 seconds | > 5 minutes |
+| Dead-letter notification delay | < 5 minutes | > 15 minutes |
 
 ### Slow Query Monitoring
 
@@ -867,11 +858,11 @@ Slow queries (> 100ms average) are reviewed weekly and optimised.
 Returns immediately if the process is running. Used by Coolify and Traefik to detect crashed containers.
 
 ```typescript
-fastify.get('/health', async (request, reply) => {
+fastify.get("/health", async (request, reply) => {
   return reply.code(200).send({
-    status: 'ok',
+    status: "ok",
     uptime: Math.floor(process.uptime()),
-    version: process.env.APP_VERSION ?? 'unknown',
+    version: process.env.APP_VERSION ?? "unknown",
     timestamp: new Date().toISOString(),
   });
 });
@@ -882,23 +873,23 @@ fastify.get('/health', async (request, reply) => {
 Checks all dependencies before declaring the service ready to receive traffic.
 
 ```typescript
-fastify.get('/ready', async (request, reply) => {
+fastify.get("/ready", async (request, reply) => {
   const checks: Record<string, string> = {};
 
   // Check database
   try {
     await db.execute(sql`SELECT 1`);
-    checks.database = 'ok';
+    checks.database = "ok";
   } catch {
-    checks.database = 'error: connection failed';
+    checks.database = "error: connection failed";
   }
 
   // Check Redis
   try {
     await redis.ping();
-    checks.redis = 'ok';
+    checks.redis = "ok";
   } catch {
-    checks.redis = 'error: connection failed';
+    checks.redis = "error: connection failed";
   }
 
   // Check queue
@@ -906,14 +897,14 @@ fastify.get('/ready', async (request, reply) => {
     const queueSize = await bullQueue.count();
     checks.queue = `ok (${queueSize} pending)`;
   } catch {
-    checks.queue = 'error: BullMQ unreachable';
+    checks.queue = "error: BullMQ unreachable";
   }
 
-  const allOk = Object.values(checks).every((v) => v.startsWith('ok'));
+  const allOk = Object.values(checks).every((v) => v.startsWith("ok"));
   const statusCode = allOk ? 200 : 503;
 
   return reply.code(statusCode).send({
-    status: allOk ? 'ready' : 'not_ready',
+    status: allOk ? "ready" : "not_ready",
     checks,
     timestamp: new Date().toISOString(),
   });
@@ -927,7 +918,7 @@ fastify.get('/ready', async (request, reply) => {
 services:
   api:
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/ready']
+      test: ["CMD", "curl", "-f", "http://localhost:3001/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -935,7 +926,7 @@ services:
 
   web:
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -951,8 +942,8 @@ http:
       loadBalancer:
         healthCheck:
           path: /ready
-          interval: '30s'
-          timeout: '10s'
+          interval: "30s"
+          timeout: "10s"
 ```
 
 ---
@@ -963,12 +954,12 @@ http:
 
 External monitoring checks from multiple global locations to detect outages that internal monitoring would miss.
 
-| Monitor       | URL                                 | Check interval | Alert on               |
-| ------------- | ----------------------------------- | -------------- | ---------------------- |
-| Frontend      | `https://app.viralscopes.io`        | 1 minute       | 2 consecutive failures |
-| API health    | `https://api.viralscopes.io/health` | 1 minute       | 2 consecutive failures |
-| API readiness | `https://api.viralscopes.io/ready`  | 2 minutes      | 3 consecutive failures |
-| Login page    | `https://app.viralscopes.io/login`  | 5 minutes      | 2 consecutive failures |
+| Monitor | URL | Check interval | Alert on |
+|---|---|---|---|
+| Frontend | `https://app.viralscopes.io` | 1 minute | 2 consecutive failures |
+| API health | `https://api.viralscopes.io/health` | 1 minute | 2 consecutive failures |
+| API readiness | `https://api.viralscopes.io/ready` | 2 minutes | 3 consecutive failures |
+| Login page | `https://app.viralscopes.io/login` | 5 minutes | 2 consecutive failures |
 
 ### Uptime SLO Tracking
 
@@ -988,14 +979,14 @@ SLOs define the reliability targets we commit to achieving.
 
 ### Platform SLOs
 
-| SLO                                | Target            | Measurement window | Error budget (monthly) |
-| ---------------------------------- | ----------------- | ------------------ | ---------------------- |
-| API availability                   | 99.9%             | Rolling 30 days    | 43.8 minutes downtime  |
-| API p95 latency < 500ms            | 99.5% of requests | Rolling 7 days     | 0.5% of requests       |
-| Background job success rate        | 99.0%             | Rolling 24 hours   | 1% of jobs             |
-| Alert dispatch within 2 minutes    | 98.0%             | Rolling 7 days     | 2% of alerts           |
-| Export completion within 5 minutes | 99.0%             | Rolling 7 days     | 1% of exports          |
-| Email delivery                     | 98.0%             | Rolling 7 days     | 2% of emails           |
+| SLO | Target | Measurement window | Error budget (monthly) |
+|---|---|---|---|
+| API availability | 99.9% | Rolling 30 days | 43.8 minutes downtime |
+| API p95 latency < 500ms | 99.5% of requests | Rolling 7 days | 0.5% of requests |
+| Background job success rate | 99.0% | Rolling 24 hours | 1% of jobs |
+| Alert dispatch within 2 minutes | 98.0% | Rolling 7 days | 2% of alerts |
+| Export completion within 5 minutes | 99.0% | Rolling 7 days | 1% of exports |
+| Email delivery | 98.0% | Rolling 7 days | 2% of emails |
 
 ### Error Budget Policy
 
@@ -1009,23 +1000,23 @@ SLOs define the reliability targets we commit to achieving.
 
 SLIs are the specific metrics used to measure whether SLOs are being met.
 
-| SLO                    | SLI (what we measure)                                       | Data source                 |
-| ---------------------- | ----------------------------------------------------------- | --------------------------- |
-| API availability       | `(total_requests - 5xx_errors) / total_requests`            | Prometheus                  |
-| API p95 latency        | `histogram_quantile(0.95, http_request_duration_ms_bucket)` | Prometheus                  |
-| Job success rate       | `successful_jobs / total_jobs`                              | Prometheus + job_logs table |
-| Alert dispatch latency | `alert_dispatched_at - trigger_event_at`                    | alert_events table          |
-| Export completion time | `completed_at - created_at`                                 | exports table               |
-| Email delivery         | `delivered / (delivered + bounced + failed)`                | SendGrid webhook data       |
+| SLO | SLI (what we measure) | Data source |
+|---|---|---|
+| API availability | `(total_requests - 5xx_errors) / total_requests` | Prometheus |
+| API p95 latency | `histogram_quantile(0.95, http_request_duration_ms_bucket)` | Prometheus |
+| Job success rate | `successful_jobs / total_jobs` | Prometheus + job_logs table |
+| Alert dispatch latency | `alert_dispatched_at - trigger_event_at` | alert_events table |
+| Export completion time | `completed_at - created_at` | exports table |
+| Email delivery | `delivered / (delivered + bounced + failed)` | SendGrid webhook data |
 
 ### SLI Measurement Cadence
 
-| SLI                    | Measurement frequency             | Alert frequency                  |
-| ---------------------- | --------------------------------- | -------------------------------- |
-| API availability       | Real-time (15s Prometheus scrape) | Immediate on breach              |
-| API p95 latency        | 1-minute rolling average          | After 5 minutes sustained breach |
-| Job success rate       | 15-minute rolling average         | After 10 minutes breach          |
-| Alert dispatch latency | Computed on each dispatch         | If any alert takes > 10 minutes  |
+| SLI | Measurement frequency | Alert frequency |
+|---|---|---|
+| API availability | Real-time (15s Prometheus scrape) | Immediate on breach |
+| API p95 latency | 1-minute rolling average | After 5 minutes sustained breach |
+| Job success rate | 15-minute rolling average | After 10 minutes breach |
+| Alert dispatch latency | Computed on each dispatch | If any alert takes > 10 minutes |
 
 ---
 
@@ -1033,13 +1024,13 @@ SLIs are the specific metrics used to measure whether SLOs are being met.
 
 SLAs are the contractual commitments made to customers. They are stricter at higher plan tiers.
 
-| Plan         | Uptime SLA     | Response time SLA           | Breach credit                             |
-| ------------ | -------------- | --------------------------- | ----------------------------------------- |
-| Free         | No SLA         | No SLA                      | None                                      |
-| Starter      | No SLA         | No SLA                      | None                                      |
-| Professional | 99.5% monthly  | —                           | Service credit: 1 day per hour below SLA  |
-| Business     | 99.9% monthly  | P1 support: 4-hour response | Service credit: 1 week per hour below SLA |
-| Enterprise   | 99.95% monthly | P1 support: 1-hour response | Custom SLA credit terms                   |
+| Plan | Uptime SLA | Response time SLA | Breach credit |
+|---|---|---|---|
+| Free | No SLA | No SLA | None |
+| Starter | No SLA | No SLA | None |
+| Professional | 99.5% monthly | — | Service credit: 1 day per hour below SLA |
+| Business | 99.9% monthly | P1 support: 4-hour response | Service credit: 1 week per hour below SLA |
+| Enterprise | 99.95% monthly | P1 support: 1-hour response | Custom SLA credit terms |
 
 ### SLA Reporting
 
@@ -1053,17 +1044,16 @@ SLAs are the contractual commitments made to customers. They are stricter at hig
 
 ### Incident Classification
 
-| Severity          | Definition                               | Response target                         | Communication                             |
-| ----------------- | ---------------------------------------- | --------------------------------------- | ----------------------------------------- |
-| **P1 — Critical** | Service completely down or data breach   | Acknowledge: 5 min · Mitigate: 30 min   | Status page + email to all customers      |
-| **P2 — High**     | Major feature broken, > 10% error rate   | Acknowledge: 15 min · Mitigate: 2 hours | Status page + email to affected customers |
-| **P3 — Medium**   | Minor feature degraded, < 10% error rate | Acknowledge: 1 hour · Resolve: 24 hours | Status page update                        |
-| **P4 — Low**      | Cosmetic issue, no user impact           | Resolve: 7 days                         | Internal tracking only                    |
+| Severity | Definition | Response target | Communication |
+|---|---|---|---|
+| **P1 — Critical** | Service completely down or data breach | Acknowledge: 5 min · Mitigate: 30 min | Status page + email to all customers |
+| **P2 — High** | Major feature broken, > 10% error rate | Acknowledge: 15 min · Mitigate: 2 hours | Status page + email to affected customers |
+| **P3 — Medium** | Minor feature degraded, < 10% error rate | Acknowledge: 1 hour · Resolve: 24 hours | Status page update |
+| **P4 — Low** | Cosmetic issue, no user impact | Resolve: 7 days | Internal tracking only |
 
 ### Incident Response Checklist
 
 #### Detection (0–5 minutes)
-
 - [ ] Alert fires in PagerDuty / Slack
 - [ ] On-call engineer acknowledges
 - [ ] Classify severity (P1–P4)
@@ -1071,7 +1061,6 @@ SLAs are the contractual commitments made to customers. They are stricter at hig
 - [ ] Assign Incident Commander and Technical Lead
 
 #### Assessment (5–15 minutes)
-
 - [ ] Check Grafana dashboards — which metrics are anomalous?
 - [ ] Check Loki logs — what errors appear in the last 5 minutes?
 - [ ] Check `/ready` endpoint on all services
@@ -1080,7 +1069,6 @@ SLAs are the contractual commitments made to customers. They are stricter at hig
 - [ ] Post initial status update to incident channel
 
 #### Containment (15–60 minutes for P1)
-
 - [ ] If applicable: enable maintenance mode or circuit breaker
 - [ ] Preserve logs and metrics snapshots before any changes
 - [ ] Identify the root cause hypothesis
@@ -1088,14 +1076,12 @@ SLAs are the contractual commitments made to customers. They are stricter at hig
 - [ ] Verify the containment step worked via metrics
 
 #### Resolution
-
 - [ ] Apply permanent fix or revert the breaking change
 - [ ] Verify via `/ready` and Grafana that all metrics return to baseline
 - [ ] Communicate resolution to customers via status page
 - [ ] Monitor for 30 minutes post-resolution
 
 #### Post-Mortem (within 5 business days)
-
 - [ ] Create post-mortem document from template
 - [ ] Timeline of events (what happened, when)
 - [ ] Root cause (the 5 Whys)
@@ -1113,11 +1099,11 @@ SLAs are the contractual commitments made to customers. They are stricter at hig
 
 At Stage 1 (small team), all engineers are available on a best-effort basis. Formal on-call rotation begins at Stage 2 when PagerDuty is enabled.
 
-| Stage         | On-call structure                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------- |
+| Stage | On-call structure |
+|---|---|
 | Stage 1 (MVP) | Engineering lead primary; all engineers expected to respond within 30 minutes during business hours |
-| Stage 2       | Weekly rotation via PagerDuty; primary + secondary on-call                                          |
-| Stage 3       | 24/7 rotation; primary + secondary; follow-the-sun for global coverage                              |
+| Stage 2 | Weekly rotation via PagerDuty; primary + secondary on-call |
+| Stage 3 | 24/7 rotation; primary + secondary; follow-the-sun for global coverage |
 
 ### On-Call Responsibilities
 
@@ -1151,7 +1137,6 @@ Legal / PR team notified
 ### Handoff Procedure
 
 At the end of each on-call shift:
-
 - [ ] Write a brief handoff note in `#on-call-handoff` Slack channel
 - [ ] Include: any active incidents, any known issues, any changes made during shift
 - [ ] Confirm the incoming engineer has acknowledged
@@ -1162,13 +1147,13 @@ At the end of each on-call shift:
 
 ### Backup Schedule
 
-| Backup type               | Frequency                 | Retention                          | Storage                         |
-| ------------------------- | ------------------------- | ---------------------------------- | ------------------------------- |
-| Supabase automated backup | Daily at 02:00 UTC        | 7 days (Pro), 30 days (Pro + PITR) | Supabase infrastructure         |
-| pg_dump export to R2      | Daily at 03:00 UTC        | 30 days                            | Cloudflare R2 `backups/` bucket |
-| Hetzner server snapshot   | Weekly (Sunday 04:00 UTC) | 4 snapshots                        | Hetzner snapshot storage        |
-| n8n workflow export       | On every workflow change  | Git history                        | GitHub repository               |
-| Loki log export           | Monthly to R2             | 6 months                           | Cloudflare R2 `logs-archive/`   |
+| Backup type | Frequency | Retention | Storage |
+|---|---|---|---|
+| Supabase automated backup | Daily at 02:00 UTC | 7 days (Pro), 30 days (Pro + PITR) | Supabase infrastructure |
+| pg_dump export to R2 | Daily at 03:00 UTC | 30 days | Cloudflare R2 `backups/` bucket |
+| Hetzner server snapshot | Weekly (Sunday 04:00 UTC) | 4 snapshots | Hetzner snapshot storage |
+| n8n workflow export | On every workflow change | Git history | GitHub repository |
+| Loki log export | Monthly to R2 | 6 months | Cloudflare R2 `logs-archive/` |
 
 ### Monthly Backup Verification Procedure
 
@@ -1229,16 +1214,16 @@ echo "
 
 ### Recovery Objectives
 
-| Scenario                                 | RTO        | RPO                       | Priority |
-| ---------------------------------------- | ---------- | ------------------------- | -------- |
-| API container crash                      | 2 minutes  | 0 (Docker restart)        | P1       |
-| VPS hardware failure                     | 30 minutes | 24 hours (last backup)    | P1       |
-| Database corruption                      | 1 hour     | 24 hours (last backup)    | P1       |
-| Redis failure (Stage 1, no persistence)  | 5 minutes  | Cache only (no data loss) | P2       |
-| Object storage unavailable               | 60 minutes | None (read-only impact)   | P2       |
-| n8n workflow failure                     | 5 minutes  | Queue retry covers gaps   | P2       |
-| Cloudflare service disruption            | 30 minutes | None                      | P2       |
-| AI API unavailability (OpenAI/Anthropic) | 10 minutes | None (analysis paused)    | P3       |
+| Scenario | RTO | RPO | Priority |
+|---|---|---|---|
+| API container crash | 2 minutes | 0 (Docker restart) | P1 |
+| VPS hardware failure | 30 minutes | 24 hours (last backup) | P1 |
+| Database corruption | 1 hour | 24 hours (last backup) | P1 |
+| Redis failure (Stage 1, no persistence) | 5 minutes | Cache only (no data loss) | P2 |
+| Object storage unavailable | 60 minutes | None (read-only impact) | P2 |
+| n8n workflow failure | 5 minutes | Queue retry covers gaps | P2 |
+| Cloudflare service disruption | 30 minutes | None | P2 |
+| AI API unavailability (OpenAI/Anthropic) | 10 minutes | None (analysis paused) | P3 |
 
 ### DR Runbook: VPS Complete Failure
 
@@ -1306,27 +1291,27 @@ Estimated time: 60 minutes
 
 ### Capacity Thresholds — Action Required
 
-| Resource                   | Warning                    | Critical   | Action                               |
-| -------------------------- | -------------------------- | ---------- | ------------------------------------ |
-| Server CPU (sustained)     | 70%                        | 85%        | Optimise, then upgrade server        |
-| Server RAM                 | 75%                        | 88%        | Optimise Redis/n8n, then upgrade     |
-| Disk usage                 | 75%                        | 88%        | Expand volume or clean old logs      |
-| PostgreSQL connections     | 80% of pool                | 95%        | Increase PgBouncer pool size         |
-| Redis memory               | 75% of max                 | 88%        | Increase Redis maxmemory or add node |
-| Queue depth (sustained 1h) | 500 jobs                   | 2,000 jobs | Add n8n worker instance              |
-| Database size              | 6 GB (on 8GB Supabase Pro) | 7.5 GB     | Upgrade Supabase plan                |
+| Resource | Warning | Critical | Action |
+|---|---|---|---|
+| Server CPU (sustained) | 70% | 85% | Optimise, then upgrade server |
+| Server RAM | 75% | 88% | Optimise Redis/n8n, then upgrade |
+| Disk usage | 75% | 88% | Expand volume or clean old logs |
+| PostgreSQL connections | 80% of pool | 95% | Increase PgBouncer pool size |
+| Redis memory | 75% of max | 88% | Increase Redis maxmemory or add node |
+| Queue depth (sustained 1h) | 500 jobs | 2,000 jobs | Add n8n worker instance |
+| Database size | 6 GB (on 8GB Supabase Pro) | 7.5 GB | Upgrade Supabase plan |
 
 ### Disk Growth Projection
 
 Expected disk usage growth at Stage 1:
 
-| Data type                     | Growth rate                     | Monthly addition |
-| ----------------------------- | ------------------------------- | ---------------- |
-| PostgreSQL (videos, analyses) | ~500 MB/month                   | +500 MB          |
-| Loki logs                     | ~200 MB/month                   | +200 MB          |
-| Prometheus metrics            | ~100 MB/month (with compaction) | +100 MB          |
-| n8n workflow data             | ~50 MB/month                    | +50 MB           |
-| **Total**                     | **~850 MB/month**               |                  |
+| Data type | Growth rate | Monthly addition |
+|---|---|---|
+| PostgreSQL (videos, analyses) | ~500 MB/month | +500 MB |
+| Loki logs | ~200 MB/month | +200 MB |
+| Prometheus metrics | ~100 MB/month (with compaction) | +100 MB |
+| n8n workflow data | ~50 MB/month | +50 MB |
+| **Total** | **~850 MB/month** | |
 
 At this rate, the 240 GB NVMe SSD on the CCX33 provides approximately **280 months** before disk becomes a concern — well beyond when a Stage 2 migration would occur.
 
@@ -1338,21 +1323,21 @@ Runbooks live in `/docs/guides/runbooks/` and are linked from Grafana alert anno
 
 ### Runbook Index
 
-| ID     | Title                       | Trigger                        | Last reviewed |
-| ------ | --------------------------- | ------------------------------ | ------------- |
-| RB-001 | API High Error Rate         | `API_HIGH_ERROR_RATE` alert    | 2026-07-20    |
-| RB-002 | API High Latency            | `API_HIGH_LATENCY_P95` alert   | 2026-07-20    |
-| RB-003 | Queue Backlog               | `QUEUE_BACKLOG_HIGH` alert     | 2026-07-20    |
-| RB-004 | Dead-Letter Jobs Elevated   | `DEAD_LETTER_ELEVATED` alert   | 2026-07-20    |
-| RB-005 | YouTube Quota Exhausted     | `YOUTUBE_QUOTA_CRITICAL` alert | 2026-07-20    |
-| RB-006 | AI Provider Unavailable     | Manual / workflow failures     | 2026-07-20    |
-| RB-007 | Database Connection High    | `DB_CONNECTIONS_HIGH` alert    | 2026-07-20    |
-| RB-008 | Disk Space Warning          | `DISK_SPACE_WARNING` alert     | 2026-07-20    |
-| RB-009 | VPS Complete Failure        | Manual / uptime monitor        | 2026-07-20    |
-| RB-010 | Database Corruption         | Manual                         | 2026-07-20    |
-| RB-011 | Redis Failure               | Uptime monitor / queue errors  | 2026-07-20    |
-| RB-012 | Data Breach Response        | Manual / security alert        | 2026-07-20    |
-| RB-013 | Backup Verification Failure | Monthly job / manual           | 2026-07-20    |
+| ID | Title | Trigger | Last reviewed |
+|---|---|---|---|
+| RB-001 | API High Error Rate | `API_HIGH_ERROR_RATE` alert | 2026-07-20 |
+| RB-002 | API High Latency | `API_HIGH_LATENCY_P95` alert | 2026-07-20 |
+| RB-003 | Queue Backlog | `QUEUE_BACKLOG_HIGH` alert | 2026-07-20 |
+| RB-004 | Dead-Letter Jobs Elevated | `DEAD_LETTER_ELEVATED` alert | 2026-07-20 |
+| RB-005 | YouTube Quota Exhausted | `YOUTUBE_QUOTA_CRITICAL` alert | 2026-07-20 |
+| RB-006 | AI Provider Unavailable | Manual / workflow failures | 2026-07-20 |
+| RB-007 | Database Connection High | `DB_CONNECTIONS_HIGH` alert | 2026-07-20 |
+| RB-008 | Disk Space Warning | `DISK_SPACE_WARNING` alert | 2026-07-20 |
+| RB-009 | VPS Complete Failure | Manual / uptime monitor | 2026-07-20 |
+| RB-010 | Database Corruption | Manual | 2026-07-20 |
+| RB-011 | Redis Failure | Uptime monitor / queue errors | 2026-07-20 |
+| RB-012 | Data Breach Response | Manual / security alert | 2026-07-20 |
+| RB-013 | Backup Verification Failure | Monthly job / manual | 2026-07-20 |
 
 ### Runbook Template (RB-001 Example)
 
@@ -1377,13 +1362,13 @@ Runbooks live in `/docs/guides/runbooks/` and are linked from Grafana alert anno
 
 ## Common Causes & Fixes
 
-| Symptom                | Likely cause         | Fix                                   |
-| ---------------------- | -------------------- | ------------------------------------- |
-| All endpoints 500      | Database unreachable | Check Supabase status, PgBouncer pool |
-| All endpoints 500      | Redis unreachable    | Restart Redis container               |
-| Specific endpoints 500 | Bug in recent deploy | Roll back to previous version         |
-| 503 from Traefik       | API container down   | Check `docker ps`, restart container  |
-| DB connection errors   | Pool exhausted       | Increase PgBouncer pool size          |
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| All endpoints 500 | Database unreachable | Check Supabase status, PgBouncer pool |
+| All endpoints 500 | Redis unreachable | Restart Redis container |
+| Specific endpoints 500 | Bug in recent deploy | Roll back to previous version |
+| 503 from Traefik | API container down | Check `docker ps`, restart container |
+| DB connection errors | Pool exhausted | Increase PgBouncer pool size |
 
 ## Escalation
 
@@ -1445,7 +1430,6 @@ npm run db:migrate:status --workspace=packages/db --env=production
 ### Log Rotation & Cleanup
 
 Managed automatically:
-
 - Docker container logs: JSON file driver with `max-size=100m, max-file=3` — auto-rotated
 - Loki: retention policy deletes logs older than 30 days (Stage 1)
 - Prometheus: 15-day retention with TSDB compaction
@@ -1480,12 +1464,11 @@ Managed automatically:
 
 ---
 
-_This document is reviewed monthly and updated whenever monitoring configuration changes, new alerts are added, or runbooks are revised._
+*This document is reviewed monthly and updated whenever monitoring configuration changes, new alerts are added, or runbooks are revised.*
 
 ---
 
 **Related Documents:**
-
 - [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md) — Infrastructure evolution and upgrade triggers
 - [Security_Architecture.md](./Security_Architecture.md) — Security monitoring and incident response
 - [Deployment_Guide.md](./Deployment_Guide.md) — Deployment pipeline and post-deploy verification

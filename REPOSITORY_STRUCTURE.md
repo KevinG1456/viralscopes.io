@@ -1,19 +1,10 @@
 # REPOSITORY_STRUCTURE.md
-
 # ViralScopes.io — Repository Architecture & Structure
 
-> **Version:** 1.2
-> **Last Updated:** 2026-07-22
+> **Version:** 1.0
+> **Last Updated:** 2026-07-20
 > **Status:** Active
 > **Cross-references:** [README.md](./README.md) · [PROJECT_RULES.md](./PROJECT_RULES.md) · [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md)
-
-> **Phase 2 note:** The hierarchy below is the target structure for the full MVP. As of Phase 2
-> (Infrastructure & DevOps), `docker-compose.dev.yml`, `infra/docker/`, and `infra/monitoring/`
-> are live and verified; `docker-compose.prod.yml`, `infra/traefik/`, and the Coolify deploy
-> workflows are templates (BLK-002 — no VPS/domain exists). `apps/api` has a minimal Fastify
-> bootstrap (health/readiness/metrics/storage only); `packages/shared` and `packages/db` remain
-> empty stubs. See the inline "Phase 1"/"Phase 2" annotations in the tree below and
-> [PROJECT_STATUS.md](./PROJECT_STATUS.md) for current completion status.
 
 ---
 
@@ -165,7 +156,7 @@ viralscopes/
 │   │   │   ├── error.tsx             # Global error boundary
 │   │   │   ├── not-found.tsx         # 404 page
 │   │   │   ├── layout.tsx            # Root layout (fonts, providers, metadata)
-│   │   │   └── globals.css           # Tailwind v4 entrypoint + design tokens (@theme, no tailwind.config.ts)
+│   │   │   └── globals.css           # Global styles and Tailwind base
 │   │   │
 │   │   ├── components/               # Reusable UI components
 │   │   │   ├── ui/                   # shadcn/ui base components (generated)
@@ -289,19 +280,13 @@ viralscopes/
 │   │   │   └── changelog.md          # Changelog source for the Changelog page
 │   │   │
 │   │   ├── next.config.ts            # Next.js configuration
-│   │   ├── postcss.config.mjs        # PostCSS configuration (loads @tailwindcss/postcss)
-│   │   ├── eslint.config.mjs         # Package ESLint flat config (extends the root base)
-│   │   ├── tsconfig.json             # TypeScript configuration (extends tsconfig.base.json)
+│   │   ├── tailwind.config.ts        # Tailwind CSS configuration with design tokens
+│   │   ├── postcss.config.js         # PostCSS configuration
+│   │   ├── tsconfig.json             # TypeScript configuration (extends root)
 │   │   ├── .env.local                # Local dev env vars (gitignored)
 │   │   └── package.json
 │   │
 │   └── api/                          # Fastify backend API
-│       │                             # Phase 2: minimal bootstrap only — server.ts,
-│       │                             # plugins/{cors,health,metrics}.plugin.ts, and
-│       │                             # services/storage.service.ts. No routes/, controllers/,
-│       │                             # repositories/, middleware/, schemas/, or errors/ yet —
-│       │                             # config.ts is plain (no Zod validation yet). The full
-│       │                             # layered structure below lands in Phase 5.
 │       ├── src/
 │       │   ├── index.ts              # Application entry point
 │       │   ├── server.ts             # Fastify server factory and plugin registration
@@ -451,8 +436,6 @@ viralscopes/
 │
 ├── packages/
 │   ├── shared/                       # Shared types, constants, and Zod schemas
-│   │   │                             # Phase 1: stub only (index.ts, package.json, tsconfig.json,
-│   │   │                             # eslint.config.mjs). Populated starting Phase 3/5 below.
 │   │   ├── src/
 │   │   │   ├── types/                # All shared TypeScript interfaces and types
 │   │   │   │   ├── video.types.ts
@@ -493,9 +476,6 @@ viralscopes/
 │   │   └── package.json
 │   │
 │   └── db/                           # Database schema and migrations
-│       │                             # Phase 1: stub only (index.ts, package.json, tsconfig.json,
-│       │                             # eslint.config.mjs). No Drizzle dependency yet — schema,
-│       │                             # migrations, RLS, and drizzle.config.ts land in Phase 3.
 │       ├── src/
 │       │   ├── schema/               # Drizzle ORM table definitions
 │       │   │   ├── users.ts
@@ -640,32 +620,25 @@ viralscopes/
 │       └── ADR-005-dual-ai-providers.md
 │
 ├── .github/                          # GitHub configuration
-│   ├── workflows/                    # GitHub Actions CI/CD — all 5 live as of Phase 2
-│   │   ├── ci.yml                    # Lint, type-check, build, test on every PR — verified locally
-│   │   ├── build.yml                 # Docker build and push to GHCR on merge to main — verified locally
-│   │   ├── deploy-staging.yml        # TEMPLATE: skips gracefully without Coolify secrets (BLK-002)
-│   │   ├── deploy-production.yml     # TEMPLATE: skips gracefully without Coolify secrets (BLK-002)
-│   │   └── security.yml              # npm audit (blocks on high/critical) + weekly scheduled re-scan
-│   ├── dependabot.yml                # npm (root + workspaces), github-actions, docker — weekly
-│   ├── CODEOWNERS                    # Not yet created — no team to assign yet
-│   ├── PULL_REQUEST_TEMPLATE.md      # Not yet created
-│   └── ISSUE_TEMPLATE/               # Not yet created
+│   ├── workflows/                    # GitHub Actions CI/CD
+│   │   ├── ci.yml                    # Lint, type-check, test on every PR
+│   │   ├── build.yml                 # Docker build and push on merge to main
+│   │   ├── deploy-staging.yml        # Auto-deploy to staging
+│   │   ├── deploy-production.yml     # Manual-approval deploy to production
+│   │   └── security.yml              # npm audit and dependency scanning
+│   ├── CODEOWNERS                    # Code ownership assignments
+│   ├── PULL_REQUEST_TEMPLATE.md      # PR description template
+│   └── ISSUE_TEMPLATE/
 │       ├── bug_report.md
 │       └── feature_request.md
 │
-├── docker-compose.dev.yml            # Development Docker Compose — verified working (Phase 2)
-├── docker-compose.prod.yml           # Production Docker Compose — TEMPLATE, unverified (BLK-002)
+├── docker-compose.dev.yml            # Development Docker Compose
+├── docker-compose.prod.yml           # Production Docker Compose
 ├── turbo.json                        # Turborepo task pipeline configuration
 ├── package.json                      # Root package.json (workspace definition)
 ├── tsconfig.base.json                # Base TypeScript configuration (extended by all packages)
-├── eslint.config.mjs                 # Root ESLint flat config (lints stray top-level files only)
-├── eslint.config.base.mjs            # Shared ESLint flat-config rules, imported by every package's own config
-├── .prettierrc.json                  # Prettier configuration
-├── .prettierignore                   # Prettier ignore patterns
-├── .secretlintrc.json                # secretlint rule configuration (secret-commit scanning)
-├── .secretlintignore                 # secretlint ignore patterns (binaries, build output)
-├── .lintstagedrc.json                # lint-staged configuration (runs on pre-commit)
-├── .husky/                           # Husky git hooks (pre-commit runs lint-staged)
+├── .eslintrc.js                      # Root ESLint configuration
+├── .prettierrc                       # Prettier configuration
 ├── .nvmrc                            # Node.js version pin
 ├── .gitignore
 ├── .env.example                      # All required environment variables with descriptions
@@ -676,22 +649,19 @@ viralscopes/
 
 ## 3. Root Level Files
 
-| File                                       | Purpose                                                                                                                                                                                                  |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.dev.yml`                   | Local development environment: all services, hot reload, exposed ports. **Verified working** (Phase 2).                                                                                                  |
-| `docker-compose.prod.yml`                  | Production environment: health checks, restart policies, named volumes, no exposed ports except via Traefik. **Template, unverified** — no VPS/domain exists (BLK-002).                                  |
-| `turbo.json`                               | Turborepo pipeline: defines build order, cache inputs, and task dependencies                                                                                                                             |
-| `package.json`                             | Workspace root: defines all workspaces, shared dev dependencies, and monorepo scripts                                                                                                                    |
-| `tsconfig.base.json`                       | Base TypeScript config inherited by all packages. Sets `strict: true`, target `ES2022`, path aliases                                                                                                     |
-| `eslint.config.mjs`                        | Root ESLint flat config. Flat config does not cascade across directories, so this only lints stray top-level files — every package has its own `eslint.config.mjs` that imports `eslint.config.base.mjs` |
-| `eslint.config.base.mjs`                   | Shared ESLint rules (no-`any`, no-unused-vars, import ordering) inherited by every package's own flat config                                                                                             |
-| `.secretlintrc.json` / `.secretlintignore` | Secret-scanning configuration (`secretlint`, run via the pre-commit hook). `detect-secrets` is an acceptable alternative if a future need arises                                                         |
-| `.lintstagedrc.json` / `.husky/pre-commit` | Pre-commit gate: Prettier + ESLint `--fix` on staged code, secret scan on all staged files                                                                                                               |
-| `.prettierrc`                              | Prettier formatting configuration: single quotes, 100 char line length, trailing commas                                                                                                                  |
-| `.nvmrc`                                   | Pins the Node.js LTS version. Used by CI and nvm for consistent runtime                                                                                                                                  |
-| `.env.example`                             | Documents every required environment variable with type, description, and example value                                                                                                                  |
-| `.gitignore`                               | Excludes: `node_modules/`, `.env*` (except `.env.example`), build outputs, editor files                                                                                                                  |
-| `README.md`                                | Project overview, quick-start guide, and links to all documentation                                                                                                                                      |
+| File | Purpose |
+|---|---|
+| `docker-compose.dev.yml` | Local development environment: all services, hot reload, exposed ports |
+| `docker-compose.prod.yml` | Production environment: health checks, restart policies, named volumes, no exposed ports |
+| `turbo.json` | Turborepo pipeline: defines build order, cache inputs, and task dependencies |
+| `package.json` | Workspace root: defines all workspaces, shared dev dependencies, and monorepo scripts |
+| `tsconfig.base.json` | Base TypeScript config inherited by all packages. Sets `strict: true`, target `ES2022`, path aliases |
+| `.eslintrc.js` | Root ESLint configuration: inherited by all packages, defines all rules |
+| `.prettierrc` | Prettier formatting configuration: single quotes, 100 char line length, trailing commas |
+| `.nvmrc` | Pins the Node.js LTS version. Used by CI and nvm for consistent runtime |
+| `.env.example` | Documents every required environment variable with type, description, and example value |
+| `.gitignore` | Excludes: `node_modules/`, `.env*` (except `.env.example`), build outputs, editor files |
+| `README.md` | Project overview, quick-start guide, and links to all documentation |
 
 ---
 
@@ -708,27 +678,27 @@ The frontend uses **Next.js 14+ App Router** with a clear separation between:
 
 Next.js route groups (folders wrapped in parentheses) are used to apply different layouts to different sections without affecting the URL:
 
-| Route Group     | Layout                  | Pages                                             |
-| --------------- | ----------------------- | ------------------------------------------------- |
-| `(auth)/`       | Centred, no sidebar     | Login, Register, Verify Email, Reset Password     |
-| `(dashboard)/`  | Full sidebar + topbar   | All main app pages                                |
+| Route Group | Layout | Pages |
+|---|---|---|
+| `(auth)/` | Centred, no sidebar | Login, Register, Verify Email, Reset Password |
+| `(dashboard)/` | Full sidebar + topbar | All main app pages |
 | `(onboarding)/` | Stepped progress layout | Welcome, Create Org, Choose Plan, First Watchlist |
 
 ### Key Directories
 
-| Directory               | Purpose                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| `app/`                  | All pages, layouts, and Next.js API routes (thin proxies only)                |
-| `components/ui/`        | shadcn/ui base components — generated, never manually edited                  |
-| `components/charts/`    | Chart components wrapping Recharts or similar                                 |
-| `components/shared/`    | Generic components used across multiple features                              |
-| `components/<feature>/` | Components specific to one feature domain                                     |
-| `hooks/`                | Custom React hooks — each hook owns one server state slice via TanStack Query |
-| `lib/api/`              | Typed API client layer — all HTTP calls go here, never in components directly |
-| `lib/routes.ts`         | All route path constants — never hardcode paths in components                 |
-| `i18n/`                 | next-intl configuration and translation files                                 |
-| `content/`              | Markdown content files updated without code deployment                        |
-| `public/`               | Static assets served directly                                                 |
+| Directory | Purpose |
+|---|---|
+| `app/` | All pages, layouts, and Next.js API routes (thin proxies only) |
+| `components/ui/` | shadcn/ui base components — generated, never manually edited |
+| `components/charts/` | Chart components wrapping Recharts or similar |
+| `components/shared/` | Generic components used across multiple features |
+| `components/<feature>/` | Components specific to one feature domain |
+| `hooks/` | Custom React hooks — each hook owns one server state slice via TanStack Query |
+| `lib/api/` | Typed API client layer — all HTTP calls go here, never in components directly |
+| `lib/routes.ts` | All route path constants — never hardcode paths in components |
+| `i18n/` | next-intl configuration and translation files |
+| `content/` | Markdown content files updated without code deployment |
+| `public/` | Static assets served directly |
 
 ### Key Conventions
 
@@ -750,12 +720,12 @@ The API follows a strict **4-layer architecture**:
 Route → Controller → Service → Repository
 ```
 
-| Layer      | File suffix      | Responsibility                                              | Contains business logic? |
-| ---------- | ---------------- | ----------------------------------------------------------- | ------------------------ |
-| Route      | `.routes.ts`     | Define endpoints, apply middleware, validate input with Zod | No                       |
-| Controller | `.controller.ts` | Orchestrate service calls, format response                  | No                       |
-| Service    | `.service.ts`    | All business logic and domain rules                         | Yes                      |
-| Repository | `.repository.ts` | All database queries via Drizzle ORM                        | No                       |
+| Layer | File suffix | Responsibility | Contains business logic? |
+|---|---|---|---|
+| Route | `.routes.ts` | Define endpoints, apply middleware, validate input with Zod | No |
+| Controller | `.controller.ts` | Orchestrate service calls, format response | No |
+| Service | `.service.ts` | All business logic and domain rules | Yes |
+| Repository | `.repository.ts` | All database queries via Drizzle ORM | No |
 
 ### Plugins vs Middleware
 
@@ -768,13 +738,13 @@ All errors are instances of typed classes from `errors/`. The global error handl
 
 ### Services — Key Abstractions
 
-| Service                  | Purpose                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------ |
-| `email.service.ts`       | Abstraction over SendGrid/Resend. Swap providers without touching callers.                 |
-| `storage.service.ts`     | Abstraction over S3/R2/MinIO. Single interface for all object storage operations.          |
-| `queue.service.ts`       | BullMQ job queue interface. Enqueues jobs for n8n consumption.                             |
-| `cache.service.ts`       | Redis abstraction for get/set/del/ttl. Used by rate limiter, feature flags, AI cache.      |
-| `quota.service.ts`       | YouTube API quota tracking and enforcement. Cache-first video lookup.                      |
+| Service | Purpose |
+|---|---|
+| `email.service.ts` | Abstraction over SendGrid/Resend. Swap providers without touching callers. |
+| `storage.service.ts` | Abstraction over S3/R2/MinIO. Single interface for all object storage operations. |
+| `queue.service.ts` | BullMQ job queue interface. Enqueues jobs for n8n consumption. |
+| `cache.service.ts` | Redis abstraction for get/set/del/ttl. Used by rate limiter, feature flags, AI cache. |
+| `quota.service.ts` | YouTube API quota tracking and enforcement. Cache-first video lookup. |
 | `viral-score.service.ts` | Proprietary Viral Score algorithm. Pure function — same inputs always produce same output. |
 
 ---
@@ -787,12 +757,12 @@ All errors are instances of typed classes from `errors/`. The global error handl
 
 ### What Lives Here
 
-| Directory    | Contents                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| `types/`     | TypeScript interfaces for all domain entities (Video, Channel, Trend, etc.)                |
-| `schemas/`   | Zod schemas shared between API input validation and frontend form validation               |
-| `constants/` | Plan definitions, RBAC roles, platform identifiers, error codes, quota limits              |
-| `utils/`     | Pure utility functions with no side effects and no dependencies on Node.js or browser APIs |
+| Directory | Contents |
+|---|---|
+| `types/` | TypeScript interfaces for all domain entities (Video, Channel, Trend, etc.) |
+| `schemas/` | Zod schemas shared between API input validation and frontend form validation |
+| `constants/` | Plan definitions, RBAC roles, platform identifiers, error codes, quota limits |
+| `utils/` | Pure utility functions with no side effects and no dependencies on Node.js or browser APIs |
 
 ### What Does Not Live Here
 
@@ -814,13 +784,13 @@ Both `apps/web` and `apps/api` import from `@viralscopes/shared`. They never imp
 
 ### What Lives Here
 
-| Directory     | Contents                                                     |
-| ------------- | ------------------------------------------------------------ |
-| `schema/`     | One Drizzle table definition file per database table         |
+| Directory | Contents |
+|---|---|
+| `schema/` | One Drizzle table definition file per database table |
 | `migrations/` | Auto-generated SQL migration files, reviewed before applying |
-| `rls/`        | Row Level Security policy SQL, applied in migrations         |
-| `seeds/`      | Development and test seed data scripts                       |
-| `client.ts`   | Drizzle client factory, used by `apps/api`                   |
+| `rls/` | Row Level Security policy SQL, applied in migrations |
+| `seeds/` | Development and test seed data scripts |
+| `client.ts` | Drizzle client factory, used by `apps/api` |
 
 ### Migration Rules
 
@@ -833,28 +803,16 @@ Both `apps/web` and `apps/api` import from `@viralscopes/shared`. They never imp
 
 ## 8. infra/ — Infrastructure
 
-> **Phase 2 note:** `docker/`, `monitoring/`, and `traefik/` are live as of Phase 2 (see
-> `PROJECT_STATUS.md`) — `docker/` and `monitoring/` are verified working; `traefik/` is a
-> template, unverified (BLK-002: no real domain/server exists). `n8n-workflows/` remains empty
-> until Phase 6.
-
 ### docker/
 
-Custom Dockerfiles exist only for the two services this repo actually builds — `Dockerfile.web`
-and `Dockerfile.api`. n8n, Redis, MinIO, Postgres, and the monitoring stack all use official
-images pinned to a resolved digest directly in the compose files (see DEC-011 in
-`PROJECT_STATUS.md`) — no wrapper Dockerfile needed since nothing is customised. Both Dockerfiles
-use multi-stage builds:
+One Dockerfile per deployable service. Dockerfiles use multi-stage builds to keep production images small:
 
-1. **Build stage** — installs all dependencies (`--ignore-scripts`, since the root `prepare: husky`
-   script has nothing to attach to in a Docker build context) and compiles TypeScript
+1. **Build stage** — installs all dependencies and compiles TypeScript
 2. **Production stage** — copies only the compiled output and production dependencies
 
 ### n8n-workflows/
 
-Empty until Phase 6. All n8n workflow definitions will be exported as JSON and committed here.
-This ensures:
-
+All n8n workflow definitions are exported as JSON and committed here. This ensures:
 - Workflow changes are tracked in version control
 - Workflows can be restored after environment rebuild
 - Workflow history is reviewable via `git log`
@@ -863,49 +821,45 @@ This ensures:
 
 ### monitoring/
 
-| Directory                   | Contents                                                                                                                                                                                                                   |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prometheus/prometheus.yml` | Scrape config for api, n8n, postgres-exporter, redis-exporter, prometheus itself — verified, 5/5 targets up                                                                                                                |
-| `grafana/provisioning/`     | Datasource (Prometheus + Loki) and dashboard provisioning, auto-loaded on Grafana startup                                                                                                                                  |
-| `grafana/dashboards/`       | One consolidated `infrastructure-overview.json` dashboard — see scope note in `PROJECT_STATUS.md` (the 5 dashboards named in earlier drafts of this document are deferred until Phases 5/6/9 emit the metrics they'd need) |
-| `loki/loki.yml`             | Loki log aggregation configuration                                                                                                                                                                                         |
-| `loki/promtail.yml`         | Promtail scrape config — ships every container's logs into Loki via Docker service discovery, verified                                                                                                                     |
+| Directory | Contents |
+|---|---|
+| `prometheus/` | Prometheus scrape config and alerting rules |
+| `grafana/dashboards/` | Pre-built Grafana dashboard JSON (imported on startup via provisioning) |
+| `loki/` | Loki log aggregation configuration |
 
 ### traefik/
 
-**Template only — unverified, no real domain/server exists (BLK-002).** Traefik is the reverse
-proxy and SSL terminator for `docker-compose.prod.yml`. The configuration is split into:
-
-- `traefik.yml` — static configuration (entrypoints, Let's Encrypt certificate resolver, API)
-- `dynamic/middlewares.yml` — security headers middleware (HSTS, CSP-adjacent headers per
-  `PROJECT_RULES.md` 4.4)
+Traefik is the reverse proxy and SSL terminator. The configuration is split into:
+- `traefik.yml` — static configuration (entrypoints, certificate resolvers, API)
+- `dynamic/middlewares.yml` — security headers, rate limiting, authentication middleware
 
 ---
 
 ## 9. docs/ — Project Documentation
 
-| File / Directory                | Contents                                                                         |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| `PROJECT_RULES.md`              | Engineering standards, coding conventions, git workflow, Definition of Done      |
-| `ROADMAP.md`                    | Development phases, milestones, MVP scope, v1–v4 features                        |
-| `README.md`                     | Project overview, quick start, architecture summary                              |
-| `CHANGELOG.md`                  | Version history in Keep a Changelog format                                       |
-| `PRD.md`                        | Product requirements, user stories, personas, success metrics                    |
-| `PROJECT_STATUS.md`             | Current phase, completion %, blockers, next priorities                           |
-| `REPOSITORY_STRUCTURE.md`       | This document                                                                    |
-| `INFRASTRUCTURE_GROWTH_PLAN.md` | Infrastructure evolution from MVP to scale                                       |
-| `api/openapi.json`              | Auto-generated OpenAPI specification                                             |
-| `database/database-erd.png`     | Entity-relationship diagram                                                      |
-| `workflows/`                    | n8n workflow diagrams with failure paths annotated                               |
-| `guides/`                       | Operational guides: installation, deployment, scaling, troubleshooting, security |
-| `decisions/`                    | Architecture Decision Records (ADRs)                                             |
+> **Current state note:** the `docs/` layout below is the target convention. As of Phase 1, all project documentation actually lives at the repository root (not under `docs/`) — see `README.md` for the up-to-date list of docs and their root-level paths. This section is left as the intended future structure; migrating existing docs into `docs/` is not itself a scheduled phase deliverable.
+
+| File / Directory | Contents |
+|---|---|
+| `PROJECT_RULES.md` | Engineering standards, coding conventions, git workflow, Definition of Done |
+| `ROADMAP.md` | Development phases, milestones, MVP scope, v1–v4 features |
+| `README.md` | Project overview, quick start, architecture summary |
+| `CHANGELOG.md` | Version history in Keep a Changelog format |
+| `PRD.md` | Product requirements, user stories, personas, success metrics |
+| `PROJECT_STATUS.md` | Current phase, completion %, blockers, next priorities |
+| `REPOSITORY_STRUCTURE.md` | This document |
+| `INFRASTRUCTURE_GROWTH_PLAN.md` | Infrastructure evolution from MVP to scale |
+| `api/openapi.json` | Auto-generated OpenAPI specification |
+| `database/database-erd.png` | Entity-relationship diagram |
+| `workflows/` | n8n workflow diagrams with failure paths annotated |
+| `guides/` | Operational guides: installation, deployment, scaling, troubleshooting, security |
+| `decisions/` | Architecture Decision Records (ADRs) |
 
 ### Architecture Decision Records (ADRs)
 
 ADRs document significant architectural decisions with context, options considered, decision made, and consequences. They live in `docs/decisions/` and are named `ADR-NNN-short-description.md`.
 
 Every significant architectural decision should have an ADR. Examples:
-
 - Choosing Fastify over Express
 - Choosing Drizzle ORM over Prisma
 - Using n8n for workflow orchestration
@@ -917,17 +871,17 @@ Every significant architectural decision should have an ADR. Examples:
 
 ### Files and Directories
 
-| Context                 | Convention                  | Example                            |
-| ----------------------- | --------------------------- | ---------------------------------- |
-| All directories         | `kebab-case`                | `video-analyses/`, `dead-letter/`  |
-| TypeScript source files | `kebab-case`                | `viral-score.service.ts`           |
-| React component files   | `PascalCase`                | `VideoDetailPage.tsx`              |
-| Test files              | `kebab-case.<type>.test.ts` | `viral-score.service.unit.test.ts` |
-| Migration files         | `NNNN_snake_case.sql`       | `0001_initial_schema.sql`          |
-| Workflow JSON files     | `kebab-case.json`           | `video-discovery.json`             |
-| Grafana dashboards      | `kebab-case.json`           | `api-performance.json`             |
-| ADR files               | `ADR-NNN-kebab-case.md`     | `ADR-001-monorepo.md`              |
-| Environment files       | `.env.context`              | `.env.example`, `.env.local`       |
+| Context | Convention | Example |
+|---|---|---|
+| All directories | `kebab-case` | `video-analyses/`, `dead-letter/` |
+| TypeScript source files | `kebab-case` | `viral-score.service.ts` |
+| React component files | `PascalCase` | `VideoDetailPage.tsx` |
+| Test files | `kebab-case.<type>.test.ts` | `viral-score.service.unit.test.ts` |
+| Migration files | `NNNN_snake_case.sql` | `0001_initial_schema.sql` |
+| Workflow JSON files | `kebab-case.json` | `video-discovery.json` |
+| Grafana dashboards | `kebab-case.json` | `api-performance.json` |
+| ADR files | `ADR-NNN-kebab-case.md` | `ADR-001-monorepo.md` |
+| Environment files | `.env.context` | `.env.example`, `.env.local` |
 
 ### Exports
 
@@ -974,7 +928,6 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 ### Route Layer (`routes/`)
 
 **Allowed:**
-
 - Register the endpoint path and HTTP method
 - Apply middleware (authenticate, authorize, validate-org)
 - Validate request input with Zod (schema reference)
@@ -982,7 +935,6 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 - Return the controller's response
 
 **Not allowed:**
-
 - Business logic of any kind
 - Direct database access
 - Direct external service calls
@@ -992,14 +944,12 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 ### Controller Layer (`controllers/`)
 
 **Allowed:**
-
 - Extract validated data from the request
 - Call one or more service methods
 - Aggregate service results
 - Format and return the API response
 
 **Not allowed:**
-
 - Business logic
 - Database access
 - External service calls
@@ -1009,7 +959,6 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 ### Service Layer (`services/`)
 
 **Allowed:**
-
 - All business logic and domain rules
 - Calling repositories for data
 - Calling other services
@@ -1017,7 +966,6 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 - Throwing typed `AppError` instances
 
 **Not allowed:**
-
 - Direct database access (use repositories)
 - Direct external HTTP calls (use abstraction services)
 - Formatting HTTP responses
@@ -1027,13 +975,11 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 ### Repository Layer (`repositories/`)
 
 **Allowed:**
-
 - Drizzle ORM queries
 - Constructing complex SQL via the Drizzle query builder
 - Mapping raw database rows to domain types
 
 **Not allowed:**
-
 - Business logic
 - Calling other repositories (use the service layer to compose)
 - External service calls
@@ -1068,7 +1014,6 @@ Services that are used by multiple feature modules (email, storage, queue, cache
 ```
 
 **Rules:**
-
 - `apps/web` never imports from `apps/api`
 - `apps/api` never imports from `apps/web`
 - `packages/shared` never imports from any `apps/` package
@@ -1099,7 +1044,11 @@ export interface Video {
 }
 
 export type AnalysisStatus =
-  'pending' | 'processing' | 'complete' | 'failed' | 'transcript_unavailable';
+  | "pending"
+  | "processing"
+  | "complete"
+  | "failed"
+  | "transcript_unavailable";
 ```
 
 ### Shared Zod Schemas (`packages/shared/schemas/`)
@@ -1113,14 +1062,14 @@ Plan definitions, RBAC roles, platform identifiers, and error codes are defined 
 ```typescript
 // packages/shared/src/constants/plans.ts
 export const PLAN_TIERS = {
-  FREE: 'free',
-  STARTER: 'starter',
-  PROFESSIONAL: 'professional',
-  BUSINESS: 'business',
-  ENTERPRISE: 'enterprise',
+  FREE: "free",
+  STARTER: "starter",
+  PROFESSIONAL: "professional",
+  BUSINESS: "business",
+  ENTERPRISE: "enterprise",
 } as const;
 
-export type PlanTier = (typeof PLAN_TIERS)[keyof typeof PLAN_TIERS];
+export type PlanTier = typeof PLAN_TIERS[keyof typeof PLAN_TIERS];
 ```
 
 ---
@@ -1144,11 +1093,11 @@ apps/api/
 
 ### Test File Types
 
-| Suffix                 | Type                  | Scope                                             |
-| ---------------------- | --------------------- | ------------------------------------------------- |
-| `.unit.test.ts`        | Unit test             | Single function or class, all dependencies mocked |
-| `.integration.test.ts` | Integration test      | Multiple real layers, mocked external services    |
-| `.e2e.test.ts`         | E2E test (Playwright) | Full user journey in a real browser               |
+| Suffix | Type | Scope |
+|---|---|---|
+| `.unit.test.ts` | Unit test | Single function or class, all dependencies mocked |
+| `.integration.test.ts` | Integration test | Multiple real layers, mocked external services |
+| `.e2e.test.ts` | E2E test (Playwright) | Full user journey in a real browser |
 
 ### Fixture Files
 
@@ -1193,35 +1142,35 @@ All environment variables are documented in `.env.example` at the repository roo
 
 All environment variables use `SCREAMING_SNAKE_CASE` with a service prefix:
 
-| Prefix                  | Service                    |
-| ----------------------- | -------------------------- |
-| `DATABASE_`             | PostgreSQL / Supabase      |
-| `REDIS_`                | Redis                      |
-| `SUPABASE_`             | Supabase client            |
-| `YOUTUBE_`              | YouTube Data API           |
-| `OPENAI_`               | OpenAI API                 |
-| `ANTHROPIC_`            | Anthropic / Claude API     |
-| `STRIPE_`               | Stripe                     |
-| `SENDGRID_` / `RESEND_` | Email service              |
-| `S3_` / `R2_`           | Object storage             |
-| `JWT_`                  | JWT signing secrets        |
-| `N8N_`                  | n8n configuration          |
-| `APP_`                  | Application-level settings |
+| Prefix | Service |
+|---|---|
+| `DATABASE_` | PostgreSQL / Supabase |
+| `REDIS_` | Redis |
+| `SUPABASE_` | Supabase client |
+| `YOUTUBE_` | YouTube Data API |
+| `OPENAI_` | OpenAI API |
+| `ANTHROPIC_` | Anthropic / Claude API |
+| `STRIPE_` | Stripe |
+| `SENDGRID_` / `RESEND_` | Email service |
+| `S3_` / `R2_` | Object storage |
+| `JWT_` | JWT signing secrets |
+| `N8N_` | n8n configuration |
+| `APP_` | Application-level settings |
 
 ### Variable Categories
 
-| Category    | Examples                                                    | Scope        |
-| ----------- | ----------------------------------------------------------- | ------------ |
-| Database    | `DATABASE_URL`, `DATABASE_POOL_SIZE`                        | API only     |
-| Cache       | `REDIS_URL`, `REDIS_PASSWORD`                               | API, n8n     |
-| Auth        | `JWT_SECRET`, `JWT_REFRESH_SECRET`                          | API only     |
-| AI          | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`                       | n8n only     |
-| YouTube     | `YOUTUBE_API_KEY`, `YOUTUBE_QUOTA_LIMIT`                    | n8n, API     |
-| Payments    | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`                | API only     |
-| Email       | `SENDGRID_API_KEY`, `EMAIL_FROM_ADDRESS`                    | API only     |
-| Storage     | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`  | API, n8n     |
-| Frontend    | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Web only     |
-| Application | `APP_ENV`, `APP_URL`, `LOG_LEVEL`                           | All services |
+| Category | Examples | Scope |
+|---|---|---|
+| Database | `DATABASE_URL`, `DATABASE_POOL_SIZE` | API only |
+| Cache | `REDIS_URL`, `REDIS_PASSWORD` | API, n8n |
+| Auth | `JWT_SECRET`, `JWT_REFRESH_SECRET` | API only |
+| AI | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | n8n only |
+| YouTube | `YOUTUBE_API_KEY`, `YOUTUBE_QUOTA_LIMIT` | n8n, API |
+| Payments | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | API only |
+| Email | `SENDGRID_API_KEY`, `EMAIL_FROM_ADDRESS` | API only |
+| Storage | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | API, n8n |
+| Frontend | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Web only |
+| Application | `APP_ENV`, `APP_URL`, `LOG_LEVEL` | All services |
 
 ### Secret Injection
 
@@ -1229,12 +1178,11 @@ In production, secrets are injected at runtime by **Coolify** as environment var
 
 ---
 
-_This document is updated whenever new directories are added, significant restructuring occurs, or naming conventions change. All changes require a pull request with at least one approving review._
+*This document is updated whenever new directories are added, significant restructuring occurs, or naming conventions change. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [README.md](./README.md) — Project overview and quick start
 - [PROJECT_RULES.md](./PROJECT_RULES.md) — Engineering standards and conventions
 - [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md) — How the infrastructure evolves

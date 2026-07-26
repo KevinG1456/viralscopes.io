@@ -1,5 +1,4 @@
 # Deployment_Guide.md
-
 # ViralScopes.io — Deployment Guide
 
 > **Version:** 1.0
@@ -40,16 +39,16 @@
 
 ### Deployment Stack
 
-| Component               | Technology                                     | Hosting                  |
-| ----------------------- | ---------------------------------------------- | ------------------------ |
-| Container orchestration | Docker Compose (Stage 1), Kubernetes (Stage 3) | Self-hosted via Coolify  |
-| PaaS layer              | Coolify                                        | Installed on Hetzner VPS |
-| Reverse proxy           | Traefik v3                                     | Docker container on VPS  |
-| CI/CD                   | GitHub Actions                                 | GitHub-hosted runners    |
-| Image registry          | GitHub Container Registry (GHCR)               | `ghcr.io/viralscopes/*`  |
-| Database                | PostgreSQL via Supabase                        | Supabase hosted          |
-| Object storage          | Cloudflare R2                                  | Cloudflare edge          |
-| DNS & CDN               | Cloudflare                                     | Cloudflare edge          |
+| Component | Technology | Hosting |
+|---|---|---|
+| Container orchestration | Docker Compose (Stage 1), Kubernetes (Stage 3) | Self-hosted via Coolify |
+| PaaS layer | Coolify | Installed on Hetzner VPS |
+| Reverse proxy | Traefik v3 | Docker container on VPS |
+| CI/CD | GitHub Actions | GitHub-hosted runners |
+| Image registry | GitHub Container Registry (GHCR) | `ghcr.io/viralscopes/*` |
+| Database | PostgreSQL via Supabase | Supabase hosted |
+| Object storage | Cloudflare R2 | Cloudflare edge |
+| DNS & CDN | Cloudflare | Cloudflare edge |
 
 ### Deployment Flow Summary
 
@@ -80,25 +79,25 @@ Notify Slack #deployments
 
 ### Three Environments
 
-| Environment     | Branch             | Deploy trigger  | URL                              | Purpose                        |
-| --------------- | ------------------ | --------------- | -------------------------------- | ------------------------------ |
-| **Development** | Any feature branch | Local only      | `http://localhost:3000`          | Active development, hot reload |
-| **Staging**     | `develop`          | Auto on merge   | `https://staging.viralscopes.io` | Integration testing, QA, demo  |
-| **Production**  | `main`             | Manual approval | `https://app.viralscopes.io`     | Live customer traffic          |
+| Environment | Branch | Deploy trigger | URL | Purpose |
+|---|---|---|---|---|
+| **Development** | Any feature branch | Local only | `http://localhost:3000` | Active development, hot reload |
+| **Staging** | `develop` | Auto on merge | `https://staging.viralscopes.io` | Integration testing, QA, demo |
+| **Production** | `main` | Manual approval | `https://app.viralscopes.io` | Live customer traffic |
 
 ### Environment Differences
 
-| Setting        | Development               | Staging                        | Production                        |
-| -------------- | ------------------------- | ------------------------------ | --------------------------------- |
-| Database       | Supabase local (Docker)   | Supabase hosted (free tier)    | Supabase hosted (Pro + addons)    |
-| Redis          | Docker (no persistence)   | Docker (no persistence)        | Managed Redis or Docker + AOF     |
-| Object storage | MinIO (local Docker)      | Cloudflare R2 (staging bucket) | Cloudflare R2 (production bucket) |
-| Email          | Console output / Mailtrap | SendGrid (test domain)         | SendGrid (live domain)            |
-| Stripe         | Test mode (`sk_test_*`)   | Test mode (`sk_test_*`)        | Live mode (`sk_live_*`)           |
-| AI APIs        | Real keys (shared budget) | Real keys (£20/month cap)      | Real keys (full budget)           |
-| Log level      | `debug`                   | `info`                         | `info`                            |
-| SSL            | Self-signed / none        | Let's Encrypt                  | Let's Encrypt                     |
-| CORS           | `localhost:3000`          | `staging.viralscopes.io`       | `app.viralscopes.io`              |
+| Setting | Development | Staging | Production |
+|---|---|---|---|
+| Database | Supabase local (Docker) | Supabase hosted (free tier) | Supabase hosted (Pro + addons) |
+| Redis | Docker (no persistence) | Docker (no persistence) | Managed Redis or Docker + AOF |
+| Object storage | MinIO (local Docker) | Cloudflare R2 (staging bucket) | Cloudflare R2 (production bucket) |
+| Email | Console output / Mailtrap | SendGrid (test domain) | SendGrid (live domain) |
+| Stripe | Test mode (`sk_test_*`) | Test mode (`sk_test_*`) | Live mode (`sk_live_*`) |
+| AI APIs | Real keys (shared budget) | Real keys (£20/month cap) | Real keys (full budget) |
+| Log level | `debug` | `info` | `info` |
+| SSL | Self-signed / none | Let's Encrypt | Let's Encrypt |
+| CORS | `localhost:3000` | `staging.viralscopes.io` | `app.viralscopes.io` |
 
 ---
 
@@ -106,23 +105,23 @@ Notify Slack #deployments
 
 ### Required on Developer Machine
 
-| Tool           | Version  | Install                                                                   |
-| -------------- | -------- | ------------------------------------------------------------------------- |
-| Node.js        | 22.x LTS | `nvm install 22` or [nodejs.org](https://nodejs.org/)                     |
-| npm            | 10.x+    | Bundled with Node.js                                                      |
-| Docker Desktop | Latest   | [docker.com/get-docker](https://www.docker.com/get-docker/)               |
-| Docker Compose | v2.x     | Bundled with Docker Desktop                                               |
-| Git            | 2.x+     | `brew install git` or [git-scm.com](https://git-scm.com/)                 |
-| nvm            | Latest   | `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash` |
+| Tool | Version | Install |
+|---|---|---|
+| Node.js | 22.x LTS | `nvm install 22` or [nodejs.org](https://nodejs.org/) |
+| npm | 10.x+ | Bundled with Node.js |
+| Docker Desktop | Latest | [docker.com/get-docker](https://www.docker.com/get-docker/) |
+| Docker Compose | v2.x | Bundled with Docker Desktop |
+| Git | 2.x+ | `brew install git` or [git-scm.com](https://git-scm.com/) |
+| nvm | Latest | `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash` |
 
 ### Required on Production Server
 
-| Tool              | Install command                                        |
-| ----------------- | ------------------------------------------------------ |
-| Docker            | `curl -fsSL https://get.docker.com                     | sh`   |
-| Docker Compose v2 | Bundled with Docker Engine                             |
-| Coolify           | `curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash` |
-| Git               | `apt install git`                                      |
+| Tool | Install command |
+|---|---|
+| Docker | `curl -fsSL https://get.docker.com | sh` |
+| Docker Compose v2 | Bundled with Docker Engine |
+| Coolify | `curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash` |
+| Git | `apt install git` |
 
 ### Required Accounts & Services
 
@@ -247,16 +246,16 @@ open http://localhost:3000
 
 ### Development Service URLs
 
-| Service             | URL                               | Credentials                |
-| ------------------- | --------------------------------- | -------------------------- |
-| Next.js Frontend    | http://localhost:3000             | —                          |
-| Fastify API         | http://localhost:3001             | —                          |
-| API Swagger Docs    | http://localhost:3001/api/v1/docs | —                          |
-| n8n Workflow Editor | http://localhost:5678             | admin / admin (local only) |
-| Supabase Studio     | http://localhost:54323            | —                          |
-| MinIO Console       | http://localhost:9001             | minioadmin / minioadmin    |
-| Grafana             | http://localhost:3002             | admin / admin              |
-| Prometheus          | http://localhost:9090             | —                          |
+| Service | URL | Credentials |
+|---|---|---|
+| Next.js Frontend | http://localhost:3000 | — |
+| Fastify API | http://localhost:3001 | — |
+| API Swagger Docs | http://localhost:3001/api/v1/docs | — |
+| n8n Workflow Editor | http://localhost:5678 | admin / admin (local only) |
+| Supabase Studio | http://localhost:54323 | — |
+| MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
+| Grafana | http://localhost:3002 | admin / admin |
+| Prometheus | http://localhost:9090 | — |
 
 ### Stopping the Development Environment
 
@@ -484,24 +483,20 @@ openssl rand -hex 32
 ### Secret Storage by Environment
 
 **Development (`.env.local`):**
-
 - Stored locally on developer machine
 - Never committed to git (enforced by `.gitignore` and Husky pre-commit hook)
 - Can use weak test values
 
 **Staging (Coolify environment variables):**
-
 - Stored in Coolify's encrypted environment variable store
 - Different values from production (separate API keys, Stripe test mode)
 
 **Production (Coolify environment variables):**
-
 - Stored in Coolify's encrypted environment variable store
 - All secrets generated with `openssl rand -hex 64` or equivalent
 - Access restricted to Coolify admin (engineering lead only)
 
 **CI/CD (GitHub Actions secrets):**
-
 - `COOLIFY_STAGING_WEBHOOK` — Coolify webhook URL for staging deploys
 - `COOLIFY_PRODUCTION_WEBHOOK` — Coolify webhook URL for production deploys
 - `GHCR_TOKEN` — GitHub token for pushing Docker images
@@ -599,12 +594,12 @@ docker push ghcr.io/viralscopes/api:latest
 
 ### Image Tags
 
-| Tag                               | Description              | When created                |
-| --------------------------------- | ------------------------ | --------------------------- |
-| `ghcr.io/viralscopes/api:latest`  | Latest main branch build | On every merge to `main`    |
-| `ghcr.io/viralscopes/api:<sha>`   | Specific commit SHA      | On every merge to `main`    |
-| `ghcr.io/viralscopes/api:v1.0.0`  | Version tag              | On GitHub release creation  |
-| `ghcr.io/viralscopes/api:staging` | Latest staging build     | On every merge to `develop` |
+| Tag | Description | When created |
+|---|---|---|
+| `ghcr.io/viralscopes/api:latest` | Latest main branch build | On every merge to `main` |
+| `ghcr.io/viralscopes/api:<sha>` | Specific commit SHA | On every merge to `main` |
+| `ghcr.io/viralscopes/api:v1.0.0` | Version tag | On GitHub release creation |
+| `ghcr.io/viralscopes/api:staging` | Latest staging build | On every merge to `develop` |
 
 ---
 
@@ -986,7 +981,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
-    environment: production # ← Requires manual approval in GitHub
+    environment: production    # ← Requires manual approval in GitHub
     steps:
       - name: Take pre-deploy database snapshot
         run: |
@@ -1136,7 +1131,7 @@ ufw enable
 
 ```yaml
 # docker-compose.prod.yml
-version: '3.9'
+version: "3.9"
 
 networks:
   viralscopes:
@@ -1153,20 +1148,20 @@ services:
     image: traefik:v3
     restart: unless-stopped
     command:
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      - '--entrypoints.web.address=:80'
-      - '--entrypoints.websecure.address=:443'
-      - '--certificatesresolvers.letsencrypt.acme.email=security@viralscopes.io'
-      - '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web'
-      - '--metrics.prometheus=true'
-      - '--metrics.prometheus.addEntryPointsLabels=true'
-      - '--metrics.prometheus.addServicesLabels=true'
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=security@viralscopes.io"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
     ports:
-      - '80:80'
-      - '443:443'
-      - '8082:8082'
+      - "80:80"
+      - "443:443"
+      - "8082:8082"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
@@ -1180,18 +1175,18 @@ services:
     networks:
       - viralscopes
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/ready']
+      test: ["CMD", "curl", "-f", "http://localhost:3001/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.api.rule=Host(`api.viralscopes.io`)'
-      - 'traefik.http.routers.api.entrypoints=websecure'
-      - 'traefik.http.routers.api.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.api.loadbalancer.server.port=3001'
-      - 'traefik.http.routers.api.middlewares=security-headers@file'
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.viralscopes.io`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.api.loadbalancer.server.port=3001"
+      - "traefik.http.routers.api.middlewares=security-headers@file"
 
   web:
     image: ghcr.io/viralscopes/web:latest
@@ -1200,16 +1195,16 @@ services:
     networks:
       - viralscopes
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.web.rule=Host(`app.viralscopes.io`)'
-      - 'traefik.http.routers.web.entrypoints=websecure'
-      - 'traefik.http.routers.web.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.web.loadbalancer.server.port=3000'
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`app.viralscopes.io`)"
+      - "traefik.http.routers.web.entrypoints=websecure"
+      - "traefik.http.routers.web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
 
   redis:
     image: redis:7-alpine
@@ -1220,7 +1215,7 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -1234,10 +1229,10 @@ services:
     volumes:
       - n8n-data:/home/node/.n8n
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.n8n.rule=Host(`n8n.viralscopes.io`)'
-      - 'traefik.http.routers.n8n.entrypoints=websecure'
-      - 'traefik.http.routers.n8n.tls.certresolver=letsencrypt'
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.viralscopes.io`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
 
   prometheus:
     image: prom/prometheus:latest
@@ -1248,8 +1243,8 @@ services:
     networks:
       - viralscopes
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.retention.time=15d'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
 
   grafana:
     image: grafana/grafana:latest
@@ -1263,10 +1258,10 @@ services:
     networks:
       - viralscopes
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.grafana.rule=Host(`grafana.viralscopes.io`)'
-      - 'traefik.http.routers.grafana.entrypoints=websecure'
-      - 'traefik.http.routers.grafana.tls.certresolver=letsencrypt'
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.viralscopes.io`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
 
   loki:
     image: grafana/loki:latest
@@ -1315,14 +1310,14 @@ The API handles `SIGTERM` gracefully to ensure in-flight requests complete:
 
 ```typescript
 // apps/api/src/server.ts
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received — starting graceful shutdown');
+process.on("SIGTERM", async () => {
+  logger.info("SIGTERM received — starting graceful shutdown");
 
   // Stop accepting new connections
   await fastify.close();
 
   // Allow up to 30 seconds for in-flight requests to complete
-  logger.info('Graceful shutdown complete');
+  logger.info("Graceful shutdown complete");
   process.exit(0);
 });
 ```
@@ -1356,7 +1351,7 @@ kind: Deployment
 metadata:
   name: api-canary
 spec:
-  replicas: 1 # 1 of 10 total pods = 10% traffic
+  replicas: 1          # 1 of 10 total pods = 10% traffic
   selector:
     matchLabels:
       app: api
@@ -1369,7 +1364,6 @@ spec:
 ```
 
 **Canary rollout procedure:**
-
 1. Deploy canary (1 pod = 10% traffic)
 2. Monitor error rate and latency for 30 minutes
 3. If healthy: scale canary to 50% (5 of 10 pods)
@@ -1379,7 +1373,6 @@ spec:
 ### Stage 3: Blue/Green for Major Releases
 
 For breaking changes:
-
 1. Deploy "green" environment with the new version (no traffic)
 2. Run full smoke tests against green
 3. Instantly switch Cloudflare Load Balancer to send 100% traffic to green
@@ -1402,7 +1395,7 @@ certificatesResolvers:
       email: security@viralscopes.io
       storage: /letsencrypt/acme.json
       httpChallenge:
-        entryPoint: web # Port 80 must be open for challenge
+        entryPoint: web    # Port 80 must be open for challenge
 ```
 
 ### Certificate Renewal
@@ -1430,19 +1423,19 @@ docker exec traefik cat /letsencrypt/acme.json | jq '.letsencrypt.Certificates'
 
 All DNS records are managed in Cloudflare.
 
-| Type  | Name                  | Value                | Proxy                       | TTL  |
-| ----- | --------------------- | -------------------- | --------------------------- | ---- |
-| A     | `@` (viralscopes.io)  | `<server-ip>`        | ✅ Proxied                  | Auto |
-| A     | `app`                 | `<server-ip>`        | ✅ Proxied                  | Auto |
-| A     | `api`                 | `<server-ip>`        | ✅ Proxied                  | Auto |
-| A     | `n8n`                 | `<server-ip>`        | ✅ Proxied                  | Auto |
-| A     | `cdn`                 | —                    | Cloudflare R2 custom domain | Auto |
-| A     | `grafana`             | `<server-ip>`        | ❌ DNS only (internal)      | Auto |
-| CNAME | `www`                 | `app.viralscopes.io` | ✅ Proxied                  | Auto |
-| MX    | `@`                   | `mail.sendgrid.net`  | ❌ DNS only                 | Auto |
-| TXT   | `@`                   | SPF record           | ❌ DNS only                 | Auto |
-| TXT   | `sendgrid._domainkey` | DKIM record          | ❌ DNS only                 | Auto |
-| TXT   | `_dmarc`              | DMARC policy         | ❌ DNS only                 | Auto |
+| Type | Name | Value | Proxy | TTL |
+|---|---|---|---|---|
+| A | `@` (viralscopes.io) | `<server-ip>` | ✅ Proxied | Auto |
+| A | `app` | `<server-ip>` | ✅ Proxied | Auto |
+| A | `api` | `<server-ip>` | ✅ Proxied | Auto |
+| A | `n8n` | `<server-ip>` | ✅ Proxied | Auto |
+| A | `cdn` | — | Cloudflare R2 custom domain | Auto |
+| A | `grafana` | `<server-ip>` | ❌ DNS only (internal) | Auto |
+| CNAME | `www` | `app.viralscopes.io` | ✅ Proxied | Auto |
+| MX | `@` | `mail.sendgrid.net` | ❌ DNS only | Auto |
+| TXT | `@` | SPF record | ❌ DNS only | Auto |
+| TXT | `sendgrid._domainkey` | DKIM record | ❌ DNS only | Auto |
+| TXT | `_dmarc` | DMARC policy | ❌ DNS only | Auto |
 
 ### Email DNS Records (SendGrid / Resend)
 
@@ -1715,12 +1708,12 @@ code only     + notify affected customers
 
 All backups are automated. Manual intervention is only needed for verification.
 
-| Backup                    | Schedule               | Where                          | Retention   |
-| ------------------------- | ---------------------- | ------------------------------ | ----------- |
-| Supabase automated backup | Daily 02:00 UTC        | Supabase infrastructure        | 7 days      |
-| pg_dump export            | Daily 03:00 UTC        | Cloudflare R2 `backups/`       | 30 days     |
-| Hetzner server snapshot   | Weekly Sun 04:00 UTC   | Hetzner snapshot storage       | 4 weeks     |
-| n8n workflow export       | On change (git commit) | GitHub `/infra/n8n-workflows/` | Git history |
+| Backup | Schedule | Where | Retention |
+|---|---|---|---|
+| Supabase automated backup | Daily 02:00 UTC | Supabase infrastructure | 7 days |
+| pg_dump export | Daily 03:00 UTC | Cloudflare R2 `backups/` | 30 days |
+| Hetzner server snapshot | Weekly Sun 04:00 UTC | Hetzner snapshot storage | 4 weeks |
+| n8n workflow export | On change (git commit) | GitHub `/infra/n8n-workflows/` | Git history |
 
 ### Manual Database Backup
 
@@ -1826,7 +1819,6 @@ Use this checklist for every production release.
 ### Rollback Criteria (Monitor for 30 Minutes)
 
 Initiate rollback immediately if:
-
 - [ ] Error rate > 1% sustained for > 3 minutes
 - [ ] p95 API latency > 2,000ms sustained for > 3 minutes
 - [ ] Any data integrity issue detected
@@ -1834,12 +1826,11 @@ Initiate rollback immediately if:
 
 ---
 
-_This document is updated whenever the deployment pipeline changes, new environments are added, or rollback procedures are revised. All changes require a pull request with at least one approving review._
+*This document is updated whenever the deployment pipeline changes, new environments are added, or rollback procedures are revised. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [README.md](./README.md) — Quick start guide and local development overview
 - [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) — How the codebase is organised
 - [Monitoring_&_Operations.md](./Monitoring_and_Operations.md) — Post-deploy monitoring and operations

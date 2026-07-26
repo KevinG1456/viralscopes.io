@@ -1,5 +1,4 @@
 # Database_Schema.md
-
 # ViralScopes.io — Complete Database Schema
 
 > **Version:** 1.0
@@ -37,38 +36,38 @@
 
 ## 1. Design Principles
 
-| #   | Principle                               | Implementation                                                                                                        |
-| --- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| P1  | **UUID primary keys**                   | All tables use `gen_random_uuid()` — no serial integers in public-facing tables                                       |
-| P2  | **Row Level Security by default**       | RLS enabled on every table from creation; the application never bypasses RLS in normal operation                      |
-| P3  | **Immutable audit trail**               | `created_at` is always set on insert and never updated; `updated_at` is managed by a trigger                          |
-| P4  | **Multi-tenancy enforced at DB level**  | Every tenant-scoped table has `org_id`; RLS policies use it to isolate tenant data                                    |
-| P5  | **Migrations only**                     | All schema changes go through reversible Drizzle migration files; no manual `ALTER TABLE` in any environment          |
-| P6  | **Parameterised queries only**          | Drizzle ORM prevents raw string interpolation in SQL; no injection vectors                                            |
-| P7  | **Index at creation**                   | Indexes for foreign keys and frequent query columns are defined in the same migration as the table                    |
-| P8  | **JSONB for flexible data**             | AI output fields, settings, and metadata use `jsonb` with schema validation at the application layer                  |
-| P9  | **Partition high-volume append tables** | `usage_events` and `job_logs` are partitioned by month from day one                                                   |
-| P10 | **Soft deletes where appropriate**      | User accounts, organisations, and watchlists use `deleted_at`; operational logs are hard-deleted per retention policy |
+| # | Principle | Implementation |
+|---|---|---|
+| P1 | **UUID primary keys** | All tables use `gen_random_uuid()` — no serial integers in public-facing tables |
+| P2 | **Row Level Security by default** | RLS enabled on every table from creation; the application never bypasses RLS in normal operation |
+| P3 | **Immutable audit trail** | `created_at` is always set on insert and never updated; `updated_at` is managed by a trigger |
+| P4 | **Multi-tenancy enforced at DB level** | Every tenant-scoped table has `org_id`; RLS policies use it to isolate tenant data |
+| P5 | **Migrations only** | All schema changes go through reversible Drizzle migration files; no manual `ALTER TABLE` in any environment |
+| P6 | **Parameterised queries only** | Drizzle ORM prevents raw string interpolation in SQL; no injection vectors |
+| P7 | **Index at creation** | Indexes for foreign keys and frequent query columns are defined in the same migration as the table |
+| P8 | **JSONB for flexible data** | AI output fields, settings, and metadata use `jsonb` with schema validation at the application layer |
+| P9 | **Partition high-volume append tables** | `usage_events` and `job_logs` are partitioned by month from day one |
+| P10 | **Soft deletes where appropriate** | User accounts, organisations, and watchlists use `deleted_at`; operational logs are hard-deleted per retention policy |
 
 ---
 
 ## 2. Naming Conventions
 
-| Element                 | Convention                      | Example                                                 |
-| ----------------------- | ------------------------------- | ------------------------------------------------------- |
-| Table names             | `snake_case`, plural            | `video_analyses`, `alert_rules`                         |
-| Column names            | `snake_case`                    | `viral_score`, `org_id`, `created_at`                   |
-| Primary keys            | `id` (UUID)                     | `id uuid DEFAULT gen_random_uuid()`                     |
-| Foreign keys            | `<table_singular>_id`           | `video_id`, `org_id`, `user_id`                         |
-| Boolean columns         | `is_` or `has_` prefix          | `is_active`, `has_transcript`, `is_verified`            |
-| Timestamp columns       | `_at` suffix                    | `created_at`, `updated_at`, `deleted_at`, `sent_at`     |
-| Status columns          | `_status` suffix                | `analysis_status`, `transcript_status`, `export_status` |
-| JSONB columns           | `_meta` or descriptive noun     | `settings`, `payload`, `raw_output`, `metadata`         |
-| Enum types              | `snake_case`                    | `plan_tier`, `alert_channel`, `analysis_status`         |
-| Indexes                 | `idx_<table>_<column(s)>`       | `idx_videos_org_id`, `idx_videos_viral_score`           |
-| Unique constraints      | `uq_<table>_<column(s)>`        | `uq_videos_video_id`                                    |
-| Foreign key constraints | `fk_<table>_<referenced_table>` | `fk_videos_channels`                                    |
-| Partitions              | `<table>_<period>`              | `usage_events_2026_07`, `job_logs_2026_07`              |
+| Element | Convention | Example |
+|---|---|---|
+| Table names | `snake_case`, plural | `video_analyses`, `alert_rules` |
+| Column names | `snake_case` | `viral_score`, `org_id`, `created_at` |
+| Primary keys | `id` (UUID) | `id uuid DEFAULT gen_random_uuid()` |
+| Foreign keys | `<table_singular>_id` | `video_id`, `org_id`, `user_id` |
+| Boolean columns | `is_` or `has_` prefix | `is_active`, `has_transcript`, `is_verified` |
+| Timestamp columns | `_at` suffix | `created_at`, `updated_at`, `deleted_at`, `sent_at` |
+| Status columns | `_status` suffix | `analysis_status`, `transcript_status`, `export_status` |
+| JSONB columns | `_meta` or descriptive noun | `settings`, `payload`, `raw_output`, `metadata` |
+| Enum types | `snake_case` | `plan_tier`, `alert_channel`, `analysis_status` |
+| Indexes | `idx_<table>_<column(s)>` | `idx_videos_org_id`, `idx_videos_viral_score` |
+| Unique constraints | `uq_<table>_<column(s)>` | `uq_videos_video_id` |
+| Foreign key constraints | `fk_<table>_<referenced_table>` | `fk_videos_channels` |
+| Partitions | `<table>_<period>` | `usage_events_2026_07`, `job_logs_2026_07` |
 
 ---
 
@@ -200,7 +199,6 @@ CREATE INDEX idx_users_role ON users (role);
 ```
 
 **Notes:**
-
 - `password_hash` is NULL for users who sign up via Google or GitHub OAuth only
 - `role = 'super_admin'` grants platform-wide admin access (separate from org-level roles)
 - Soft delete via `deleted_at` — GDPR hard deletion is performed by a separate purge job
@@ -252,7 +250,6 @@ CREATE INDEX idx_sessions_expires_at ON sessions (expires_at);
 ```
 
 **Notes:**
-
 - Only `sha256(refresh_token)` is stored — plaintext tokens are never persisted
 - Expired and revoked sessions are purged nightly by the data retention job
 
@@ -991,16 +988,16 @@ CREATE INDEX idx_dead_letter_jobs_resolved ON dead_letter_jobs (resolved, create
 
 Indexes are defined at table creation in the same migration file. The following categories of indexes are always created:
 
-| Category               | Rule                                                                           | Example                                          |
-| ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
-| **Primary key**        | Always — auto-created on `id`                                                  | `PRIMARY KEY` constraint                         |
-| **Foreign keys**       | Always — every FK column gets an index                                         | `idx_videos_channel_id`                          |
-| **Tenant isolation**   | Always on `org_id` columns                                                     | `idx_watchlists_org_id`                          |
-| **Status columns**     | On columns used in `WHERE` filters                                             | `idx_videos_analysis_status`                     |
-| **Sort columns**       | Descending on `created_at`, `viral_score`, `opportunity_score`                 | `idx_videos_viral_score DESC`                    |
-| **Unique constraints** | Via unique index, not unique constraint, to support `WHERE deleted_at IS NULL` | `uq_videos_platform_id`                          |
-| **Partial indexes**    | For soft-deleted tables — filter on `WHERE deleted_at IS NULL`                 | `uq_organizations_slug WHERE deleted_at IS NULL` |
-| **JSONB**              | GIN indexes only when full-text search on JSONB is needed                      | Not in MVP                                       |
+| Category | Rule | Example |
+|---|---|---|
+| **Primary key** | Always — auto-created on `id` | `PRIMARY KEY` constraint |
+| **Foreign keys** | Always — every FK column gets an index | `idx_videos_channel_id` |
+| **Tenant isolation** | Always on `org_id` columns | `idx_watchlists_org_id` |
+| **Status columns** | On columns used in `WHERE` filters | `idx_videos_analysis_status` |
+| **Sort columns** | Descending on `created_at`, `viral_score`, `opportunity_score` | `idx_videos_viral_score DESC` |
+| **Unique constraints** | Via unique index, not unique constraint, to support `WHERE deleted_at IS NULL` | `uq_videos_platform_id` |
+| **Partial indexes** | For soft-deleted tables — filter on `WHERE deleted_at IS NULL` | `uq_organizations_slug WHERE deleted_at IS NULL` |
+| **JSONB** | GIN indexes only when full-text search on JSONB is needed | Not in MVP |
 
 ### Index Review Policy
 
@@ -1059,16 +1056,16 @@ CREATE POLICY "watchlists_modify_admin_only"
 
 These tables contain platform-wide data not scoped to a tenant:
 
-| Table                | Reason                                               |
-| -------------------- | ---------------------------------------------------- |
-| `videos`             | Shared across all tenants (video analysis is global) |
-| `channels`           | Shared across all tenants                            |
-| `transcripts`        | Shared across all tenants                            |
-| `thumbnail_analyses` | Shared across all tenants                            |
-| `title_analyses`     | Shared across all tenants                            |
-| `video_analyses`     | Shared across all tenants                            |
-| `trends`             | Platform-wide trend data                             |
-| `prompt_library`     | Platform configuration, admin-managed                |
+| Table | Reason |
+|---|---|
+| `videos` | Shared across all tenants (video analysis is global) |
+| `channels` | Shared across all tenants |
+| `transcripts` | Shared across all tenants |
+| `thumbnail_analyses` | Shared across all tenants |
+| `title_analyses` | Shared across all tenants |
+| `video_analyses` | Shared across all tenants |
+| `trends` | Platform-wide trend data |
+| `prompt_library` | Platform configuration, admin-managed |
 
 **Important:** `recommendations` IS tenant-scoped (each org gets its own recommendations per video).
 
@@ -1079,7 +1076,6 @@ These tables contain platform-wide data not scoped to a tenant:
 ### Why Partition
 
 `usage_events` and `job_logs` are high-volume append-only tables that grow indefinitely. Without partitioning:
-
 - Queries slow down as table size grows
 - Retention purges require full table scans or expensive deletes
 - Vacuuming becomes slow and impacts query performance
@@ -1102,7 +1098,6 @@ CREATE TABLE usage_events_2026_07
 ### Partition Management
 
 A monthly maintenance job (CRON, first day of each month):
-
 1. Creates the next month's partition
 2. Identifies partitions older than the retention period
 3. Drops old partitions (`DROP TABLE usage_events_2024_06`) — instant, no vacuum needed
@@ -1110,10 +1105,10 @@ A monthly maintenance job (CRON, first day of each month):
 
 ### Tables That Are Partitioned
 
-| Table          | Partition key | Partition period | Retention |
-| -------------- | ------------- | ---------------- | --------- |
-| `usage_events` | `created_at`  | Monthly          | 13 months |
-| `job_logs`     | `created_at`  | Monthly          | 60 days   |
+| Table | Partition key | Partition period | Retention |
+|---|---|---|---|
+| `usage_events` | `created_at` | Monthly | 13 months |
+| `job_logs` | `created_at` | Monthly | 60 days |
 
 ---
 
@@ -1163,14 +1158,14 @@ ALTER TABLE trends DROP COLUMN velocity_score;
 
 ### Zero-Downtime Migration Principles
 
-| Operation               | Safe approach                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| Add nullable column     | Safe — add directly                                                               |
-| Add non-nullable column | Add as nullable → backfill → add NOT NULL constraint                              |
-| Rename column           | Add new column → dual-write → migrate reads → drop old                            |
-| Drop column             | Stop reading column in code first → deploy → then drop in next migration          |
-| Add index               | `CREATE INDEX CONCURRENTLY` — does not lock the table                             |
-| Add constraint          | `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` separately |
+| Operation | Safe approach |
+|---|---|
+| Add nullable column | Safe — add directly |
+| Add non-nullable column | Add as nullable → backfill → add NOT NULL constraint |
+| Rename column | Add new column → dual-write → migrate reads → drop old |
+| Drop column | Stop reading column in code first → deploy → then drop in next migration |
+| Add index | `CREATE INDEX CONCURRENTLY` — does not lock the table |
+| Add constraint | `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` separately |
 
 ---
 
@@ -1180,20 +1175,20 @@ ALTER TABLE trends DROP COLUMN velocity_score;
 
 Not all tables use soft deletes. The choice is made per table based on recovery needs and compliance requirements.
 
-| Table           | Soft delete? | Column       | Reason                                                                            |
-| --------------- | ------------ | ------------ | --------------------------------------------------------------------------------- |
-| `users`         | Yes          | `deleted_at` | GDPR — account deletion is a two-step process (soft delete → scheduled PII purge) |
-| `organizations` | Yes          | `deleted_at` | Org deletion needs a grace period; billing must reconcile first                   |
-| `workspaces`    | Yes          | `deleted_at` | Workspace recovery is a common support request                                    |
-| `watchlists`    | Yes          | `deleted_at` | Users often accidentally delete watchlists                                        |
-| `alert_rules`   | Yes          | `deleted_at` | Rule deletion should be recoverable                                               |
-| `projects`      | Yes          | `deleted_at` | Same as workspaces                                                                |
-| `videos`        | No           | —            | Global content data is never deleted by a user action                             |
-| `channels`      | No           | —            | Global content data                                                               |
-| `job_logs`      | No           | —            | Hard-deleted by retention job; recovery not required                              |
-| `usage_events`  | No           | —            | Compliance records; not user-deletable                                            |
-| `audit_logs`    | No           | —            | Immutable by design                                                               |
-| `alert_events`  | No           | —            | Immutable notification log                                                        |
+| Table | Soft delete? | Column | Reason |
+|---|---|---|---|
+| `users` | Yes | `deleted_at` | GDPR — account deletion is a two-step process (soft delete → scheduled PII purge) |
+| `organizations` | Yes | `deleted_at` | Org deletion needs a grace period; billing must reconcile first |
+| `workspaces` | Yes | `deleted_at` | Workspace recovery is a common support request |
+| `watchlists` | Yes | `deleted_at` | Users often accidentally delete watchlists |
+| `alert_rules` | Yes | `deleted_at` | Rule deletion should be recoverable |
+| `projects` | Yes | `deleted_at` | Same as workspaces |
+| `videos` | No | — | Global content data is never deleted by a user action |
+| `channels` | No | — | Global content data |
+| `job_logs` | No | — | Hard-deleted by retention job; recovery not required |
+| `usage_events` | No | — | Compliance records; not user-deletable |
+| `audit_logs` | No | — | Immutable by design |
+| `alert_events` | No | — | Immutable notification log |
 
 ### Soft Delete Query Pattern
 
@@ -1228,14 +1223,14 @@ org_id = 'uuid-a' rows       org_id = 'uuid-b' rows
 
 ### Shared vs Tenant-Scoped Data
 
-| Data                                                            | Scope                     | Reason                                                                                                                 |
-| --------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `videos`, `channels`, `transcripts`, `video_analyses`, `trends` | **Shared (global)**       | Video data is analysed once and shared across all tenants who discover it; this is the core efficiency of the platform |
-| `recommendations`                                               | **Tenant-scoped**         | Each org gets its own AI recommendations per video (can be customised per niche)                                       |
-| `watchlists`, `alert_rules`, `alert_events`                     | **Tenant-scoped**         | Org-specific monitoring configuration                                                                                  |
-| `subscriptions`, `usage_events`, `api_keys`, `invoices`         | **Tenant-scoped**         | Billing data is strictly per-org                                                                                       |
-| `audit_logs`                                                    | **Tenant-scoped**         | Each org sees only its own audit trail                                                                                 |
-| `prompt_library`, `job_logs`, `dead_letter_jobs`                | **Platform (admin only)** | Internal operations data                                                                                               |
+| Data | Scope | Reason |
+|---|---|---|
+| `videos`, `channels`, `transcripts`, `video_analyses`, `trends` | **Shared (global)** | Video data is analysed once and shared across all tenants who discover it; this is the core efficiency of the platform |
+| `recommendations` | **Tenant-scoped** | Each org gets its own AI recommendations per video (can be customised per niche) |
+| `watchlists`, `alert_rules`, `alert_events` | **Tenant-scoped** | Org-specific monitoring configuration |
+| `subscriptions`, `usage_events`, `api_keys`, `invoices` | **Tenant-scoped** | Billing data is strictly per-org |
+| `audit_logs` | **Tenant-scoped** | Each org sees only its own audit trail |
+| `prompt_library`, `job_logs`, `dead_letter_jobs` | **Platform (admin only)** | Internal operations data |
 
 ### Cross-Tenant Data Leak Prevention
 
@@ -1247,12 +1242,12 @@ org_id = 'uuid-a' rows       org_id = 'uuid-b' rows
 
 ## 17. Backup Strategy
 
-| Stage         | Frequency                                  | Retention | Storage               | Method                                     |
-| ------------- | ------------------------------------------ | --------- | --------------------- | ------------------------------------------ |
-| Stage 1 (MVP) | Daily at 02:00 UTC                         | 30 days   | Cloudflare R2         | Supabase automated backup + pg_dump export |
-| Stage 2       | Every 6 hours                              | 60 days   | R2 + secondary region | Supabase automated + WAL archiving         |
-| Stage 3       | Continuous WAL archiving + daily snapshot  | 90 days   | Cross-region S3       | pgBackRest or Barman                       |
-| Stage 4       | Continuous PITR + cross-region replication | 365 days  | Multi-region          | CockroachDB / Aurora Global native         |
+| Stage | Frequency | Retention | Storage | Method |
+|---|---|---|---|---|
+| Stage 1 (MVP) | Daily at 02:00 UTC | 30 days | Cloudflare R2 | Supabase automated backup + pg_dump export |
+| Stage 2 | Every 6 hours | 60 days | R2 + secondary region | Supabase automated + WAL archiving |
+| Stage 3 | Continuous WAL archiving + daily snapshot | 90 days | Cross-region S3 | pgBackRest or Barman |
+| Stage 4 | Continuous PITR + cross-region replication | 365 days | Multi-region | CockroachDB / Aurora Global native |
 
 ### Backup Verification
 
@@ -1265,24 +1260,23 @@ org_id = 'uuid-a' rows       org_id = 'uuid-b' rows
 
 ## 18. Data Retention Policy
 
-| Data type                   | Retention period          | Storage location         | Purge method                                  |
-| --------------------------- | ------------------------- | ------------------------ | --------------------------------------------- |
-| Raw transcripts             | 90 days                   | PostgreSQL               | Nightly purge job (soft delete → hard delete) |
-| AI analysis outputs         | 12 months                 | PostgreSQL               | Nightly purge job                             |
-| Recommendations             | 12 months                 | PostgreSQL               | Nightly purge job                             |
-| Job logs                    | 60 days                   | PostgreSQL (partitioned) | Drop monthly partition                        |
-| Usage events                | 13 months                 | PostgreSQL (partitioned) | Drop monthly partition                        |
-| Audit logs                  | 2 years                   | PostgreSQL               | Nightly purge job                             |
-| Dead-letter jobs            | 30 days post-resolution   | PostgreSQL               | Nightly purge job                             |
-| Session tokens              | On expiry or revocation   | PostgreSQL               | Nightly purge job                             |
-| Object storage (thumbnails) | 7 days                    | Cloudflare R2            | R2 lifecycle policy                           |
-| Object storage (exports)    | 7 days                    | Cloudflare R2            | R2 lifecycle policy                           |
-| GDPR deletion requests      | PII purged within 30 days | All stores               | Manual + automated purge                      |
+| Data type | Retention period | Storage location | Purge method |
+|---|---|---|---|
+| Raw transcripts | 90 days | PostgreSQL | Nightly purge job (soft delete → hard delete) |
+| AI analysis outputs | 12 months | PostgreSQL | Nightly purge job |
+| Recommendations | 12 months | PostgreSQL | Nightly purge job |
+| Job logs | 60 days | PostgreSQL (partitioned) | Drop monthly partition |
+| Usage events | 13 months | PostgreSQL (partitioned) | Drop monthly partition |
+| Audit logs | 2 years | PostgreSQL | Nightly purge job |
+| Dead-letter jobs | 30 days post-resolution | PostgreSQL | Nightly purge job |
+| Session tokens | On expiry or revocation | PostgreSQL | Nightly purge job |
+| Object storage (thumbnails) | 7 days | Cloudflare R2 | R2 lifecycle policy |
+| Object storage (exports) | 7 days | Cloudflare R2 | R2 lifecycle policy |
+| GDPR deletion requests | PII purged within 30 days | All stores | Manual + automated purge |
 
 ### GDPR Hard Deletion
 
 When a user requests account deletion:
-
 1. `users.deleted_at` is set immediately (soft delete)
 2. A GDPR purge job runs within 24 hours:
    - Nullifies `users.email`, `users.name`, `users.avatar_url`, `users.password_hash`
@@ -1325,45 +1319,44 @@ When a user requests account deletion:
 
 ## 20. Complete Table Reference
 
-| Table                  | Schema       | Row estimate (MVP) | Partitioned   | RLS                              | Soft delete |
-| ---------------------- | ------------ | ------------------ | ------------- | -------------------------------- | ----------- |
-| `users`                | Users & Orgs | 10,000             | No            | No (global, filtered by session) | Yes         |
-| `oauth_accounts`       | Users & Orgs | 8,000              | No            | Yes                              | No          |
-| `sessions`             | Users & Orgs | 50,000             | No            | Yes                              | No          |
-| `organizations`        | Users & Orgs | 3,000              | No            | No (filtered by membership)      | Yes         |
-| `organization_members` | Users & Orgs | 15,000             | No            | Yes                              | No          |
-| `workspaces`           | Users & Orgs | 5,000              | No            | Yes                              | Yes         |
-| `projects`             | Users & Orgs | 10,000             | No            | Yes                              | Yes         |
-| `audit_logs`           | Users & Orgs | 500,000            | No            | Yes                              | No          |
-| `subscriptions`        | Billing      | 3,000              | No            | Yes                              | No          |
-| `invoices`             | Billing      | 20,000             | No            | Yes                              | No          |
-| `usage_events`         | Billing      | 5,000,000          | Yes (monthly) | Yes                              | No          |
-| `api_keys`             | Billing      | 5,000              | No            | Yes                              | No          |
-| `channels`             | Content      | 50,000             | No            | No (global)                      | No          |
-| `videos`               | Content      | 2,000,000          | No            | No (global)                      | No          |
-| `transcripts`          | Content      | 1,500,000          | No            | No (global)                      | No          |
-| `thumbnail_analyses`   | AI Analysis  | 1,500,000          | No            | No (global)                      | No          |
-| `title_analyses`       | AI Analysis  | 1,500,000          | No            | No (global)                      | No          |
-| `video_analyses`       | AI Analysis  | 1,500,000          | No            | No (global)                      | No          |
-| `recommendations`      | AI Analysis  | 300,000            | No            | Yes                              | No          |
-| `trends`               | AI Analysis  | 50,000             | No            | No (global)                      | No          |
-| `prompt_library`       | AI Analysis  | 50                 | No            | No (admin only)                  | No          |
-| `watchlists`           | Watchlists   | 30,000             | No            | Yes                              | Yes         |
-| `alert_rules`          | Watchlists   | 50,000             | No            | Yes                              | Yes         |
-| `alert_events`         | Watchlists   | 200,000            | No            | Yes                              | No          |
-| `job_logs`             | Operations   | 10,000,000         | Yes (monthly) | No (admin only)                  | No          |
-| `dead_letter_jobs`     | Operations   | 500                | No            | No (admin only)                  | No          |
+| Table | Schema | Row estimate (MVP) | Partitioned | RLS | Soft delete |
+|---|---|---|---|---|---|
+| `users` | Users & Orgs | 10,000 | No | No (global, filtered by session) | Yes |
+| `oauth_accounts` | Users & Orgs | 8,000 | No | Yes | No |
+| `sessions` | Users & Orgs | 50,000 | No | Yes | No |
+| `organizations` | Users & Orgs | 3,000 | No | No (filtered by membership) | Yes |
+| `organization_members` | Users & Orgs | 15,000 | No | Yes | No |
+| `workspaces` | Users & Orgs | 5,000 | No | Yes | Yes |
+| `projects` | Users & Orgs | 10,000 | No | Yes | Yes |
+| `audit_logs` | Users & Orgs | 500,000 | No | Yes | No |
+| `subscriptions` | Billing | 3,000 | No | Yes | No |
+| `invoices` | Billing | 20,000 | No | Yes | No |
+| `usage_events` | Billing | 5,000,000 | Yes (monthly) | Yes | No |
+| `api_keys` | Billing | 5,000 | No | Yes | No |
+| `channels` | Content | 50,000 | No | No (global) | No |
+| `videos` | Content | 2,000,000 | No | No (global) | No |
+| `transcripts` | Content | 1,500,000 | No | No (global) | No |
+| `thumbnail_analyses` | AI Analysis | 1,500,000 | No | No (global) | No |
+| `title_analyses` | AI Analysis | 1,500,000 | No | No (global) | No |
+| `video_analyses` | AI Analysis | 1,500,000 | No | No (global) | No |
+| `recommendations` | AI Analysis | 300,000 | No | Yes | No |
+| `trends` | AI Analysis | 50,000 | No | No (global) | No |
+| `prompt_library` | AI Analysis | 50 | No | No (admin only) | No |
+| `watchlists` | Watchlists | 30,000 | No | Yes | Yes |
+| `alert_rules` | Watchlists | 50,000 | No | Yes | Yes |
+| `alert_events` | Watchlists | 200,000 | No | Yes | No |
+| `job_logs` | Operations | 10,000,000 | Yes (monthly) | No (admin only) | No |
+| `dead_letter_jobs` | Operations | 500 | No | No (admin only) | No |
 
 **Total tables: 26**
 
 ---
 
-_This document is updated whenever a migration is applied that adds, removes, or alters a table or significant column. All changes require a pull request with at least one approving review._
+*This document is updated whenever a migration is applied that adds, removes, or alters a table or significant column. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) — Where schema files live in the codebase
 - [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md) — Database scaling strategy per stage
 - [Security_Architecture.md](./Security_Architecture.md) — RLS policy design and data security

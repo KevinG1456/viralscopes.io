@@ -1,5 +1,4 @@
 # PROJECT_RULES.md
-
 # ViralScopes.io — Engineering Standards & Project Rules
 
 > **Version:** 1.0
@@ -36,18 +35,18 @@ These principles are non-negotiable. Every engineering decision must be evaluate
 
 ### 1.1 Core Principles
 
-| #   | Principle                                                | Description                                                                                                                                                                                        |
-| --- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | **Correctness first**                                    | Working software beats clever software. Never sacrifice correctness for performance or elegance.                                                                                                   |
-| P2  | **Explicit over implicit**                               | Favour explicit code that is obvious to read over concise code that requires inference.                                                                                                            |
-| P3  | **Fail loudly in development, gracefully in production** | Throw hard errors in dev. Return structured error responses in production. Never silently swallow errors.                                                                                          |
-| P4  | **Security by default**                                  | Every feature is built with security considerations from the start. Security is never retrofitted.                                                                                                 |
-| P5  | **Incremental delivery**                                 | Ship small, working increments. No big-bang releases. Every merge to main must leave the system in a deployable state.                                                                             |
-| P6  | **Observable systems**                                   | If it is not logged, it did not happen. Every significant state change, job execution, and error must be observable.                                                                               |
-| P7  | **Ethical AI**                                           | The platform analyses patterns and generates original content ideas. It must never reproduce, paraphrase closely, or facilitate copying of any creator's original script, title, or creative work. |
-| P8  | **Data minimisation**                                    | Collect only the data required to deliver the feature. Define retention periods at design time, not after launch.                                                                                  |
-| P9  | **Idempotency**                                          | All background jobs and webhook handlers must be safe to run more than once without producing duplicate or inconsistent results.                                                                   |
-| P10 | **Dependency on interfaces, not implementations**        | Vendor and provider integrations (email, storage, AI models, payment providers) are accessed through abstraction layers so they can be swapped without changes to business logic.                  |
+| # | Principle | Description |
+|---|---|---|
+| P1 | **Correctness first** | Working software beats clever software. Never sacrifice correctness for performance or elegance. |
+| P2 | **Explicit over implicit** | Favour explicit code that is obvious to read over concise code that requires inference. |
+| P3 | **Fail loudly in development, gracefully in production** | Throw hard errors in dev. Return structured error responses in production. Never silently swallow errors. |
+| P4 | **Security by default** | Every feature is built with security considerations from the start. Security is never retrofitted. |
+| P5 | **Incremental delivery** | Ship small, working increments. No big-bang releases. Every merge to main must leave the system in a deployable state. |
+| P6 | **Observable systems** | If it is not logged, it did not happen. Every significant state change, job execution, and error must be observable. |
+| P7 | **Ethical AI** | The platform analyses patterns and generates original content ideas. It must never reproduce, paraphrase closely, or facilitate copying of any creator's original script, title, or creative work. |
+| P8 | **Data minimisation** | Collect only the data required to deliver the feature. Define retention periods at design time, not after launch. |
+| P9 | **Idempotency** | All background jobs and webhook handlers must be safe to run more than once without producing duplicate or inconsistent results. |
+| P10 | **Dependency on interfaces, not implementations** | Vendor and provider integrations (email, storage, AI models, payment providers) are accessed through abstraction layers so they can be swapped without changes to business logic. |
 
 ### 1.2 What We Do Not Do
 
@@ -95,19 +94,19 @@ function processVideo(data) { ... }
 
 ### 2.3 Naming Conventions
 
-| Context               | Convention                 | Example                                     |
-| --------------------- | -------------------------- | ------------------------------------------- |
-| Variables & functions | `camelCase`                | `viralScore`, `calculateEngagement()`       |
-| Classes & interfaces  | `PascalCase`               | `VideoAnalysisService`, `IVideoRepository`  |
-| Type aliases          | `PascalCase`               | `ViralScoreResult`, `PlanTier`              |
-| Enum members          | `SCREAMING_SNAKE_CASE`     | `PlanTier.PROFESSIONAL`                     |
-| Constants             | `SCREAMING_SNAKE_CASE`     | `MAX_RETRY_ATTEMPTS`, `DEFAULT_QUOTA_LIMIT` |
-| Files & directories   | `kebab-case`               | `video-analysis.service.ts`, `viral-score/` |
-| React components      | `PascalCase` file + export | `VideoDetailPage.tsx`                       |
-| Database tables       | `snake_case`               | `video_analyses`, `alert_rules`             |
-| Database columns      | `snake_case`               | `viral_score`, `created_at`                 |
-| Environment variables | `SCREAMING_SNAKE_CASE`     | `YOUTUBE_API_KEY`, `DATABASE_URL`           |
-| API routes            | `kebab-case`, plural nouns | `/api/v1/videos`, `/api/v1/alert-rules`     |
+| Context | Convention | Example |
+|---|---|---|
+| Variables & functions | `camelCase` | `viralScore`, `calculateEngagement()` |
+| Classes & interfaces | `PascalCase` | `VideoAnalysisService`, `IVideoRepository` |
+| Type aliases | `PascalCase` | `ViralScoreResult`, `PlanTier` |
+| Enum members | `SCREAMING_SNAKE_CASE` | `PlanTier.PROFESSIONAL` |
+| Constants | `SCREAMING_SNAKE_CASE` | `MAX_RETRY_ATTEMPTS`, `DEFAULT_QUOTA_LIMIT` |
+| Files & directories | `kebab-case` | `video-analysis.service.ts`, `viral-score/` |
+| React components | `PascalCase` file + export | `VideoDetailPage.tsx` |
+| Database tables | `snake_case` | `video_analyses`, `alert_rules` |
+| Database columns | `snake_case` | `viral_score`, `created_at` |
+| Environment variables | `SCREAMING_SNAKE_CASE` | `YOUTUBE_API_KEY`, `DATABASE_URL` |
+| API routes | `kebab-case`, plural nouns | `/api/v1/videos`, `/api/v1/alert-rules` |
 
 ### 2.4 Code Formatting
 
@@ -124,18 +123,18 @@ function processVideo(data) { ... }
 ```typescript
 // Order (enforced by ESLint import/order plugin):
 // 1. Node built-ins
-import { readFileSync } from 'fs';
+import { readFileSync } from "fs";
 
 // 2. External packages
-import { z } from 'zod';
-import { FastifyRequest } from 'fastify';
+import { z } from "zod";
+import { FastifyRequest } from "fastify";
 
 // 3. Internal monorepo packages
-import { VideoAnalysis } from '@viralscopes/shared';
+import { VideoAnalysis } from "@viralscopes/shared";
 
 // 4. Local relative imports (deepest last)
-import { viralScoreService } from '../services/viral-score.service';
-import { videoRepository } from './video.repository';
+import { viralScoreService } from "../services/viral-score.service";
+import { videoRepository } from "./video.repository";
 ```
 
 - Barrel files (`index.ts`) are permitted only at package boundaries, not within feature modules.
@@ -150,10 +149,10 @@ class AppError extends Error {
     public readonly code: string,
     public readonly message: string,
     public readonly statusCode: number,
-    public readonly details?: unknown,
+    public readonly details?: unknown
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = "AppError";
   }
 }
 
@@ -161,10 +160,10 @@ class AppError extends Error {
 const response = {
   success: false,
   error: {
-    code: 'VIDEO_NOT_FOUND',
-    message: 'No video found with the provided ID.',
-    details: { videoId },
-  },
+    code: "VIDEO_NOT_FOUND",
+    message: "No video found with the provided ID.",
+    details: { videoId }
+  }
 };
 
 // ❌ Never expose stack traces in production responses
@@ -179,11 +178,11 @@ const response = {
 
 ```typescript
 // ✅ Structured logging with context
-logger.info({ correlationId, videoId, phase: 'viral-score' }, 'Viral score computed');
-logger.error({ correlationId, err, videoId }, 'Failed to fetch transcript');
+logger.info({ correlationId, videoId, phase: "viral-score" }, "Viral score computed");
+logger.error({ correlationId, err, videoId }, "Failed to fetch transcript");
 
 // ❌ Console.log is prohibited in application code
-console.log('video:', video);
+console.log("video:", video);
 ```
 
 - Use **Pino** (API) or the Next.js logger (frontend server components) for structured JSON logging.
@@ -307,7 +306,7 @@ YouTube API / External Sources
 
 - Secrets are injected as environment variables by Coolify at runtime.
 - No secrets in `.env` files committed to the repository. The committed `.env.example` contains only key names with placeholder values.
-- The pre-commit hook runs [`secretlint`](https://github.com/secretlint/secretlint) (via Husky + lint-staged) to block accidental secret commits, using `@secretlint/secretlint-rule-preset-recommend`. `detect-secrets` is an acceptable alternative if a future need (e.g. a specific credential format secretlint doesn't cover) arises.
+- The pre-commit hook runs [`secretlint`](https://github.com/secretlint/secretlint) (`@secretlint/secretlint-rule-preset-recommend`) to block accidental secret commits. Chosen over `git-secrets`/`detect-secrets` because it's npm-native and fits the all-TypeScript/Node tooling stack without adding a Python dependency.
 - JWT signing secrets are rotated on a defined schedule (minimum annually, immediately on suspected compromise).
 
 ### 4.4 Transport Security
@@ -360,14 +359,12 @@ docs/*        ← documentation-only changes
 ### 5.2 Protected Branch Rules
 
 **`main`:**
-
 - Requires 1 approving review from a code owner
 - Requires all CI checks to pass (lint, tests, build, security scan)
 - No direct pushes. No force pushes. No deletion.
 - Merge strategy: Squash and merge only
 
 **`develop`:**
-
 - Requires all CI checks to pass
 - No force pushes
 - Merge strategy: Squash and merge preferred; merge commit permitted
@@ -389,19 +386,18 @@ docs/*        ← documentation-only changes
 
 **Format:** `<type>/<ticket-id>-<short-description>`
 
-| Type        | When to use                              | Example                                |
-| ----------- | ---------------------------------------- | -------------------------------------- |
-| `feature/`  | New features                             | `feature/VS-45-viral-score-engine`     |
-| `fix/`      | Bug fixes                                | `fix/VS-102-quota-overflow`            |
-| `hotfix/`   | Critical production fix                  | `hotfix/VS-201-auth-token-expiry`      |
-| `chore/`    | Tooling, deps, CI                        | `chore/upgrade-typescript-5-5`         |
-| `docs/`     | Documentation only                       | `docs/VS-88-api-reference`             |
-| `release/`  | Release candidates                       | `release/v1.2.0`                       |
+| Type | When to use | Example |
+|---|---|---|
+| `feature/` | New features | `feature/VS-45-viral-score-engine` |
+| `fix/` | Bug fixes | `fix/VS-102-quota-overflow` |
+| `hotfix/` | Critical production fix | `hotfix/VS-201-auth-token-expiry` |
+| `chore/` | Tooling, deps, CI | `chore/upgrade-typescript-5-5` |
+| `docs/` | Documentation only | `docs/VS-88-api-reference` |
+| `release/` | Release candidates | `release/v1.2.0` |
 | `refactor/` | Code restructuring (no behaviour change) | `refactor/VS-77-extract-quota-service` |
-| `test/`     | Adding or fixing tests only              | `test/VS-91-e2e-onboarding-flow`       |
+| `test/` | Adding or fixing tests only | `test/VS-91-e2e-onboarding-flow` |
 
 **Rules:**
-
 - All lowercase.
 - Words separated by hyphens only.
 - Ticket ID is required for feature, fix, and refactor branches.
@@ -415,7 +411,6 @@ docs/*        ← documentation-only changes
 We follow the **Conventional Commits** specification.
 
 **Format:**
-
 ```
 <type>(<scope>): <subject>
 
@@ -426,33 +421,33 @@ We follow the **Conventional Commits** specification.
 
 ### 7.1 Types
 
-| Type       | Description                             |
-| ---------- | --------------------------------------- |
-| `feat`     | A new feature                           |
-| `fix`      | A bug fix                               |
-| `docs`     | Documentation changes only              |
-| `style`    | Formatting changes (no logic change)    |
+| Type | Description |
+|---|---|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation changes only |
+| `style` | Formatting changes (no logic change) |
 | `refactor` | Code restructuring (no feature, no fix) |
-| `test`     | Adding or fixing tests                  |
-| `chore`    | Tooling, build, dependency updates      |
-| `perf`     | Performance improvements                |
-| `ci`       | CI/CD configuration changes             |
-| `revert`   | Reverts a previous commit               |
+| `test` | Adding or fixing tests |
+| `chore` | Tooling, build, dependency updates |
+| `perf` | Performance improvements |
+| `ci` | CI/CD configuration changes |
+| `revert` | Reverts a previous commit |
 
 ### 7.2 Scopes
 
-| Scope      | Description                      |
-| ---------- | -------------------------------- |
-| `api`      | Backend API service              |
-| `web`      | Frontend Next.js application     |
-| `db`       | Database schema, migrations      |
-| `n8n`      | n8n workflow changes             |
-| `auth`     | Authentication and authorisation |
-| `billing`  | Subscription and billing         |
-| `ai`       | AI prompts and pipeline          |
-| `infra`    | Docker, CI/CD, Coolify           |
-| `shared`   | Shared packages                  |
-| `security` | Security-related changes         |
+| Scope | Description |
+|---|---|
+| `api` | Backend API service |
+| `web` | Frontend Next.js application |
+| `db` | Database schema, migrations |
+| `n8n` | n8n workflow changes |
+| `auth` | Authentication and authorisation |
+| `billing` | Subscription and billing |
+| `ai` | AI prompts and pipeline |
+| `infra` | Docker, CI/CD, Coolify |
+| `shared` | Shared packages |
+| `security` | Security-related changes |
 
 ### 7.3 Examples
 
@@ -492,7 +487,7 @@ Update client error handling accordingly.
 
 - Subject line: imperative mood ("add", not "added" or "adds"), no capital first letter, no full stop at end.
 - Subject line: maximum 72 characters.
-- Body: wrap at 100 characters. Explain _why_, not _what_ (the diff shows what).
+- Body: wrap at 100 characters. Explain *why*, not *what* (the diff shows what).
 - Footer: reference ticket IDs using `Closes VS-NNN` or `Fixes VS-NNN`.
 - Breaking changes: append `!` after the type/scope and include a `BREAKING CHANGE:` footer.
 
@@ -517,7 +512,6 @@ Every PR must include:
 ## PR Checklist
 
 ### Code Quality
-
 - [ ] TypeScript strict mode passes with no errors
 - [ ] ESLint passes with no warnings or errors
 - [ ] No `any` types introduced
@@ -526,27 +520,23 @@ Every PR must include:
 - [ ] No secrets or credentials in code
 
 ### Tests
-
 - [ ] Unit tests added or updated for all changed business logic
 - [ ] Integration tests added or updated for any changed API endpoints
 - [ ] All existing tests pass locally
 - [ ] Test coverage has not decreased
 
 ### Security
-
 - [ ] Input validation with Zod on any new API endpoints
 - [ ] No new unvalidated external data flows
 - [ ] RLS policies considered if new DB tables or columns added
 - [ ] Webhook handlers verify signatures
 
 ### Database
-
 - [ ] Schema changes use a reversible migration file
 - [ ] New columns have appropriate indexes where needed
 - [ ] Seed data updated if required
 
 ### Documentation
-
 - [ ] Inline code comments added for non-obvious logic
 - [ ] JSDoc updated for any changed public function signatures
 - [ ] CHANGELOG.md updated if this is a user-facing change
@@ -575,29 +565,28 @@ Every PR must include:
 
 ### 9.1 Testing Stack
 
-| Layer                | Tool                     |
-| -------------------- | ------------------------ |
-| Unit tests           | Vitest                   |
-| Integration tests    | Vitest + Supertest (API) |
-| E2E tests            | Playwright               |
-| Load tests           | k6                       |
-| AI prompt regression | Vitest + fixture videos  |
-| Coverage reporting   | Vitest coverage (v8)     |
+| Layer | Tool |
+|---|---|
+| Unit tests | Vitest |
+| Integration tests | Vitest + Supertest (API) |
+| E2E tests | Playwright |
+| Load tests | k6 |
+| AI prompt regression | Vitest + fixture videos |
+| Coverage reporting | Vitest coverage (v8) |
 
 ### 9.2 Coverage Targets
 
-| Test type         | Target                             |
-| ----------------- | ---------------------------------- |
-| Unit tests        | ≥ 80% line coverage                |
-| Integration tests | ≥ 70% endpoint coverage            |
-| E2E tests         | All critical user journeys covered |
+| Test type | Target |
+|---|---|
+| Unit tests | ≥ 80% line coverage |
+| Integration tests | ≥ 70% endpoint coverage |
+| E2E tests | All critical user journeys covered |
 
 Coverage targets are enforced in CI. PRs that decrease coverage below the target are blocked.
 
 ### 9.3 What Must Have Tests
 
 **Always:**
-
 - All service layer functions containing business logic
 - All utility/helper functions
 - Viral Score calculation algorithm
@@ -608,13 +597,11 @@ Coverage targets are enforced in CI. PRs that decrease coverage below the target
 - All API endpoints (request/response shape, auth enforcement, error cases)
 
 **Always for new features:**
-
 - At least one unit test per new service method
 - At least one integration test per new API endpoint
 - E2E test if the feature introduces a new user journey
 
 **Never acceptable:**
-
 - Tests that only test the framework (e.g. "it calls the controller")
 - Tests that mock so much they don't actually test anything
 - Tests that rely on production data or external services (use fixtures and mocks)
@@ -656,7 +643,7 @@ apps/api/src/
 
 - **JSDoc** is required for all exported functions, classes, and types in `packages/shared` and `apps/api/src/`.
 - Inline comments are required for any logic that is not immediately obvious to a competent TypeScript developer.
-- Comments explain _why_, not _what_. The code explains what.
+- Comments explain *why*, not *what*. The code explains what.
 
 ```typescript
 // ✅ Explains WHY — valuable context
@@ -681,15 +668,15 @@ const keyHash = sha256(rawKey);
 
 The following documents must be kept up to date:
 
-| Document                        | Update trigger                                   |
-| ------------------------------- | ------------------------------------------------ |
-| `CHANGELOG.md`                  | Every user-facing change merged to main          |
-| `PROJECT_STATUS.md`             | Every week; every phase completion               |
-| `ROADMAP.md`                    | Every phase completion; priority change          |
-| `README.md`                     | New setup steps; new environment variables       |
-| `REPOSITORY_STRUCTURE.md`       | New directories or significant restructuring     |
-| `INFRASTRUCTURE_GROWTH_PLAN.md` | Architectural changes; new services added        |
-| `PRD.md`                        | New features added to scope; requirements change |
+| Document | Update trigger |
+|---|---|
+| `CHANGELOG.md` | Every user-facing change merged to main |
+| `PROJECT_STATUS.md` | Every week; every phase completion |
+| `ROADMAP.md` | Every phase completion; priority change |
+| `README.md` | New setup steps; new environment variables |
+| `REPOSITORY_STRUCTURE.md` | New directories or significant restructuring |
+| `INFRASTRUCTURE_GROWTH_PLAN.md` | Architectural changes; new services added |
+| `PRD.md` | New features added to scope; requirements change |
 
 ### 10.4 n8n Workflow Documentation
 
@@ -734,33 +721,33 @@ If all answers are satisfactory, add it with an exact version (`npm install --sa
 
 ### 12.1 API Performance Targets
 
-| Metric                | Target   | Critical threshold |
-| --------------------- | -------- | ------------------ |
-| p50 API response time | < 100ms  | 200ms              |
-| p95 API response time | < 500ms  | 1000ms             |
-| p99 API response time | < 1000ms | 2000ms             |
-| Error rate (5xx)      | < 0.1%   | 1%                 |
-| Availability          | > 99.9%  | 99.5%              |
+| Metric | Target | Critical threshold |
+|---|---|---|
+| p50 API response time | < 100ms | 200ms |
+| p95 API response time | < 500ms | 1000ms |
+| p99 API response time | < 1000ms | 2000ms |
+| Error rate (5xx) | < 0.1% | 1% |
+| Availability | > 99.9% | 99.5% |
 
 ### 12.2 Frontend Performance Targets
 
-| Metric                         | Target  |
-| ------------------------------ | ------- |
-| Largest Contentful Paint (LCP) | < 2.5s  |
-| First Input Delay (FID)        | < 100ms |
-| Cumulative Layout Shift (CLS)  | < 0.1   |
-| Time to Interactive (TTI)      | < 3.5s  |
-| Lighthouse Performance Score   | ≥ 85    |
+| Metric | Target |
+|---|---|
+| Largest Contentful Paint (LCP) | < 2.5s |
+| First Input Delay (FID) | < 100ms |
+| Cumulative Layout Shift (CLS) | < 0.1 |
+| Time to Interactive (TTI) | < 3.5s |
+| Lighthouse Performance Score | ≥ 85 |
 
 ### 12.3 Background Job Performance Targets
 
-| Metric                                | Target                      |
-| ------------------------------------- | --------------------------- |
-| Video discovery cycle                 | Completes within 30 minutes |
-| Single video analysis (full pipeline) | < 5 minutes                 |
-| Alert dispatch latency                | < 2 minutes from trigger    |
-| Trend detection cycle (daily)         | Completes within 2 hours    |
-| Dead-letter job notification          | < 5 minutes from failure    |
+| Metric | Target |
+|---|---|
+| Video discovery cycle | Completes within 30 minutes |
+| Single video analysis (full pipeline) | < 5 minutes |
+| Alert dispatch latency | < 2 minutes from trigger |
+| Trend detection cycle (daily) | Completes within 2 hours |
+| Dead-letter job notification | < 5 minutes from failure |
 
 ### 12.4 Performance Monitoring
 
@@ -775,14 +762,12 @@ If all answers are satisfactory, add it with an exact version (`npm install --sa
 Use this checklist when reviewing any pull request.
 
 ### Correctness
-
 - [ ] Does the code do what the PR description says it does?
 - [ ] Are all edge cases handled? (null, empty, zero, very large values)
 - [ ] Are all error paths handled and returning appropriate responses?
 - [ ] Does the code handle concurrent requests safely?
 
 ### Security
-
 - [ ] Are all inputs validated with Zod before use?
 - [ ] Is any user-generated content sanitised before rendering?
 - [ ] Are there any new vectors for SQL injection, XSS, or CSRF?
@@ -791,34 +776,29 @@ Use this checklist when reviewing any pull request.
 - [ ] Are new database tables/columns protected by appropriate RLS policies?
 
 ### Architecture
-
 - [ ] Does the code follow the layered architecture? (no business logic in routes/controllers)
 - [ ] Are external services accessed through abstraction layers?
 - [ ] Are there any circular dependencies introduced?
 - [ ] Are shared types defined in `packages/shared` rather than duplicated?
 
 ### Data & Database
-
 - [ ] Do new schema changes use a reversible migration?
 - [ ] Are new columns indexed appropriately?
 - [ ] Is the `org_id` filter applied for any new tenant-scoped queries?
 - [ ] Is RLS enforced at the database level for new tables?
 
 ### Testing
-
 - [ ] Are new service methods covered by unit tests?
 - [ ] Are new API endpoints covered by integration tests?
 - [ ] Do tests actually assert meaningful behaviour, not just that the code runs?
 - [ ] Are test fixtures used instead of real external service calls?
 
 ### Performance
-
 - [ ] Are there any obvious N+1 query patterns?
 - [ ] Are expensive operations (AI calls, external API calls) deferred to background jobs?
 - [ ] Is caching applied where appropriate and are cache keys designed to avoid collisions?
 
 ### Documentation
-
 - [ ] Are public functions documented with JSDoc?
 - [ ] Are non-obvious logic blocks explained with inline comments?
 - [ ] Is `CHANGELOG.md` updated for user-facing changes?
@@ -831,7 +811,6 @@ Use this checklist when reviewing any pull request.
 A task or feature is **Done** when all of the following are true:
 
 ### Code Complete
-
 - [ ] All acceptance criteria from the ticket are implemented
 - [ ] Code follows all standards defined in this document
 - [ ] TypeScript compiles with no errors in strict mode
@@ -839,7 +818,6 @@ A task or feature is **Done** when all of the following are true:
 - [ ] No `console.log`, `TODO`, `FIXME`, or `any` in production code paths
 
 ### Tests Complete
-
 - [ ] Unit tests written and passing for all new business logic
 - [ ] Integration tests written and passing for all new API endpoints
 - [ ] All existing tests still pass
@@ -847,14 +825,12 @@ A task or feature is **Done** when all of the following are true:
 - [ ] AI prompt regression tests pass (if AI pipeline touched)
 
 ### Review Complete
-
 - [ ] Pull request created with complete description and checklist
 - [ ] At least 1 approving review received (2 for changes to `main`)
 - [ ] All review comments resolved
 - [ ] All CI checks green
 
 ### Deployed & Verified
-
 - [ ] Feature is deployed to staging
 - [ ] Feature is manually verified to work as expected in staging
 - [ ] No regressions observed in monitoring dashboards
@@ -862,7 +838,6 @@ A task or feature is **Done** when all of the following are true:
 - [ ] Post-deploy smoke test passed in production
 
 ### Documentation Complete
-
 - [ ] `CHANGELOG.md` updated (user-facing changes)
 - [ ] API documentation updated (new or changed endpoints)
 - [ ] `PROJECT_STATUS.md` updated
@@ -897,7 +872,6 @@ When a PR contains significant AI-generated code (more than ~20 lines), the PR d
 
 ```markdown
 ## AI Assistance Disclosure
-
 - Tool used: [e.g. Claude Sonnet 4.6, GitHub Copilot]
 - Sections generated with AI assistance: [e.g. Zod schema in video.schema.ts, test fixtures]
 - Review notes: [explain what you verified, what you modified, and what you tested]
@@ -906,7 +880,6 @@ When a PR contains significant AI-generated code (more than ~20 lines), the PR d
 ### 15.4 AI and the Ethical Content Constraint
 
 AI assistants must never be used to generate content that:
-
 - Reproduces a specific creator's script, narration, or unique creative expression.
 - Closely paraphrases a creator's work in a way that substitutes for the original.
 - Facilitates plagiarism of any creator's content strategy in a specific, identifiable way.
@@ -915,12 +888,11 @@ The platform's purpose is to identify **patterns** and inspire **original** crea
 
 ---
 
-_These rules are a living document. Proposed changes require a PR to `main` with at least 2 approvals. All engineers are expected to have read and understood this document before making their first contribution._
+*These rules are a living document. Proposed changes require a PR to `main` with at least 2 approvals. All engineers are expected to have read and understood this document before making their first contribution.*
 
 ---
 
 **Related Documents:**
-
 - [README.md](./README.md) — Project overview and quick start
 - [ROADMAP.md](./ROADMAP.md) — Development phases and milestones
 - [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) — Folder and file organisation

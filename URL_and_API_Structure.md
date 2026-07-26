@@ -1,5 +1,4 @@
 # URL_&_API_Structure.md
-
 # ViralScopes.io — URL & API Structure
 
 > **Version:** 1.0
@@ -47,28 +46,28 @@
 
 ### Domain Architecture
 
-| Domain                  | Purpose                             | Example                                         |
-| ----------------------- | ----------------------------------- | ----------------------------------------------- |
-| `viralscopes.io`        | Marketing site (static)             | `https://viralscopes.io`                        |
-| `app.viralscopes.io`    | Next.js frontend application        | `https://app.viralscopes.io/dashboard`          |
-| `api.viralscopes.io`    | Fastify REST API                    | `https://api.viralscopes.io/api/v1/videos`      |
-| `n8n.viralscopes.io`    | n8n workflow editor (internal)      | `https://n8n.viralscopes.io`                    |
-| `cdn.viralscopes.io`    | Cloudflare R2 asset delivery        | `https://cdn.viralscopes.io/thumbnails/abc.jpg` |
-| `status.viralscopes.io` | Public status page (Post-MVP)       | `https://status.viralscopes.io`                 |
-| `docs.viralscopes.io`   | API documentation portal (Post-MVP) | `https://docs.viralscopes.io`                   |
+| Domain | Purpose | Example |
+|---|---|---|
+| `viralscopes.io` | Marketing site (static) | `https://viralscopes.io` |
+| `app.viralscopes.io` | Next.js frontend application | `https://app.viralscopes.io/dashboard` |
+| `api.viralscopes.io` | Fastify REST API | `https://api.viralscopes.io/api/v1/videos` |
+| `n8n.viralscopes.io` | n8n workflow editor (internal) | `https://n8n.viralscopes.io` |
+| `cdn.viralscopes.io` | Cloudflare R2 asset delivery | `https://cdn.viralscopes.io/thumbnails/abc.jpg` |
+| `status.viralscopes.io` | Public status page (Post-MVP) | `https://status.viralscopes.io` |
+| `docs.viralscopes.io` | API documentation portal (Post-MVP) | `https://docs.viralscopes.io` |
 
 ### Path Prefix Summary
 
-| Prefix                                    | Location | Auth required           | Description              |
-| ----------------------------------------- | -------- | ----------------------- | ------------------------ |
-| `/`                                       | Frontend | No                      | Public marketing pages   |
-| `/login`, `/register`                     | Frontend | No                      | Auth pages               |
-| `/onboarding/*`                           | Frontend | Yes                     | New user onboarding flow |
-| `/dashboard/*` (aliased as `/home`, etc.) | Frontend | Yes                     | Main application         |
-| `/admin/*`                                | Frontend | Yes (admin role)        | Super Admin Panel        |
-| `/api/v1/*`                               | API      | Yes (JWT or API key)    | REST API v1              |
-| `/api/v1/webhooks/*`                      | API      | No (signature verified) | Inbound webhooks         |
-| `/health`, `/ready`                       | API      | No                      | Health checks            |
+| Prefix | Location | Auth required | Description |
+|---|---|---|---|
+| `/` | Frontend | No | Public marketing pages |
+| `/login`, `/register` | Frontend | No | Auth pages |
+| `/onboarding/*` | Frontend | Yes | New user onboarding flow |
+| `/dashboard/*` (aliased as `/home`, etc.) | Frontend | Yes | Main application |
+| `/admin/*` | Frontend | Yes (admin role) | Super Admin Panel |
+| `/api/v1/*` | API | Yes (JWT or API key) | REST API v1 |
+| `/api/v1/webhooks/*` | API | No (signature verified) | Inbound webhooks |
+| `/health`, `/ready` | API | No | Health checks |
 
 ---
 
@@ -78,74 +77,74 @@ All frontend routes are served by Next.js App Router. Routes are grouped by layo
 
 ### Public Routes (No Auth)
 
-| Route        | Page             | Description                   |
-| ------------ | ---------------- | ----------------------------- |
-| `/`          | Marketing home   | Product landing page          |
-| `/pricing`   | Pricing          | Plan comparison page          |
-| `/privacy`   | Privacy Policy   | GDPR-compliant privacy policy |
-| `/terms`     | Terms of Service | Terms of service              |
-| `/changelog` | Changelog        | Release notes                 |
+| Route | Page | Description |
+|---|---|---|
+| `/` | Marketing home | Product landing page |
+| `/pricing` | Pricing | Plan comparison page |
+| `/privacy` | Privacy Policy | GDPR-compliant privacy policy |
+| `/terms` | Terms of Service | Terms of service |
+| `/changelog` | Changelog | Release notes |
 
 ### Auth Routes (No Sidebar Layout)
 
-| Route                     | Page                   | Description                              |
-| ------------------------- | ---------------------- | ---------------------------------------- |
-| `/login`                  | Login                  | Email/password + OAuth login             |
-| `/register`               | Register               | New account registration                 |
-| `/verify-email`           | Email Verification     | Email link landing page                  |
-| `/reset-password`         | Password Reset Request | Request reset email                      |
+| Route | Page | Description |
+|---|---|---|
+| `/login` | Login | Email/password + OAuth login |
+| `/register` | Register | New account registration |
+| `/verify-email` | Email Verification | Email link landing page |
+| `/reset-password` | Password Reset Request | Request reset email |
 | `/reset-password/confirm` | Password Reset Confirm | New password form (token in query param) |
-| `/auth/callback`          | OAuth Callback         | Handles Google/GitHub OAuth redirect     |
+| `/auth/callback` | OAuth Callback | Handles Google/GitHub OAuth redirect |
 
 ### Onboarding Routes (Auth Required)
 
-| Route                         | Page                | Description                        |
-| ----------------------------- | ------------------- | ---------------------------------- |
-| `/onboarding`                 | Onboarding Entry    | Redirect to current step           |
-| `/onboarding/create-org`      | Create Organisation | Step 1: Create or join an org      |
-| `/onboarding/choose-plan`     | Choose Plan         | Step 2: Select a subscription plan |
-| `/onboarding/first-watchlist` | First Watchlist     | Step 3: Set first watchlist        |
-| `/onboarding/tour`            | Product Tour        | Step 4: Guided dashboard tour      |
+| Route | Page | Description |
+|---|---|---|
+| `/onboarding` | Onboarding Entry | Redirect to current step |
+| `/onboarding/create-org` | Create Organisation | Step 1: Create or join an org |
+| `/onboarding/choose-plan` | Choose Plan | Step 2: Select a subscription plan |
+| `/onboarding/first-watchlist` | First Watchlist | Step 3: Set first watchlist |
+| `/onboarding/tour` | Product Tour | Step 4: Guided dashboard tour |
 
 ### Dashboard Routes (Auth + Sidebar Layout)
 
-| Route                     | Page             | Description                             |
-| ------------------------- | ---------------- | --------------------------------------- |
-| `/home`                   | Home             | KPI cards and recent activity feed      |
-| `/trending`               | Trending         | Latest high-scoring videos              |
-| `/videos`                 | Videos           | Searchable, filterable video list       |
-| `/videos/[id]`            | Video Detail     | Full analysis for one video             |
-| `/channels`               | Channels         | Channel profiles and growth data        |
-| `/channels/[id]`          | Channel Detail   | Individual channel profile              |
-| `/trends`                 | Trends           | Topic trend velocity and classification |
-| `/opportunities`          | Opportunities    | Ranked content opportunity list         |
-| `/recommendations`        | Recommendations  | AI-generated content ideas              |
-| `/watchlists`             | Watchlists       | Watchlist management                    |
-| `/watchlists/[id]`        | Watchlist Detail | Activity for one watchlist              |
-| `/alerts`                 | Alerts           | Alert rule management                   |
-| `/alerts/history`         | Alert History    | Dispatched alert log                    |
-| `/search`                 | Search           | Unified search results                  |
-| `/export`                 | Export           | Export history and trigger              |
-| `/settings`               | Settings         | Account and organisation settings       |
-| `/settings/profile`       | Profile          | User profile and password               |
-| `/settings/organisation`  | Organisation     | Org name, logo, settings                |
-| `/settings/billing`       | Billing          | Stripe Customer Portal embed            |
-| `/settings/team`          | Team             | Member management and invitations       |
-| `/settings/api-keys`      | API Keys         | Create and revoke API keys              |
-| `/settings/notifications` | Notifications    | Notification preferences                |
+| Route | Page | Description |
+|---|---|---|
+| `/home` | Home | KPI cards and recent activity feed |
+| `/trending` | Trending | Latest high-scoring videos |
+| `/videos` | Videos | Searchable, filterable video list |
+| `/videos/[id]` | Video Detail | Full analysis for one video |
+| `/channels` | Channels | Channel profiles and growth data |
+| `/channels/[id]` | Channel Detail | Individual channel profile |
+| `/trends` | Trends | Topic trend velocity and classification |
+| `/opportunities` | Opportunities | Ranked content opportunity list |
+| `/recommendations` | Recommendations | AI-generated content ideas |
+| `/watchlists` | Watchlists | Watchlist management |
+| `/watchlists/[id]` | Watchlist Detail | Activity for one watchlist |
+| `/alerts` | Alerts | Alert rule management |
+| `/alerts/history` | Alert History | Dispatched alert log |
+| `/search` | Search | Unified search results |
+| `/export` | Export | Export history and trigger |
+| `/settings` | Settings | Account and organisation settings |
+| `/settings/profile` | Profile | User profile and password |
+| `/settings/organisation` | Organisation | Org name, logo, settings |
+| `/settings/billing` | Billing | Stripe Customer Portal embed |
+| `/settings/team` | Team | Member management and invitations |
+| `/settings/api-keys` | API Keys | Create and revoke API keys |
+| `/settings/notifications` | Notifications | Notification preferences |
 
 ### Admin Routes (Auth + Super Admin / Admin Role)
 
-| Route                  | Page                    | Description                   |
-| ---------------------- | ----------------------- | ----------------------------- |
-| `/admin`               | Admin Overview          | System health summary         |
-| `/admin/users`         | User Management         | Search, suspend, verify users |
-| `/admin/organisations` | Organisation Management | View, modify, suspend orgs    |
-| `/admin/jobs`          | Job Logs                | n8n workflow execution log    |
-| `/admin/dead-letter`   | Dead-Letter Queue       | Failed job viewer and retry   |
-| `/admin/prompts`       | Prompt Library          | Edit and version AI prompts   |
-| `/admin/system`        | System Health           | Embedded Grafana panels       |
-| `/admin/quota`         | Quota Management        | YouTube API quota viewer      |
+| Route | Page | Description |
+|---|---|---|
+| `/admin` | Admin Overview | System health summary |
+| `/admin/users` | User Management | Search, suspend, verify users |
+| `/admin/organisations` | Organisation Management | View, modify, suspend orgs |
+| `/admin/jobs` | Job Logs | n8n workflow execution log |
+| `/admin/dead-letter` | Dead-Letter Queue | Failed job viewer and retry |
+| `/admin/prompts` | Prompt Library | Edit and version AI prompts |
+| `/admin/system` | System Health | Embedded Grafana panels |
+| `/admin/quota` | Quota Management | YouTube API quota viewer |
 
 ---
 
@@ -162,15 +161,14 @@ https://api.viralscopes.io/api/v1/trends
 
 ### Version Lifecycle
 
-| Version | Status  | Sunset date | Notes                                        |
-| ------- | ------- | ----------- | -------------------------------------------- |
-| `v1`    | Active  | Not planned | Current version                              |
-| `v2`    | Planned | —           | Will be introduced for breaking changes only |
+| Version | Status | Sunset date | Notes |
+|---|---|---|---|
+| `v1` | Active | Not planned | Current version |
+| `v2` | Planned | — | Will be introduced for breaking changes only |
 
 ### Breaking Change Policy
 
 A new API version is introduced **only** when a change would break existing integrations. Breaking changes include:
-
 - Removing an existing field from a response
 - Renaming a field
 - Changing a field's type
@@ -184,7 +182,6 @@ Non-breaking changes (adding optional fields, adding new endpoints) are applied 
 Clients specify the version in the URL path. No header-based versioning is used — URL versioning is explicit and cacheable.
 
 When `v2` is introduced:
-
 - `v1` remains fully operational for a minimum of 12 months
 - Deprecation notices are sent via email to all API key holders
 - A `Deprecation` response header is added to all `v1` responses 6 months before sunset
@@ -195,28 +192,28 @@ When `v2` is introduced:
 
 ### URL Path Conventions
 
-| Rule                                               | Example                                             |
-| -------------------------------------------------- | --------------------------------------------------- |
-| Lowercase, hyphen-separated                        | `/alert-rules`, not `/alertRules` or `/alert_rules` |
-| Plural resource nouns                              | `/videos`, `/channels`, `/watchlists`               |
-| Resource ID in path for single-resource operations | `/videos/:id`, `/watchlists/:id`                    |
-| Sub-resources as nested paths                      | `/videos/:id/recommendations`                       |
-| Actions that are not CRUD use verb-noun            | `/videos/:id/refresh`, `/exports/:id/download`      |
-| Admin sub-namespace for admin operations           | `/admin/users`, `/admin/dead-letter`                |
-| Webhook receivers prefixed with `/webhooks/`       | `/webhooks/stripe`, `/webhooks/paddle`              |
+| Rule | Example |
+|---|---|
+| Lowercase, hyphen-separated | `/alert-rules`, not `/alertRules` or `/alert_rules` |
+| Plural resource nouns | `/videos`, `/channels`, `/watchlists` |
+| Resource ID in path for single-resource operations | `/videos/:id`, `/watchlists/:id` |
+| Sub-resources as nested paths | `/videos/:id/recommendations` |
+| Actions that are not CRUD use verb-noun | `/videos/:id/refresh`, `/exports/:id/download` |
+| Admin sub-namespace for admin operations | `/admin/users`, `/admin/dead-letter` |
+| Webhook receivers prefixed with `/webhooks/` | `/webhooks/stripe`, `/webhooks/paddle` |
 
 ### Query Parameter Conventions
 
-| Parameter         | Convention       | Example                          |
-| ----------------- | ---------------- | -------------------------------- |
-| Pagination cursor | `cursor`         | `?cursor=eyJ...`                 |
-| Page size         | `limit`          | `?limit=25`                      |
-| Filter fields     | `filter_<field>` | `?filter_language=en`            |
-| Date range        | `from` / `to`    | `?from=2026-01-01&to=2026-07-01` |
-| Sort field        | `sort_by`        | `?sort_by=viral_score`           |
-| Sort direction    | `sort_dir`       | `?sort_dir=desc`                 |
-| Search query      | `q`              | `?q=productivity+hacks`          |
-| Platform filter   | `platform`       | `?platform=youtube`              |
+| Parameter | Convention | Example |
+|---|---|---|
+| Pagination cursor | `cursor` | `?cursor=eyJ...` |
+| Page size | `limit` | `?limit=25` |
+| Filter fields | `filter_<field>` | `?filter_language=en` |
+| Date range | `from` / `to` | `?from=2026-01-01&to=2026-07-01` |
+| Sort field | `sort_by` | `?sort_by=viral_score` |
+| Sort direction | `sort_dir` | `?sort_dir=desc` |
+| Search query | `q` | `?q=productivity+hacks` |
+| Platform filter | `platform` | `?platform=youtube` |
 
 ---
 
@@ -231,7 +228,6 @@ Register a new user account.
 **Auth:** None required
 
 **Request:**
-
 ```json
 {
   "email": "maya@example.com",
@@ -241,7 +237,6 @@ Register a new user account.
 ```
 
 **Response `201 Created`:**
-
 ```json
 {
   "success": true,
@@ -268,7 +263,6 @@ Authenticate with email and password.
 **Auth:** None required
 
 **Request:**
-
 ```json
 {
   "email": "maya@example.com",
@@ -277,7 +271,6 @@ Authenticate with email and password.
 ```
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -310,7 +303,6 @@ Revoke the current session and invalidate the refresh token.
 **Request:** Empty body
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Logged out successfully." } }
 ```
@@ -324,7 +316,6 @@ Exchange a valid refresh token for a new access token. Refresh token is read fro
 **Auth:** Refresh token cookie
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -343,13 +334,11 @@ Verify a user's email address using the token from the verification email.
 **Auth:** None
 
 **Request:**
-
 ```json
 { "token": "abc123..." }
 ```
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Email verified successfully." } }
 ```
@@ -363,18 +352,16 @@ Send a password reset email.
 **Auth:** None
 
 **Request:**
-
 ```json
 { "email": "maya@example.com" }
 ```
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "If that email exists, a reset link has been sent." } }
 ```
 
-_Always returns 200 regardless of whether the email exists (prevents user enumeration)._
+*Always returns 200 regardless of whether the email exists (prevents user enumeration).*
 
 ---
 
@@ -385,7 +372,6 @@ Reset password using a valid reset token.
 **Auth:** None
 
 **Request:**
-
 ```json
 {
   "token": "abc123...",
@@ -394,7 +380,6 @@ Reset password using a valid reset token.
 ```
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Password updated successfully." } }
 ```
@@ -428,7 +413,6 @@ List all active sessions for the authenticated user.
 **Auth:** JWT required
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -455,7 +439,6 @@ Revoke a specific session.
 **Auth:** JWT required
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Session revoked." } }
 ```
@@ -469,7 +452,6 @@ Revoke all sessions except the current one.
 **Auth:** JWT required
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "revokedCount": 3 } }
 ```
@@ -486,23 +468,22 @@ List videos with filters. Cursor-paginated.
 
 **Query parameters:**
 
-| Parameter                | Type           | Description                           | Example                            |
-| ------------------------ | -------------- | ------------------------------------- | ---------------------------------- |
-| `cursor`                 | string         | Pagination cursor                     | `?cursor=eyJ...`                   |
-| `limit`                  | integer        | Results per page (max 50, default 25) | `?limit=25`                        |
-| `filter_platform`        | string         | Platform filter                       | `?filter_platform=youtube`         |
-| `filter_language`        | string         | ISO 639-1 language code               | `?filter_language=en`              |
-| `filter_category`        | string         | Category name                         | `?filter_category=education`       |
-| `filter_viral_score_min` | number         | Minimum viral score                   | `?filter_viral_score_min=60`       |
-| `filter_viral_score_max` | number         | Maximum viral score                   | `?filter_viral_score_max=100`      |
-| `filter_analysis_status` | string         | Analysis status filter                | `?filter_analysis_status=complete` |
-| `from`                   | ISO 8601 date  | Published after                       | `?from=2026-07-01`                 |
-| `to`                     | ISO 8601 date  | Published before                      | `?to=2026-07-20`                   |
-| `sort_by`                | string         | Field to sort by                      | `?sort_by=viral_score`             |
-| `sort_dir`               | `asc` / `desc` | Sort direction                        | `?sort_dir=desc`                   |
+| Parameter | Type | Description | Example |
+|---|---|---|---|
+| `cursor` | string | Pagination cursor | `?cursor=eyJ...` |
+| `limit` | integer | Results per page (max 50, default 25) | `?limit=25` |
+| `filter_platform` | string | Platform filter | `?filter_platform=youtube` |
+| `filter_language` | string | ISO 639-1 language code | `?filter_language=en` |
+| `filter_category` | string | Category name | `?filter_category=education` |
+| `filter_viral_score_min` | number | Minimum viral score | `?filter_viral_score_min=60` |
+| `filter_viral_score_max` | number | Maximum viral score | `?filter_viral_score_max=100` |
+| `filter_analysis_status` | string | Analysis status filter | `?filter_analysis_status=complete` |
+| `from` | ISO 8601 date | Published after | `?from=2026-07-01` |
+| `to` | ISO 8601 date | Published before | `?to=2026-07-20` |
+| `sort_by` | string | Field to sort by | `?sort_by=viral_score` |
+| `sort_dir` | `asc` / `desc` | Sort direction | `?sort_dir=desc` |
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -544,7 +525,6 @@ Get full detail for a single video including all analysis outputs.
 **Auth:** JWT or API Key
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -606,13 +586,11 @@ Trigger analysis for a specific YouTube URL. Enqueues a job and returns immediat
 **Auth:** JWT or API Key | **Plan:** Starter+
 
 **Request:**
-
 ```json
 { "url": "https://youtube.com/watch?v=abc123" }
 ```
 
 **Response `202 Accepted`:**
-
 ```json
 {
   "success": true,
@@ -636,7 +614,6 @@ Re-analyse a video, bypassing the 24-hour cache.
 **Auth:** JWT or API Key | **Plan:** Professional+
 
 **Response `202 Accepted`:**
-
 ```json
 {
   "success": true,
@@ -656,7 +633,6 @@ Get AI-generated original recommendations for a specific video, scoped to the au
 **Auth:** JWT or API Key
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -668,14 +644,8 @@ Get AI-generated original recommendations for a specific video, scoped to the au
       "hookConcept": "Open with the exact bank balance on payday versus after bills — let the number do the talking.",
       "contentOutline": [
         { "section": "Hook", "description": "Show the numbers. No voiceover, just the screen." },
-        {
-          "section": "The problem",
-          "description": "Explain why standard saving advice fails on a starter salary."
-        },
-        {
-          "section": "Framework",
-          "description": "Introduce your 3-step method with a memorable name."
-        },
+        { "section": "The problem", "description": "Explain why standard saving advice fails on a starter salary." },
+        { "section": "Framework", "description": "Introduce your 3-step method with a memorable name." },
         { "section": "Step 1", "description": "..." }
       ],
       "thumbnailConcept": "Split screen: stressed face on left / happy face with money graphic on right. Bold number overlay.",
@@ -709,7 +679,6 @@ Get a full channel profile including growth history and top videos.
 **Auth:** JWT or API Key
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -725,17 +694,10 @@ Get a full channel profile including growth history and top videos.
       "uploadFrequency": 1.8,
       "growthScore": 72.4,
       "topicFocus": ["personal finance", "saving", "investing", "uk money"],
-      "postingSchedule": {
-        "monday": false,
-        "tuesday": true,
-        "wednesday": false,
-        "thursday": true,
-        "friday": false,
-        "saturday": false,
-        "sunday": false,
-        "preferredHour": 14
-      },
-      "topVideos": [{ "id": "...", "title": "...", "viralScore": 87.4, "viewCount": 284000 }]
+      "postingSchedule": { "monday": false, "tuesday": true, "wednesday": false, "thursday": true, "friday": false, "saturday": false, "sunday": false, "preferredHour": 14 },
+      "topVideos": [
+        { "id": "...", "title": "...", "viralScore": 87.4, "viewCount": 284000 }
+      ]
     }
   }
 }
@@ -753,17 +715,16 @@ List topic trends from the most recent daily snapshot.
 
 **Query parameters:**
 
-| Parameter          | Description                                          | Example                    |
-| ------------------ | ---------------------------------------------------- | -------------------------- |
-| `filter_status`    | `emerging`, `evergreen`, `declining`                 | `?filter_status=emerging`  |
-| `filter_language`  | ISO 639-1 code                                       | `?filter_language=en`      |
-| `filter_platform`  | Platform                                             | `?filter_platform=youtube` |
-| `sort_by`          | `velocity_score`, `opportunity_score`, `growth_rate` | `?sort_by=velocity_score`  |
-| `sort_dir`         | `asc` / `desc`                                       | `?sort_dir=desc`           |
-| `limit` / `cursor` | Pagination                                           | Standard                   |
+| Parameter | Description | Example |
+|---|---|---|
+| `filter_status` | `emerging`, `evergreen`, `declining` | `?filter_status=emerging` |
+| `filter_language` | ISO 639-1 code | `?filter_language=en` |
+| `filter_platform` | Platform | `?filter_platform=youtube` |
+| `sort_by` | `velocity_score`, `opportunity_score`, `growth_rate` | `?sort_by=velocity_score` |
+| `sort_dir` | `asc` / `desc` | `?sort_dir=desc` |
+| `limit` / `cursor` | Pagination | Standard |
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -822,7 +783,6 @@ Organisation-level KPI dashboard metrics.
 **Auth:** JWT
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -850,7 +810,6 @@ Viral score distribution over time.
 **Query parameters:** `from`, `to`, `filter_language`, `filter_category`, `granularity` (`day` / `week`)
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -884,7 +843,6 @@ Hook type distribution across all analysed videos.
 **Auth:** JWT or API Key
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -942,7 +900,6 @@ List all watchlists for the authenticated organisation.
 **Auth:** JWT
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -972,7 +929,6 @@ Create a new watchlist.
 **Auth:** JWT | **Plan:** Starter+
 
 **Request:**
-
 ```json
 {
   "name": "Finance Competitors",
@@ -1005,7 +961,6 @@ Update a watchlist name or active status.
 **Auth:** JWT (Owner or Admin role)
 
 **Request:**
-
 ```json
 {
   "name": "Finance Competitors — Updated",
@@ -1024,7 +979,6 @@ Soft-delete a watchlist.
 **Auth:** JWT (Owner or Admin role)
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Watchlist deleted." } }
 ```
@@ -1040,7 +994,6 @@ List all alert rules for the authenticated organisation.
 **Auth:** JWT
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1073,7 +1026,6 @@ Create a new alert rule.
 **Auth:** JWT | **Plan:** Starter+
 
 **Request:**
-
 ```json
 {
   "name": "High Viral Score Alert",
@@ -1110,7 +1062,6 @@ Soft-delete an alert rule.
 **Auth:** JWT (Owner or Admin)
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "Alert rule deleted." } }
 ```
@@ -1139,19 +1090,18 @@ Unified search across videos, channels, and trends.
 
 **Query parameters:**
 
-| Parameter                | Description                  | Example                      |
-| ------------------------ | ---------------------------- | ---------------------------- |
-| `q`                      | Search query (required)      | `?q=personal+finance+uk`     |
-| `types`                  | Comma-separated result types | `?types=videos,channels`     |
-| `filter_language`        | Language filter              | `?filter_language=en`        |
-| `filter_platform`        | Platform filter              | `?filter_platform=youtube`   |
-| `filter_category`        | Category filter              | `?filter_category=finance`   |
-| `filter_viral_score_min` | Minimum viral score          | `?filter_viral_score_min=70` |
-| `from` / `to`            | Date range                   | `?from=2026-07-01`           |
-| `cursor` / `limit`       | Pagination                   | Standard                     |
+| Parameter | Description | Example |
+|---|---|---|
+| `q` | Search query (required) | `?q=personal+finance+uk` |
+| `types` | Comma-separated result types | `?types=videos,channels` |
+| `filter_language` | Language filter | `?filter_language=en` |
+| `filter_platform` | Platform filter | `?filter_platform=youtube` |
+| `filter_category` | Category filter | `?filter_category=finance` |
+| `filter_viral_score_min` | Minimum viral score | `?filter_viral_score_min=70` |
+| `from` / `to` | Date range | `?from=2026-07-01` |
+| `cursor` / `limit` | Pagination | Standard |
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1187,7 +1137,6 @@ Trigger an async export job.
 **Auth:** JWT or API Key | **Plan:** Professional+ (PDF)
 
 **Request:**
-
 ```json
 {
   "type": "videos",
@@ -1203,7 +1152,6 @@ Trigger an async export job.
 ```
 
 **Response `202 Accepted`:**
-
 ```json
 {
   "success": true,
@@ -1234,7 +1182,6 @@ Get status of a specific export.
 **Auth:** JWT
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1276,7 +1223,6 @@ List all API keys for the organisation. Key values are never returned after crea
 **Auth:** JWT (Owner or Admin)
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1305,7 +1251,6 @@ Create a new API key. The plaintext key is returned once only.
 **Auth:** JWT (Owner or Admin) | **Plan:** Professional+
 
 **Request:**
-
 ```json
 {
   "name": "Tableau Integration",
@@ -1315,7 +1260,6 @@ Create a new API key. The plaintext key is returned once only.
 ```
 
 **Response `201 Created`:**
-
 ```json
 {
   "success": true,
@@ -1342,7 +1286,6 @@ Revoke an API key immediately.
 **Auth:** JWT (Owner or Admin)
 
 **Response `200 OK`:**
-
 ```json
 { "success": true, "data": { "message": "API key revoked." } }
 ```
@@ -1358,7 +1301,6 @@ Current period usage and quota remaining for the authenticated organisation.
 **Auth:** JWT or API Key
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1397,7 +1339,6 @@ Create a Stripe Checkout session for a plan upgrade.
 **Auth:** JWT
 
 **Request:**
-
 ```json
 {
   "plan": "professional",
@@ -1408,7 +1349,6 @@ Create a Stripe Checkout session for a plan upgrade.
 ```
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1425,13 +1365,11 @@ Create a Stripe Customer Portal session for plan management.
 **Auth:** JWT
 
 **Request:**
-
 ```json
 { "returnUrl": "https://app.viralscopes.io/settings/billing" }
 ```
 
 **Response `200 OK`:**
-
 ```json
 {
   "success": true,
@@ -1452,7 +1390,6 @@ Handles all Stripe subscription lifecycle events.
 **Auth:** Stripe-Signature header (HMAC-SHA256)
 
 **Events handled:**
-
 - `invoice.paid` — activate or renew subscription
 - `invoice.payment_failed` — start 3-day grace period, send failure email
 - `customer.subscription.updated` — sync plan change
@@ -1463,7 +1400,7 @@ Handles all Stripe subscription lifecycle events.
 
 ---
 
-### POST `/api/v1/webhooks/paddle` _(Post-MVP)_
+### POST `/api/v1/webhooks/paddle` *(Post-MVP)*
 
 Handles Paddle subscription events.
 
@@ -1471,7 +1408,7 @@ Handles Paddle subscription events.
 
 ---
 
-### POST `/api/v1/webhooks/crypto` _(Post-MVP)_
+### POST `/api/v1/webhooks/crypto` *(Post-MVP)*
 
 Handles cryptocurrency payment confirmations.
 
@@ -1612,7 +1549,6 @@ Basic liveness check. Always responds if the process is running.
 **Auth:** None
 
 **Response `200 OK`:**
-
 ```json
 {
   "status": "ok",
@@ -1631,7 +1567,6 @@ Readiness check. Verifies that all dependencies are reachable.
 **Auth:** None
 
 **Response `200 OK`:**
-
 ```json
 {
   "status": "ready",
@@ -1646,7 +1581,6 @@ Readiness check. Verifies that all dependencies are reachable.
 ```
 
 **Response `503 Service Unavailable`** (when any dependency is down):
-
 ```json
 {
   "status": "not_ready",
@@ -1691,21 +1625,21 @@ All API responses use a consistent envelope:
 
 ### Request Headers
 
-| Header          | Required            | Description                                   |
-| --------------- | ------------------- | --------------------------------------------- |
-| `Content-Type`  | Yes (POST/PUT)      | `application/json`                            |
+| Header | Required | Description |
+|---|---|---|
+| `Content-Type` | Yes (POST/PUT) | `application/json` |
 | `Authorization` | Yes (authenticated) | `Bearer <access_token>` or `Bearer <api_key>` |
-| `X-Request-ID`  | Optional            | Client-provided request ID for tracing        |
+| `X-Request-ID` | Optional | Client-provided request ID for tracing |
 
 ### Response Headers
 
-| Header                  | Description                                             |
-| ----------------------- | ------------------------------------------------------- |
-| `X-Request-ID`          | Echo of client request ID or generated correlation ID   |
-| `X-RateLimit-Limit`     | Maximum requests per window                             |
-| `X-RateLimit-Remaining` | Requests remaining in current window                    |
-| `X-RateLimit-Reset`     | Unix timestamp when the window resets                   |
-| `Retry-After`           | Seconds until rate limit resets (on 429 responses only) |
+| Header | Description |
+|---|---|
+| `X-Request-ID` | Echo of client request ID or generated correlation ID |
+| `X-RateLimit-Limit` | Maximum requests per window |
+| `X-RateLimit-Remaining` | Requests remaining in current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+| `Retry-After` | Seconds until rate limit resets (on 429 responses only) |
 
 ---
 
@@ -1713,28 +1647,27 @@ All API responses use a consistent envelope:
 
 ### HTTP Status Codes
 
-| Code  | Name                  | When used                                                           |
-| ----- | --------------------- | ------------------------------------------------------------------- |
-| `200` | OK                    | Successful GET, PUT, DELETE                                         |
-| `201` | Created               | Successful POST that creates a resource                             |
-| `202` | Accepted              | Async job enqueued                                                  |
-| `204` | No Content            | Successful DELETE with no body                                      |
-| `301` | Moved Permanently     | URL redirect                                                        |
-| `302` | Found                 | Temporary redirect (OAuth, export download)                         |
-| `400` | Bad Request           | Malformed request body or invalid JSON                              |
-| `401` | Unauthorized          | Missing or expired authentication token                             |
-| `403` | Forbidden             | Valid token but insufficient permissions                            |
-| `404` | Not Found             | Resource does not exist                                             |
-| `409` | Conflict              | Resource already exists (duplicate email, duplicate video analysis) |
-| `422` | Unprocessable Entity  | Valid JSON but fails business validation (Zod schema errors)        |
-| `429` | Too Many Requests     | Rate limit exceeded                                                 |
-| `500` | Internal Server Error | Unexpected server error                                             |
-| `503` | Service Unavailable   | Dependency down (returned by `/ready` only)                         |
+| Code | Name | When used |
+|---|---|---|
+| `200` | OK | Successful GET, PUT, DELETE |
+| `201` | Created | Successful POST that creates a resource |
+| `202` | Accepted | Async job enqueued |
+| `204` | No Content | Successful DELETE with no body |
+| `301` | Moved Permanently | URL redirect |
+| `302` | Found | Temporary redirect (OAuth, export download) |
+| `400` | Bad Request | Malformed request body or invalid JSON |
+| `401` | Unauthorized | Missing or expired authentication token |
+| `403` | Forbidden | Valid token but insufficient permissions |
+| `404` | Not Found | Resource does not exist |
+| `409` | Conflict | Resource already exists (duplicate email, duplicate video analysis) |
+| `422` | Unprocessable Entity | Valid JSON but fails business validation (Zod schema errors) |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Unexpected server error |
+| `503` | Service Unavailable | Dependency down (returned by `/ready` only) |
 
 ### Error Response Examples
 
 **Validation error (422):**
-
 ```json
 {
   "success": false,
@@ -1753,7 +1686,6 @@ All API responses use a consistent envelope:
 ```
 
 **Rate limit error (429):**
-
 ```json
 {
   "success": false,
@@ -1771,7 +1703,6 @@ All API responses use a consistent envelope:
 ```
 
 **Not found (404):**
-
 ```json
 {
   "success": false,
@@ -1786,26 +1717,26 @@ All API responses use a consistent envelope:
 
 ### Error Code Registry
 
-| Code                        | HTTP Status | Description                                         |
-| --------------------------- | ----------- | --------------------------------------------------- |
-| `VALIDATION_ERROR`          | 422         | Input failed Zod schema validation                  |
-| `AUTHENTICATION_REQUIRED`   | 401         | No token provided                                   |
-| `TOKEN_EXPIRED`             | 401         | JWT access token has expired                        |
-| `INVALID_CREDENTIALS`       | 401         | Wrong email or password                             |
-| `ACCOUNT_LOCKED`            | 403         | Account locked after too many failed attempts       |
-| `EMAIL_NOT_VERIFIED`        | 403         | Email address not verified                          |
-| `INSUFFICIENT_PERMISSIONS`  | 403         | Role does not permit this action                    |
-| `PLAN_LIMIT_EXCEEDED`       | 429         | Feature or quota limit for current plan             |
-| `RATE_LIMIT_EXCEEDED`       | 429         | Per-minute or per-day rate limit hit                |
-| `VIDEO_NOT_FOUND`           | 404         | Video ID does not exist                             |
-| `CHANNEL_NOT_FOUND`         | 404         | Channel ID does not exist                           |
-| `WATCHLIST_NOT_FOUND`       | 404         | Watchlist ID does not exist                         |
-| `EXPORT_NOT_FOUND`          | 404         | Export ID does not exist                            |
-| `DUPLICATE_EMAIL`           | 409         | Email already registered                            |
-| `VIDEO_RECENTLY_ANALYSED`   | 409         | Use `/refresh` to bypass the 24h cache              |
-| `INVALID_WEBHOOK_SIGNATURE` | 400         | Webhook signature verification failed               |
-| `YOUTUBE_QUOTA_EXHAUSTED`   | 503         | Platform quota exceeded; try again after reset      |
-| `INTERNAL_ERROR`            | 500         | Unexpected server error (never exposes stack trace) |
+| Code | HTTP Status | Description |
+|---|---|---|
+| `VALIDATION_ERROR` | 422 | Input failed Zod schema validation |
+| `AUTHENTICATION_REQUIRED` | 401 | No token provided |
+| `TOKEN_EXPIRED` | 401 | JWT access token has expired |
+| `INVALID_CREDENTIALS` | 401 | Wrong email or password |
+| `ACCOUNT_LOCKED` | 403 | Account locked after too many failed attempts |
+| `EMAIL_NOT_VERIFIED` | 403 | Email address not verified |
+| `INSUFFICIENT_PERMISSIONS` | 403 | Role does not permit this action |
+| `PLAN_LIMIT_EXCEEDED` | 429 | Feature or quota limit for current plan |
+| `RATE_LIMIT_EXCEEDED` | 429 | Per-minute or per-day rate limit hit |
+| `VIDEO_NOT_FOUND` | 404 | Video ID does not exist |
+| `CHANNEL_NOT_FOUND` | 404 | Channel ID does not exist |
+| `WATCHLIST_NOT_FOUND` | 404 | Watchlist ID does not exist |
+| `EXPORT_NOT_FOUND` | 404 | Export ID does not exist |
+| `DUPLICATE_EMAIL` | 409 | Email already registered |
+| `VIDEO_RECENTLY_ANALYSED` | 409 | Use `/refresh` to bypass the 24h cache |
+| `INVALID_WEBHOOK_SIGNATURE` | 400 | Webhook signature verification failed |
+| `YOUTUBE_QUOTA_EXHAUSTED` | 503 | Platform quota exceeded; try again after reset |
+| `INTERNAL_ERROR` | 500 | Unexpected server error (never exposes stack trace) |
 
 ---
 
@@ -1870,22 +1801,22 @@ GET /api/v1/videos?filter_language=en&filter_category=finance&filter_viral_score
 
 ### Available Sort Fields
 
-| Resource        | Sort fields                                                               |
-| --------------- | ------------------------------------------------------------------------- |
-| Videos          | `viral_score`, `published_at`, `view_count`, `views_per_day`              |
-| Channels        | `growth_score`, `avg_views`, `upload_frequency`, `subscriber_estimate`    |
-| Trends          | `velocity_score`, `opportunity_score`, `growth_rate`, `competition_score` |
-| Recommendations | `created_at`                                                              |
-| Alert Events    | `created_at`                                                              |
+| Resource | Sort fields |
+|---|---|
+| Videos | `viral_score`, `published_at`, `view_count`, `views_per_day` |
+| Channels | `growth_score`, `avg_views`, `upload_frequency`, `subscriber_estimate` |
+| Trends | `velocity_score`, `opportunity_score`, `growth_rate`, `competition_score` |
+| Recommendations | `created_at` |
+| Alert Events | `created_at` |
 
 ### Default Sort
 
-| Resource        | Default sort             |
-| --------------- | ------------------------ |
-| Videos          | `viral_score DESC`       |
-| Channels        | `growth_score DESC`      |
-| Trends          | `opportunity_score DESC` |
-| Recommendations | `created_at DESC`        |
+| Resource | Default sort |
+|---|---|
+| Videos | `viral_score DESC` |
+| Channels | `growth_score DESC` |
+| Trends | `opportunity_score DESC` |
+| Recommendations | `created_at DESC` |
 
 ---
 
@@ -1897,21 +1828,21 @@ Rate limits are enforced per API key (for API access) or per authenticated user 
 
 ### Rate Limit Tiers
 
-| Plan         | Requests/minute | Requests/day |
-| ------------ | --------------- | ------------ |
-| Free         | 10              | 500          |
-| Starter      | 30              | 5,000        |
-| Professional | 100             | 50,000       |
-| Business     | 300             | 200,000      |
-| Enterprise   | Custom          | Custom       |
+| Plan | Requests/minute | Requests/day |
+|---|---|---|
+| Free | 10 | 500 |
+| Starter | 30 | 5,000 |
+| Professional | 100 | 50,000 |
+| Business | 300 | 200,000 |
+| Enterprise | Custom | Custom |
 
 ### Auth Endpoint Limits (All Plans)
 
-| Endpoint                            | Limit       | Window                 |
-| ----------------------------------- | ----------- | ---------------------- |
-| `POST /api/v1/auth/login`           | 10 requests | Per IP, per minute     |
-| `POST /api/v1/auth/register`        | 5 requests  | Per IP, per minute     |
-| `POST /api/v1/auth/forgot-password` | 5 requests  | Per IP, per 15 minutes |
+| Endpoint | Limit | Window |
+|---|---|---|
+| `POST /api/v1/auth/login` | 10 requests | Per IP, per minute |
+| `POST /api/v1/auth/register` | 5 requests | Per IP, per minute |
+| `POST /api/v1/auth/forgot-password` | 5 requests | Per IP, per 15 minutes |
 
 ### Rate Limit Headers
 
@@ -1935,16 +1866,15 @@ Retry-After: 42
 
 ### YouTube Data API v3
 
-| Detail       | Value                                                |
-| ------------ | ---------------------------------------------------- |
-| **Base URL** | `https://www.googleapis.com/youtube/v3`              |
-| **Auth**     | API key in query string (`?key=...`)                 |
-| **Quota**    | 10,000 units/day (free tier)                         |
-| **Used by**  | Video Discovery workflow, Metadata Pipeline workflow |
-| **Fallback** | RapidAPI YouTube API or Apify when quota exhausted   |
+| Detail | Value |
+|---|---|
+| **Base URL** | `https://www.googleapis.com/youtube/v3` |
+| **Auth** | API key in query string (`?key=...`) |
+| **Quota** | 10,000 units/day (free tier) |
+| **Used by** | Video Discovery workflow, Metadata Pipeline workflow |
+| **Fallback** | RapidAPI YouTube API or Apify when quota exhausted |
 
 **Endpoints used:**
-
 - `GET /search` — discover videos (100 units each)
 - `GET /videos` — fetch video metadata (1–3 units each)
 - `GET /channels` — fetch channel data (1 unit each)
@@ -1954,44 +1884,44 @@ Retry-After: 42
 
 ### Anthropic Claude API
 
-| Detail       | Value                                                                |
-| ------------ | -------------------------------------------------------------------- |
-| **Base URL** | `https://api.anthropic.com/v1`                                       |
-| **Auth**     | `x-api-key` header                                                   |
-| **Used by**  | AI Analysis Pipeline, Ethical Recommendation Engine, Trend Detection |
-| **Model**    | `claude-sonnet-4-6`                                                  |
+| Detail | Value |
+|---|---|
+| **Base URL** | `https://api.anthropic.com/v1` |
+| **Auth** | `x-api-key` header |
+| **Used by** | AI Analysis Pipeline, Ethical Recommendation Engine, Trend Detection |
+| **Model** | `claude-sonnet-4-6` |
 
 ---
 
 ### OpenAI API
 
-| Detail       | Value                                                |
-| ------------ | ---------------------------------------------------- |
-| **Base URL** | `https://api.openai.com/v1`                          |
-| **Auth**     | `Authorization: Bearer sk-...`                       |
-| **Used by**  | Thumbnail Analysis (vision), Title Formula Detection |
-| **Models**   | `gpt-4o`, `gpt-4o-mini`                              |
+| Detail | Value |
+|---|---|
+| **Base URL** | `https://api.openai.com/v1` |
+| **Auth** | `Authorization: Bearer sk-...` |
+| **Used by** | Thumbnail Analysis (vision), Title Formula Detection |
+| **Models** | `gpt-4o`, `gpt-4o-mini` |
 
 ---
 
 ### Stripe API
 
-| Detail       | Value                                      |
-| ------------ | ------------------------------------------ |
-| **Base URL** | `https://api.stripe.com/v1`                |
-| **Auth**     | `Authorization: Bearer sk_live_...`        |
-| **Used by**  | Billing service, checkout, customer portal |
-| **Webhook**  | `POST /api/v1/webhooks/stripe`             |
+| Detail | Value |
+|---|---|
+| **Base URL** | `https://api.stripe.com/v1` |
+| **Auth** | `Authorization: Bearer sk_live_...` |
+| **Used by** | Billing service, checkout, customer portal |
+| **Webhook** | `POST /api/v1/webhooks/stripe` |
 
 ---
 
 ### SendGrid / Resend
 
-| Detail                   | Value                           |
-| ------------------------ | ------------------------------- |
-| **Used by**              | Email service abstraction layer |
-| **Transactional emails** | 7 template types                |
-| **Auth**                 | API key in header               |
+| Detail | Value |
+|---|---|
+| **Used by** | Email service abstraction layer |
+| **Transactional emails** | 7 template types |
+| **Auth** | API key in header |
 
 ---
 
@@ -2041,18 +1971,18 @@ When an alert rule fires, ViralScopes dispatches an outbound webhook to the user
 
 ## 27. API Security
 
-| Control                  | Implementation                                                          |
-| ------------------------ | ----------------------------------------------------------------------- |
-| **Authentication**       | JWT (15-min access token) + API Key (sha256-hashed, scoped)             |
-| **Transport**            | HTTPS only; HTTP → HTTPS redirect at Traefik; TLS 1.2 minimum           |
-| **Input validation**     | Zod schema validation on every endpoint — `422` on failure              |
-| **Rate limiting**        | Redis sliding window per key and per user; plan-tier limits             |
-| **Webhook verification** | HMAC-SHA256 signature verified on every inbound webhook                 |
-| **CORS**                 | Locked to `app.viralscopes.io` — no wildcard in production              |
-| **Security headers**     | Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy                  |
-| **API key storage**      | `sha256(key)` only — plaintext never stored or logged                   |
-| **Error responses**      | Never expose stack traces or internal details in production             |
-| **Audit logging**        | All authenticated API calls logged with `user_id`, `org_id`, action, IP |
+| Control | Implementation |
+|---|---|
+| **Authentication** | JWT (15-min access token) + API Key (sha256-hashed, scoped) |
+| **Transport** | HTTPS only; HTTP → HTTPS redirect at Traefik; TLS 1.2 minimum |
+| **Input validation** | Zod schema validation on every endpoint — `422` on failure |
+| **Rate limiting** | Redis sliding window per key and per user; plan-tier limits |
+| **Webhook verification** | HMAC-SHA256 signature verified on every inbound webhook |
+| **CORS** | Locked to `app.viralscopes.io` — no wildcard in production |
+| **Security headers** | Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy |
+| **API key storage** | `sha256(key)` only — plaintext never stored or logged |
+| **Error responses** | Never expose stack traces or internal details in production |
+| **Audit logging** | All authenticated API calls logged with `user_id`, `org_id`, action, IP |
 
 See [Security_Architecture.md](./Security_Architecture.md) for the full security design.
 
@@ -2083,12 +2013,11 @@ See [Security_Architecture.md](./Security_Architecture.md) for the full security
 
 ---
 
-_This document is updated whenever a new endpoint is added, removed, or significantly changed. All changes require a pull request with at least one approving review._
+*This document is updated whenever a new endpoint is added, removed, or significantly changed. All changes require a pull request with at least one approving review.*
 
 ---
 
 **Related Documents:**
-
 - [Database_Schema.md](./Database_Schema.md) — Data models that back these endpoints
 - [Security_Architecture.md](./Security_Architecture.md) — Authentication and authorisation details
 - [README.md](./README.md) — Quick start guide including API key setup

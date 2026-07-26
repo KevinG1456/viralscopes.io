@@ -1,0 +1,345 @@
+## Frontend Architecture & Design Documentation
+
+31. `Frontend_Architecture.md`
+32. `Design_Tokens.md`
+33. `Component_Library.md`
+34. `Accessibility.md`
+
+---
+
+# Frontend_Architecture.md
+
+Create a comprehensive frontend architecture document that defines how the ViralScopes.io web application is structured.
+
+Include:
+
+## Architecture Overview
+
+* Frontend architecture principles
+* Application structure
+* Feature-based organization
+* Separation of concerns
+* Rendering strategy (SSR, SSG, CSR, ISR where applicable)
+* State management strategy
+* Data fetching strategy
+* Error handling strategy
+
+---
+
+## Folder Structure
+
+Document:
+
+* Applications
+* Shared packages
+* Feature modules
+* Hooks
+* Services
+* Utilities
+* Components
+* Assets
+
+Explain the purpose of each directory.
+
+---
+
+## Routing
+
+Define:
+
+* Public routes
+* Authenticated routes
+* Admin routes
+* Error pages
+* Layout hierarchy
+* Route guards
+* Dynamic routes
+
+---
+
+## State Management
+
+Document:
+
+* Local state
+* Server state
+* Global state
+* Cache strategy
+* Optimistic updates
+
+---
+
+## API Integration
+
+Include:
+
+* API client architecture
+* Authentication flow
+* Error handling
+* Retry strategy
+* Pagination
+* Rate limiting
+* File uploads
+
+---
+
+## Performance
+
+Document:
+
+* Code splitting
+* Lazy loading
+* Image optimization
+* Font loading
+* Bundle optimization
+* Caching strategy
+* Rendering performance
+
+---
+
+## Security
+
+Include:
+
+* XSS prevention
+* CSRF considerations
+* Content Security Policy (CSP)
+* Secure token handling
+* Input validation
+* Client-side authorization boundaries
+
+---
+
+## Testing Strategy
+
+Define:
+
+* Unit testing
+* Component testing
+* Integration testing
+* End-to-end testing
+* Visual regression testing
+
+---
+
+# Design_Tokens.md
+
+Create the single source of truth for all design tokens.
+
+Include:
+
+## Color Tokens
+
+* Primary
+* Secondary
+* Accent
+* Success
+* Warning
+* Error
+* Info
+* Background
+* Surface
+* Border
+* Text
+* Disabled
+* Focus
+
+Provide semantic token names rather than component-specific colors.
+
+---
+
+## Typography Tokens
+
+Document:
+
+* Font families
+* Font sizes
+* Font weights
+* Line heights
+* Letter spacing
+* Text styles
+
+---
+
+## Spacing Tokens
+
+Define:
+
+* Base spacing scale
+* Margins
+* Padding
+* Grid spacing
+* Section spacing
+
+---
+
+## Layout Tokens
+
+Include:
+
+* Breakpoints
+* Container widths
+* Border radius
+* Shadows
+* Z-index scale
+* Opacity values
+
+---
+
+## Motion Tokens
+
+Document:
+
+* Animation durations
+* Easing curves
+* Transition timing
+* Reduced-motion support
+
+---
+
+## Token Governance
+
+Explain:
+
+* Naming conventions
+* Versioning
+* Deprecation policy
+* Usage guidelines
+
+---
+
+# Component_Library.md
+
+Document every reusable UI component.
+
+For each component include:
+
+* Purpose
+* Variants
+* Properties
+* States
+* Accessibility requirements
+* Responsive behavior
+* Usage guidelines
+* Do's and Don'ts
+
+Include categories such as:
+
+* Buttons
+* Forms
+* Navigation
+* Data Display
+* Tables
+* Charts
+* Cards
+* Modals
+* Drawers
+* Tabs
+* Menus
+* Tooltips
+* Alerts
+* Toasts
+* Badges
+* Avatars
+* Skeleton loaders
+* Empty states
+* Loaders
+
+Document component composition and reuse patterns to avoid duplication.
+
+---
+
+# Accessibility.md
+
+Create a comprehensive accessibility guide for ViralScopes.io.
+
+Include:
+
+## Accessibility Goals
+
+* WCAG 2.2 AA target
+* Inclusive design principles
+* Accessibility statement
+
+---
+
+## Keyboard Accessibility
+
+Document:
+
+* Keyboard navigation
+* Focus management
+* Skip links
+* Focus indicators
+* Logical tab order
+
+---
+
+## Screen Reader Support
+
+Include:
+
+* Semantic HTML
+* ARIA usage
+* Accessible labels
+* Live regions
+* Form accessibility
+
+---
+
+## Visual Accessibility
+
+Document:
+
+* Color contrast
+* Text scaling
+* Responsive layouts
+* Reduced motion
+* Dark mode considerations
+
+---
+
+## Accessible Components
+
+Define accessibility requirements for:
+
+* Forms
+* Tables
+* Dialogs
+* Menus
+* Charts
+* Notifications
+* Media controls
+
+---
+
+## Accessibility Testing
+
+Include:
+
+* Automated accessibility testing
+* Manual testing
+* Keyboard-only testing
+* Screen reader testing
+* Browser compatibility
+* Accessibility regression testing
+
+---
+
+## Compliance
+
+Document alignment with:
+
+* WCAG 2.2 AA
+* WAI-ARIA Authoring Practices
+* HTML accessibility best practices
+
+---
+
+## General Requirements
+
+* Keep these documents consistent with the PRD, ROADMAP, UI Design System, Visual Design System, Brand Guidelines, and Frontend Architecture.
+* Cross-reference related documentation instead of duplicating content.
+* Clearly identify assumptions where implementation details are not yet finalized.
+* Use professional Markdown formatting with diagrams, tables, and examples where appropriate.
+* Treat these documents as living references that evolve alongside the product and frontend architecture.

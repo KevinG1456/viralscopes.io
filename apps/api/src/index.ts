@@ -3,14 +3,12 @@ import { buildServer } from './server';
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const app = await buildServer(config);
+  const app = buildServer();
 
-  try {
-    await app.listen({ port: config.port, host: config.host });
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
+  await app.listen({ port: config.port, host: '0.0.0.0' });
 }
 
-void main();
+main().catch((err: unknown) => {
+  process.stderr.write(`${String(err)}\n`);
+  process.exit(1);
+});

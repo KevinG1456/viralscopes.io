@@ -1,14 +1,13 @@
-import path from 'path';
+import path from 'node:path';
 
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Minimal production image for infra/docker/Dockerfile.web (Phase 2).
-  output: 'standalone',
+  reactStrictMode: true,
   turbopack: {
-    // Monorepo root (two levels up: apps/web -> apps -> repo root), so
-    // Turbopack doesn't get confused by the workspace-hoisted node_modules.
-    root: path.resolve(__dirname, '..', '..'),
+    // Pins the workspace root to this monorepo so Turbopack doesn't pick up
+    // an unrelated lockfile elsewhere on the machine (stray-lockfile warning).
+    root: path.join(__dirname, '..', '..'),
   },
 };
 

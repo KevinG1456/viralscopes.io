@@ -1,5 +1,4 @@
 # CHANGELOG.md
-
 # ViralScopes.io — Changelog
 
 > All notable changes to ViralScopes.io are documented in this file.
@@ -13,30 +12,29 @@
 
 Each version entry uses the following change categories:
 
-| Category         | Description                                               |
-| ---------------- | --------------------------------------------------------- |
-| `Added`          | New features, endpoints, pages, or capabilities           |
-| `Changed`        | Changes to existing functionality (non-breaking)          |
-| `Deprecated`     | Features that will be removed in a future version         |
-| `Removed`        | Features removed in this version                          |
-| `Fixed`          | Bug fixes                                                 |
-| `Security`       | Security patches, vulnerability fixes, compliance updates |
-| `Performance`    | Performance improvements                                  |
-| `Infrastructure` | Infrastructure, DevOps, CI/CD, deployment changes         |
-| `Documentation`  | Documentation additions or corrections                    |
+| Category | Description |
+|---|---|
+| `Added` | New features, endpoints, pages, or capabilities |
+| `Changed` | Changes to existing functionality (non-breaking) |
+| `Deprecated` | Features that will be removed in a future version |
+| `Removed` | Features removed in this version |
+| `Fixed` | Bug fixes |
+| `Security` | Security patches, vulnerability fixes, compliance updates |
+| `Performance` | Performance improvements |
+| `Infrastructure` | Infrastructure, DevOps, CI/CD, deployment changes |
+| `Documentation` | Documentation additions or corrections |
 
 ---
 
 ## Versioning Policy
 
-| Version type        | When used                                  | Example |
-| ------------------- | ------------------------------------------ | ------- |
+| Version type | When used | Example |
+|---|---|---|
 | **Major** (`X.0.0`) | Breaking API changes, major product pivots | `2.0.0` |
-| **Minor** (`x.Y.0`) | New features, non-breaking additions       | `1.3.0` |
+| **Minor** (`x.Y.0`) | New features, non-breaking additions | `1.3.0` |
 | **Patch** (`x.y.Z`) | Bug fixes, security patches, minor updates | `1.2.4` |
 
 **Pre-release identifiers:**
-
 - `alpha` — Internal only, unstable (`1.0.0-alpha.1`)
 - `beta` — External beta testing (`1.0.0-beta.3`)
 - `rc` — Release candidate, feature-complete (`1.0.0-rc.1`)
@@ -71,86 +69,26 @@ Each version entry uses the following change categories:
 - All 8 core project documents authored and cross-referenced
 - Architecture Decision Records (ADRs) defined for: monorepo structure, Fastify over Express, n8n for workflows, Drizzle ORM, dual AI providers, Cloudflare R2
 
-### Added — Phase 1: Foundation & Project Setup
+### Added (Phase 1 — Foundation & Project Setup)
 
-- Turborepo monorepo scaffolded with npm workspaces: `@viralscopes/web`, `@viralscopes/api`, `@viralscopes/shared`, `@viralscopes/db`
-- Existing Next.js frontend relocated into `apps/web`; `apps/api`, `packages/shared`, and `packages/db` scaffolded as empty workspace members (business logic for these lands in later phases)
-- Root TypeScript strict-mode base config (`tsconfig.base.json`, ES2022) extended by every package
-- Root ESLint flat config (`eslint.config.mjs` + shared `eslint.config.base.mjs`) enforcing no-`any`, no-unused-vars, and import ordering across all packages
-- Prettier configured (single quotes, 100-char lines, trailing commas) with `format` / `format:check` scripts
-- Husky pre-commit hook running `lint-staged` (Prettier + ESLint --fix + secret scanning) on every commit
-- Secret scanning via `secretlint` (`@secretlint/secretlint-rule-preset-recommend`) — verified to catch private keys and similar credential patterns; `detect-secrets` documented as an optional alternative
-- Semantic design token system (light/dark) in `apps/web/src/app/globals.css` using Tailwind v4's CSS-native `@theme` — provisional neutral + single-accent palette, refinable once brand guidelines exist
-- Placeholder brand assets: logo (`apps/web/public/logo.svg`), favicon (`apps/web/src/app/icon.svg`), loading screen (`apps/web/src/app/loading.tsx`), and a 5-icon dashboard icon set placeholder (`apps/web/public/icons/`)
-- `.env.example` at repository root documenting every environment variable referenced in `README.md`
-- `.nvmrc` pinning Node.js 22
+- Turborepo monorepo scaffold: `apps/web` (Next.js 16, App Router), `apps/api` (bare Fastify skeleton), `packages/shared` and `packages/db` (stub packages, populated from Phase 3 onward)
+- TypeScript strict mode, ESLint (flat config, shared base + no-`any`/no-`console`/import-order rules), Prettier, and Husky pre-commit hooks configured across all packages
+- `secretlint` pre-commit secret scanning — verified to actually block a commit containing a fake secret
+- Full design token system implemented as CSS custom properties (colour, typography, spacing, layout, motion) with dark/light theme support, wired into `tailwind.config.ts`
+- Placeholder brand assets: logo, favicon (`icon.svg`), loading screen, and dashboard icon set (home, trends, videos, watchlists, settings)
+- `.env.example` populated with the full environment variable reference
+- `LICENSE` (MIT) added
 
-### Changed — Phase 1
+### Infrastructure (Phase 1)
 
-- `README.md`: Tailwind CSS entry updated from 3.x to 4.x; added a "Current implementation status" note and a "Design Tokens (Phase 1)" section; fixed cross-references that pointed to a non-existent `docs/` subfolder
-- `REPOSITORY_STRUCTURE.md`: updated to reflect `eslint.config.mjs` (flat config) instead of `.eslintrc.js`, Tailwind v4's CSS-based configuration instead of `tailwind.config.ts`, and Phase 1 stub status for `apps/api`, `packages/shared`, `packages/db`
-- `PROJECT_RULES.md`: secret-scanning tooling updated to name `secretlint` as the chosen tool, with `detect-secrets` retained as an optional alternative
+- Turborepo build pipeline (`build`, `dev`, `lint`, `type-check`, `test` tasks)
+- GitHub repository ruleset configuration created for `main` and `develop` per `PROJECT_RULES.md` §5.2; active enforcement is currently limited by GitHub's private-repo plan requirements (see `PROJECT_STATUS.md` BLK-001)
 
-### Added — Phase 2: Infrastructure & DevOps
+### Documentation (Phase 1)
 
-- `docker-compose.dev.yml` — one-command local dev stack: `web`/`api` (hot reload via bind mount), Postgres, Redis, MinIO, n8n, Prometheus, Grafana, Loki, Promtail, postgres-exporter, redis-exporter. Verified: all 12 containers healthy, service-to-service DNS resolution confirmed.
-- `docker-compose.prod.yml` — Stage 1 production topology per `INFRASTRUCTURE_GROWTH_PLAN.md` (template only — no VPS/domain exists yet)
-- `infra/docker/Dockerfile.web`, `infra/docker/Dockerfile.api` — multi-stage production images, both built and run successfully
-- Minimal Fastify bootstrap in `apps/api`: `GET /health`, `GET /ready` (verified DB + Redis connectivity checks), `GET /metrics` (Prometheus format)
-- Provider-agnostic object storage abstraction (`services/storage.service.ts`) — verified end-to-end (put/get/delete/signed-URL) against live MinIO
-- `apps/web` `GET /api/health` route
-- GitHub Actions: `ci.yml` (lint/type-check/build/test), `security.yml` (`npm audit --audit-level=high`), `build.yml` (build + push both images to GHCR on merge to `main`), `deploy-staging.yml`/`deploy-production.yml` (templates — skip gracefully without Coolify secrets)
-- `.github/dependabot.yml` — weekly npm, github-actions, and Docker ecosystem updates
-- Prometheus scrape config, Grafana provisioning (datasources + one consolidated "Infrastructure Overview" dashboard), Loki + Promtail log shipping — all verified with real data
-- MinIO bucket auto-creation (`viralscopes-dev`) on stack startup
-
-### Changed — Phase 2
-
-- `apps/api/next.config.ts` (web): added `output: 'standalone'` for the minimal production Docker image
-- `.env.example`: Postgres port corrected from `54322` to `15432` (54322 falls inside a Windows dynamic port exclusion range on some dev machines); added `S3_FORCE_PATH_STYLE`
-- `README.md`: rewrote "Local Development" with a real, verified Docker workflow section; updated "Running the Application" and "Deployment" implementation-status callouts
-- `PROJECT_STATUS.md`: Phase 2 progress, BLK-002, DEC-010 through DEC-013, corrected Phase 2's task total from an approximate 28 to the actual 32
-
-### Known Issues — Phase 2
-
-- Alertmanager/PagerDuty alerting rules deferred to Stage 2 (DEC-010) — no automated alert routing exists yet, only Grafana dashboards and ad hoc Loki queries
-- `deploy-staging.yml`/`deploy-production.yml`, Traefik/Let's Encrypt, and Cloudflare R2 production credentials are untested — no deployment infrastructure exists (BLK-002 in `PROJECT_STATUS.md`)
-
-### Changed — Documentation consistency review (2026-07-25)
-
-- `README.md`: corrected a claim that Phase 2 was "completed" (it's 22/32, in progress) to match `PROJECT_STATUS.md`; fixed a stale `DATABASE_URL` example still showing port `54322` instead of `15432`; corrected the `/health` example response's version string (`1.0.0` → `0.1.0`, matching actual behaviour); updated the CI badge and clone URL from a placeholder org to the real repository (`KevinG1456/viralscopes.io`)
-
-### Fixed — Architecture review findings (2026-07-25)
-
-Three real issues found during the Phase 2 architecture review, all fixed and verified (YAML/workflow syntax validated via Prettier; Docker daemon was down for live testing, see `PROJECT_STATUS.md`):
-
-- `docker-compose.prod.yml`: `/metrics` was publicly routable via the `api` service's Traefik router with no restriction. Added a higher-priority `api-metrics` router matching `PathPrefix(/metrics)`, gated by a new `deny-external` middleware (`ipAllowList` restricted to `127.0.0.1/32`) — Prometheus never needs this, since it scrapes `api:3001/metrics` directly over the internal Docker network, not through Traefik.
-- `infra/traefik/dynamic/middlewares.yml`: added the `contentSecurityPolicy` header that `PROJECT_RULES.md` §4.4 and `PRD.md` §7.4 both require and which was missing. Baseline policy for Phase 2; flagged for tightening (nonce-based `script-src`) once Phase 8 builds the real frontend.
-- `build.yml`: fixed the GHCR case-sensitivity bug — `github.repository` (`KevinG1456/viralscopes.io`) contains uppercase characters, which OCI registries reject. Added a step to lowercase it before use in the image tag. Restored the concrete (now-correct) GHCR example in `README.md`'s Manual Deployment section.
-
-### Phase 2 — Infrastructure & DevOps: marked Complete (2026-07-25)
-
-Phase 2 is closed on a **code/config-complete** basis (see DEC-014 in `PROJECT_STATUS.md`): every
-deliverable buildable without real external infrastructure is done and verified. The 8 tasks that
-require a VPS, domain, Coolify instance, or Cloudflare R2 account (**BLK-002**) are unchanged and
-carry forward as a standing, separately-tracked item rather than gating this phase's closure —
-they still need doing, just not by engineering work. Task-level counts are unchanged: 22/32
-verified, 2 deferred to Stage 2 (DEC-010), 8 open under BLK-002.
-
-Also corrected while updating the tracking docs: `PROJECT_STATUS.md`'s "Active Blockers" section
-claimed none existed while BLK-002 sat, unresolved, under "Blocker Log (Historical)" (reserved for
-resolved items) — moved to Active Blockers. `M1` (Project Ready) had never been marked done despite
-Phase 1 completing on 2026-07-21; `M2` (Infrastructure Live) marked "Partial" rather than done,
-since its "CI/CD deployed to staging" criterion is exactly the part BLK-002 blocks.
-
-**Critical path moves to Phase 3 — Database & Core Schema**, which has no dependency on BLK-002.
-
-### Security
-
-- Bumped `next` `16.2.10` → `16.2.11` (and matching `eslint-config-next`) — resolves 9 high-severity CVEs (`npm audit`): middleware/proxy bypass, Server Actions DoS and SSRF, cache confusion (2 variants), unbounded Server Action payload, rewrites SSRF, Image Optimization DoS, and unauthenticated Server Function endpoint disclosure. Verified via a forced clean rebuild across all 4 packages.
-- Two `npm audit` findings remain, logged as accepted technical debt rather than forced through a risky fix (see TD-005, TD-006 in `PROJECT_STATUS.md`):
-  - `brace-expansion` (via ESLint's dependency chain) — the suggested `eslint@9→10` fix hits an unresolvable `ERESOLVE` conflict in the current ecosystem; dev-tooling-only exposure, low real-world risk
-  - `postcss`/`sharp` (vendored inside `next@16.2.11` itself) — no newer stable Next.js release exists yet; upstream-blocked
+- `README.md` setup instructions corrected to match the actual repository layout (docs at root, not under `docs/`) and the real GitHub remote
+- `PROJECT_RULES.md` §4.3 updated to name `secretlint` explicitly (was generic "git-secrets or detect-secrets")
+- `REPOSITORY_STRUCTURE.md` §9 annotated to note its `docs/` folder tree is a target convention, not the current layout
 
 ---
 
@@ -489,18 +427,18 @@ since its "CI/CD deployed to staging" criterion is exactly the part BLK-002 bloc
 
 ## Version History Summary
 
-| Version         | Status      | Target / Released  | Key deliverable                            |
-| --------------- | ----------- | ------------------ | ------------------------------------------ |
-| Pre-development | ✅ Complete | 2026-07-20         | All 8 core project documents               |
-| `1.0.0-alpha.1` | ⏳ Planned  | Week 6             | Foundation, infra, DB, auth                |
-| `1.0.0-alpha.2` | ⏳ Planned  | Week 13            | API, n8n workflows, prompts, dashboard     |
-| `1.0.0-beta.1`  | ⏳ Planned  | Week 16            | Billing, security, GDPR, full test suite   |
-| `1.0.0-rc.1`    | ⏳ Planned  | Week 18–19         | Bug fixes, admin panel, all docs           |
-| `1.0.0`         | ⏳ Planned  | Week 19–20         | Public launch 🚀                           |
-| `1.1.0`         | ⏳ Planned  | Week 36 (Month 8)  | AI Chat, Reports, Chrome Extension, Paddle |
-| `2.0.0`         | ⏳ Planned  | Week 72 (Month 18) | TikTok, Instagram, Mobile App, Public API  |
-| `3.0.0`         | ⏳ Planned  | Month 24–30        | Plugin marketplace, Enterprise SSO, SOC 2  |
-| `4.0.0`         | ⏳ Planned  | Month 30+          | Autonomous Financial AI (data-gated)       |
+| Version | Status | Target / Released | Key deliverable |
+|---|---|---|---|
+| Pre-development | ✅ Complete | 2026-07-20 | All 8 core project documents |
+| `1.0.0-alpha.1` | ⏳ Planned | Week 6 | Foundation, infra, DB, auth |
+| `1.0.0-alpha.2` | ⏳ Planned | Week 13 | API, n8n workflows, prompts, dashboard |
+| `1.0.0-beta.1` | ⏳ Planned | Week 16 | Billing, security, GDPR, full test suite |
+| `1.0.0-rc.1` | ⏳ Planned | Week 18–19 | Bug fixes, admin panel, all docs |
+| `1.0.0` | ⏳ Planned | Week 19–20 | Public launch 🚀 |
+| `1.1.0` | ⏳ Planned | Week 36 (Month 8) | AI Chat, Reports, Chrome Extension, Paddle |
+| `2.0.0` | ⏳ Planned | Week 72 (Month 18) | TikTok, Instagram, Mobile App, Public API |
+| `3.0.0` | ⏳ Planned | Month 24–30 | Plugin marketplace, Enterprise SSO, SOC 2 |
+| `4.0.0` | ⏳ Planned | Month 30+ | Autonomous Financial AI (data-gated) |
 
 ---
 
@@ -546,7 +484,6 @@ git push origin main --tags
 ---
 
 **Related Documents:**
-
 - [PROJECT_STATUS.md](./PROJECT_STATUS.md) — Current progress and next priorities
 - [ROADMAP.md](./ROADMAP.md) — Development phases and milestone calendar
 - [PRD.md](./PRD.md) — Product requirements and success metrics

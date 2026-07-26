@@ -1,5 +1,4 @@
 # Security_Architecture.md
-
 # ViralScopes.io — Security Architecture
 
 > **Version:** 1.0
@@ -41,16 +40,16 @@
 
 ### Core Principles
 
-| #   | Principle                       | Implementation                                                                                              |
-| --- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| S1  | **Defence in depth**            | Multiple independent security controls at every layer — perimeter, network, application, database, and data |
-| S2  | **Least privilege**             | Every component, user, and service role has only the minimum permissions required for its function          |
-| S3  | **Secure by default**           | New features are secure unless explicitly relaxed; not the other way around                                 |
-| S4  | **Fail securely**               | When a security control fails, the system denies access rather than granting it                             |
-| S5  | **Zero trust**                  | No implicit trust between services, users, or network segments — all access is authenticated and authorised |
-| S6  | **Transparency over obscurity** | Security controls are documented and auditable; we do not rely on secret implementation details             |
-| S7  | **Separation of duties**        | No single actor (human or service) can perform a sensitive operation without a second control               |
-| S8  | **Audit everything**            | All significant security events generate an immutable, tamper-evident audit log entry                       |
+| # | Principle | Implementation |
+|---|---|---|
+| S1 | **Defence in depth** | Multiple independent security controls at every layer — perimeter, network, application, database, and data |
+| S2 | **Least privilege** | Every component, user, and service role has only the minimum permissions required for its function |
+| S3 | **Secure by default** | New features are secure unless explicitly relaxed; not the other way around |
+| S4 | **Fail securely** | When a security control fails, the system denies access rather than granting it |
+| S5 | **Zero trust** | No implicit trust between services, users, or network segments — all access is authenticated and authorised |
+| S6 | **Transparency over obscurity** | Security controls are documented and auditable; we do not rely on secret implementation details |
+| S7 | **Separation of duties** | No single actor (human or service) can perform a sensitive operation without a second control |
+| S8 | **Audit everything** | All significant security events generate an immutable, tamper-evident audit log entry |
 
 ### Security Layers
 
@@ -90,14 +89,14 @@
 
 ### Supported Authentication Methods
 
-| Method                 | Use case                                  | Status |
-| ---------------------- | ----------------------------------------- | ------ |
-| Email + password       | Primary user auth                         | MVP    |
-| Google OAuth 2.0       | Social login                              | MVP    |
-| GitHub OAuth 2.0       | Developer-friendly social login           | MVP    |
-| API Key (Bearer token) | Programmatic / machine access             | MVP    |
-| SAML 2.0 / OIDC (SSO)  | Enterprise identity providers             | v3.0   |
-| TOTP / FIDO2 (MFA)     | Second factor for high-privilege accounts | v2.0   |
+| Method | Use case | Status |
+|---|---|---|
+| Email + password | Primary user auth | MVP |
+| Google OAuth 2.0 | Social login | MVP |
+| GitHub OAuth 2.0 | Developer-friendly social login | MVP |
+| API Key (Bearer token) | Programmatic / machine access | MVP |
+| SAML 2.0 / OIDC (SSO) | Enterprise identity providers | v3.0 |
+| TOTP / FIDO2 (MFA) | Second factor for high-privilege accounts | v2.0 |
 
 ### Password Requirements
 
@@ -113,17 +112,20 @@ Salt:                     bcrypt generates a unique salt per password automatica
 **Implementation:**
 
 ```typescript
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 const BCRYPT_ROUNDS = 12;
 
 export async function hashPassword(plaintext: string): Promise<string> {
   // Max 72 chars enforced before hashing (bcrypt truncates at 72 bytes)
-  if (plaintext.length > 128) throw new AppError('PASSWORD_TOO_LONG', '...', 422);
+  if (plaintext.length > 128) throw new AppError("PASSWORD_TOO_LONG", "...", 422);
   return bcrypt.hash(plaintext, BCRYPT_ROUNDS);
 }
 
-export async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
+export async function verifyPassword(
+  plaintext: string,
+  hash: string
+): Promise<boolean> {
   return bcrypt.compare(plaintext, hash);
 }
 ```
@@ -147,10 +149,10 @@ export async function verifyPassword(plaintext: string, hash: string): Promise<b
 // Lockout check in auth.service.ts
 async function checkAccountLockout(userId: string): Promise<void> {
   const failures = await redis.get(`auth:failures:${userId}`);
-  if (parseInt(failures ?? '0') >= 5) {
+  if (parseInt(failures ?? "0") >= 5) {
     const lockedUntil = await redis.get(`auth:locked_until:${userId}`);
     if (lockedUntil && Date.now() < parseInt(lockedUntil)) {
-      throw new AppError('ACCOUNT_LOCKED', 'Account temporarily locked.', 403);
+      throw new AppError("ACCOUNT_LOCKED", "Account temporarily locked.", 403);
     }
   }
 }
@@ -176,31 +178,31 @@ Super Admin (platform-wide)
 
 ### Role Permissions Matrix
 
-| Permission                        | Super Admin | Admin | Owner | Member | Viewer |
-| --------------------------------- | ----------- | ----- | ----- | ------ | ------ |
-| **Platform**                      |             |       |       |        |        |
-| Access Super Admin Panel          | ✅          | ❌    | ❌    | ❌     | ❌     |
-| Manage all organisations          | ✅          | ❌    | ❌    | ❌     | ❌     |
-| Override any org plan             | ✅          | ❌    | ❌    | ❌     | ❌     |
-| Trigger n8n workflows             | ✅          | ✅    | ❌    | ❌     | ❌     |
-| View dead-letter queue            | ✅          | ✅    | ❌    | ❌     | ❌     |
-| **Organisation**                  |             |       |       |        |        |
-| View org content (videos, trends) | ✅          | ✅    | ✅    | ✅     | ✅     |
-| Create / delete watchlists        | ✅          | ✅    | ✅    | ✅     | ❌     |
-| Create / delete alert rules       | ✅          | ✅    | ✅    | ✅     | ❌     |
-| Trigger video analysis            | ✅          | ✅    | ✅    | ✅     | ❌     |
-| Create exports                    | ✅          | ✅    | ✅    | ✅     | ❌     |
-| Invite members                    | ✅          | ✅    | ✅    | ❌     | ❌     |
-| Remove members                    | ✅          | ✅    | ✅    | ❌     | ❌     |
-| Change member roles               | ✅          | ✅    | ✅    | ❌     | ❌     |
-| **Billing**                       |             |       |       |        |        |
-| View billing and invoices         | ✅          | ✅    | ✅    | ❌     | ❌     |
-| Upgrade / downgrade plan          | ✅          | ❌    | ✅    | ❌     | ❌     |
-| Cancel subscription               | ✅          | ❌    | ✅    | ❌     | ❌     |
-| **API Keys**                      |             |       |       |        |        |
-| View API keys                     | ✅          | ✅    | ✅    | ❌     | ❌     |
-| Create API keys                   | ✅          | ✅    | ✅    | ❌     | ❌     |
-| Revoke API keys                   | ✅          | ✅    | ✅    | ❌     | ❌     |
+| Permission | Super Admin | Admin | Owner | Member | Viewer |
+|---|---|---|---|---|---|
+| **Platform** | | | | | |
+| Access Super Admin Panel | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Manage all organisations | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Override any org plan | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Trigger n8n workflows | ✅ | ✅ | ❌ | ❌ | ❌ |
+| View dead-letter queue | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Organisation** | | | | | |
+| View org content (videos, trends) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Create / delete watchlists | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Create / delete alert rules | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Trigger video analysis | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Create exports | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Invite members | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Remove members | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Change member roles | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Billing** | | | | | |
+| View billing and invoices | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Upgrade / downgrade plan | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Cancel subscription | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **API Keys** | | | | | |
+| View API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Create API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Revoke API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
 
 ### Enforcement Layers
 
@@ -214,16 +216,16 @@ export function requireRole(...roles: UserRole[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const userRole = request.user.orgRole;
     if (!roles.includes(userRole)) {
-      throw new AppError('INSUFFICIENT_PERMISSIONS', 'Your role does not permit this action.', 403);
+      throw new AppError("INSUFFICIENT_PERMISSIONS",
+        "Your role does not permit this action.", 403);
     }
   };
 }
 
 // Usage in routes:
-fastify.delete(
-  '/api/v1/watchlists/:id',
-  { preHandler: [authenticate, requireRole('owner', 'admin', 'super_admin')] },
-  watchlistController.delete,
+fastify.delete("/api/v1/watchlists/:id",
+  { preHandler: [authenticate, requireRole("owner", "admin", "super_admin")] },
+  watchlistController.delete
 );
 ```
 
@@ -294,7 +296,6 @@ Client Browser
 ### Session Invalidation Events
 
 All active sessions are invalidated when:
-
 - User changes their password
 - User requests "sign out all devices"
 - Super Admin suspends the account
@@ -329,28 +330,28 @@ All active sessions are invalidated when:
 
 **Key JWT fields:**
 
-| Field      | Description                                                                       |
-| ---------- | --------------------------------------------------------------------------------- |
-| `sub`      | User UUID (standard subject claim)                                                |
-| `userId`   | Explicit user ID (same as `sub`)                                                  |
-| `orgId`    | Currently active organisation UUID                                                |
-| `orgRole`  | Role within the current org (`super_admin`, `admin`, `owner`, `member`, `viewer`) |
-| `planTier` | Plan for quick feature flag checks without a DB lookup                            |
-| `jti`      | JWT ID — unique token identifier for revocation                                   |
-| `iat`      | Issued at (Unix timestamp)                                                        |
-| `exp`      | Expires at (Unix timestamp, 15 minutes after `iat`)                               |
+| Field | Description |
+|---|---|
+| `sub` | User UUID (standard subject claim) |
+| `userId` | Explicit user ID (same as `sub`) |
+| `orgId` | Currently active organisation UUID |
+| `orgRole` | Role within the current org (`super_admin`, `admin`, `owner`, `member`, `viewer`) |
+| `planTier` | Plan for quick feature flag checks without a DB lookup |
+| `jti` | JWT ID — unique token identifier for revocation |
+| `iat` | Issued at (Unix timestamp) |
+| `exp` | Expires at (Unix timestamp, 15 minutes after `iat`) |
 
 ### JWT Signing
 
 ```typescript
-const JWT_ALGORITHM = 'HS256';
-const ACCESS_TOKEN_EXPIRY = '15m';
+const JWT_ALGORITHM = "HS256";
+const ACCESS_TOKEN_EXPIRY = "15m";
 
 // Signing
 const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
   algorithm: JWT_ALGORITHM,
   expiresIn: ACCESS_TOKEN_EXPIRY,
-  jwtid: ulid(), // unique JWT ID
+  jwtid: ulid(),        // unique JWT ID
 });
 
 // Verification
@@ -378,7 +379,6 @@ Rotation procedure (non-disruptive):
 6. Deploy the final configuration
 
 Secret rotation is performed:
-
 - **Annually** as a scheduled maintenance task
 - **Immediately** on suspected compromise
 
@@ -408,7 +408,6 @@ Secret rotation is performed:
 ```
 
 **Security measures in OAuth flow:**
-
 - State parameter: CSRF protection (random nonce, verified on callback)
 - PKCE: Proof Key for Code Exchange — prevents code interception attacks
 - Redirect URI: hardcoded in the OAuth app configuration — not passed by the client
@@ -420,7 +419,6 @@ Secret rotation is performed:
 ### MVP (v1.0) — Not Implemented
 
 MFA is not included in the MVP. The risk is mitigated by:
-
 - Strong password hashing (bcrypt, cost factor 12)
 - Account lockout after 5 failed attempts
 - Session anomaly detection (IP change + rotation gap)
@@ -429,18 +427,17 @@ MFA is not included in the MVP. The risk is mitigated by:
 ### v2.0 — TOTP (Time-Based One-Time Passwords)
 
 **Implementation plan:**
-
 - TOTP via authenticator apps (Google Authenticator, Authy, 1Password)
 - Library: `otplib`
 - Backup codes: 10 single-use recovery codes generated at TOTP setup
 - Enforcement: Optional for Starter/Professional, enforced for Admin/Owner roles on Business+
 
 ```typescript
-import { authenticator } from 'otplib';
+import { authenticator } from "otplib";
 
 // Setup: generate secret and QR code URI
 const secret = authenticator.generateSecret();
-const otpauth = authenticator.keyuri(user.email, 'ViralScopes', secret);
+const otpauth = authenticator.keyuri(user.email, "ViralScopes", secret);
 
 // Verify: on each login after password
 const isValid = authenticator.verify({ token: userInputCode, secret });
@@ -458,40 +455,40 @@ const isValid = authenticator.verify({ token: userInputCode, secret });
 
 ### Database (PostgreSQL via Supabase)
 
-| Layer                 | Encryption                             | Details                                                  |
-| --------------------- | -------------------------------------- | -------------------------------------------------------- |
-| **Disk encryption**   | AES-256                                | Supabase infrastructure — encrypted at the storage layer |
-| **Sensitive columns** | Application-level encryption           | OAuth tokens, refresh tokens in `oauth_accounts`         |
-| **Passwords**         | bcrypt (not encryption — one-way hash) | `password_hash` in `users` table                         |
-| **API keys**          | SHA-256 hash (not encryption)          | `key_hash` in `api_keys` table                           |
+| Layer | Encryption | Details |
+|---|---|---|
+| **Disk encryption** | AES-256 | Supabase infrastructure — encrypted at the storage layer |
+| **Sensitive columns** | Application-level encryption | OAuth tokens, refresh tokens in `oauth_accounts` |
+| **Passwords** | bcrypt (not encryption — one-way hash) | `password_hash` in `users` table |
+| **API keys** | SHA-256 hash (not encryption) | `key_hash` in `api_keys` table |
 
 ### Application-Level Column Encryption
 
 For particularly sensitive fields (OAuth `access_token`, `refresh_token`), we apply application-level AES-256-GCM encryption before storage:
 
 ```typescript
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
-const ENCRYPTION_KEY = Buffer.from(process.env.DB_ENCRYPTION_KEY, 'hex'); // 32 bytes
-const ALGORITHM = 'aes-256-gcm';
+const ENCRYPTION_KEY = Buffer.from(process.env.DB_ENCRYPTION_KEY, "hex"); // 32 bytes
+const ALGORITHM = "aes-256-gcm";
 
 export function encrypt(plaintext: string): string {
   const iv = randomBytes(16);
   const cipher = createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
   // Store as: iv:authTag:ciphertext (base64)
-  return `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted.toString('base64')}`;
+  return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
 }
 
 export function decrypt(ciphertext: string): string {
-  const [ivB64, authTagB64, dataB64] = ciphertext.split(':');
-  const iv = Buffer.from(ivB64, 'base64');
-  const authTag = Buffer.from(authTagB64, 'base64');
-  const data = Buffer.from(dataB64, 'base64');
+  const [ivB64, authTagB64, dataB64] = ciphertext.split(":");
+  const iv = Buffer.from(ivB64, "base64");
+  const authTag = Buffer.from(authTagB64, "base64");
+  const data = Buffer.from(dataB64, "base64");
   const decipher = createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
   decipher.setAuthTag(authTag);
-  return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }
 ```
 
@@ -524,18 +521,15 @@ HTTP redirect:          All HTTP → HTTPS at Traefik (307 Temporary Redirect)
 ### Cipher Suite Policy
 
 TLS 1.3 ciphers (all forward-secret):
-
 - `TLS_AES_256_GCM_SHA384`
 - `TLS_CHACHA20_POLY1305_SHA256`
 - `TLS_AES_128_GCM_SHA256`
 
 TLS 1.2 ciphers (forward-secret only):
-
 - `ECDHE-RSA-AES256-GCM-SHA384`
 - `ECDHE-RSA-AES128-GCM-SHA256`
 
 **Disabled:**
-
 - TLS 1.0 and 1.1
 - RC4, DES, 3DES, MD5
 - Non-forward-secret RSA key exchange
@@ -543,7 +537,6 @@ TLS 1.2 ciphers (forward-secret only):
 ### Service-to-Service Communication
 
 All inter-service communication occurs within the Docker internal network. At Stage 3+, mTLS via Istio is planned. Until then:
-
 - All API → Supabase connections use TLS
 - All API → Redis connections use TLS (when using managed Redis)
 - All API → external services (Stripe, OpenAI, Anthropic, SendGrid) use HTTPS
@@ -566,13 +559,13 @@ Traefik configuration:
 
 ### Secret Categories
 
-| Category                   | Examples                                         | Storage                  | Access                   |
-| -------------------------- | ------------------------------------------------ | ------------------------ | ------------------------ |
-| **Application secrets**    | JWT secrets, DB encryption key                   | Coolify env vars         | API service only         |
-| **Service credentials**    | Stripe keys, OpenAI key, SendGrid key            | Coolify env vars         | API / n8n as appropriate |
-| **Database credentials**   | DATABASE_URL                                     | Coolify env vars         | API service only         |
-| **Infrastructure secrets** | Coolify webhook token, GitHub Actions secrets    | GitHub Secrets / Coolify | CI/CD pipeline           |
-| **OAuth app credentials**  | Google Client ID/Secret, GitHub Client ID/Secret | Coolify env vars         | API service only         |
+| Category | Examples | Storage | Access |
+|---|---|---|---|
+| **Application secrets** | JWT secrets, DB encryption key | Coolify env vars | API service only |
+| **Service credentials** | Stripe keys, OpenAI key, SendGrid key | Coolify env vars | API / n8n as appropriate |
+| **Database credentials** | DATABASE_URL | Coolify env vars | API service only |
+| **Infrastructure secrets** | Coolify webhook token, GitHub Actions secrets | GitHub Secrets / Coolify | CI/CD pipeline |
+| **OAuth app credentials** | Google Client ID/Secret, GitHub Client ID/Secret | Coolify env vars | API service only |
 
 ### Secret Injection Pattern
 
@@ -584,7 +577,6 @@ CI/CD pipeline       → GitHub Actions Secrets (encrypted at rest)
 ```
 
 No secret ever appears in:
-
 - Source code files
 - Docker images
 - CI/CD pipeline logs
@@ -606,20 +598,19 @@ npx detect-secrets scan --baseline .secrets.baseline
 
 ### Secret Rotation Schedule
 
-| Secret                  | Rotation frequency               | Method                                                    |
-| ----------------------- | -------------------------------- | --------------------------------------------------------- |
-| `JWT_SECRET`            | Annually + on compromise         | Dual-validation rolling rotation                          |
-| `JWT_REFRESH_SECRET`    | Annually + on compromise         | Dual-validation rolling rotation                          |
-| `DB_ENCRYPTION_KEY`     | Every 2 years                    | Re-encrypt all affected columns during maintenance window |
-| `STRIPE_WEBHOOK_SECRET` | On team member departure         | Regenerate in Stripe dashboard                            |
-| `N8N_ENCRYPTION_KEY`    | On team member departure         | Regenerate, re-enter all credentials in n8n               |
-| API keys (user-facing)  | User-initiated, or on revocation | Single-use, immediate revocation                          |
-| OAuth app secrets       | Annually                         | Regenerate in provider console                            |
+| Secret | Rotation frequency | Method |
+|---|---|---|
+| `JWT_SECRET` | Annually + on compromise | Dual-validation rolling rotation |
+| `JWT_REFRESH_SECRET` | Annually + on compromise | Dual-validation rolling rotation |
+| `DB_ENCRYPTION_KEY` | Every 2 years | Re-encrypt all affected columns during maintenance window |
+| `STRIPE_WEBHOOK_SECRET` | On team member departure | Regenerate in Stripe dashboard |
+| `N8N_ENCRYPTION_KEY` | On team member departure | Regenerate, re-enter all credentials in n8n |
+| API keys (user-facing) | User-initiated, or on revocation | Single-use, immediate revocation |
+| OAuth app secrets | Annually | Regenerate in provider console |
 
 ### v3.0: HashiCorp Vault
 
 At Stage 3, Coolify env var injection will be replaced by HashiCorp Vault:
-
 - Dynamic secrets (auto-rotated database credentials)
 - Audit log for every secret access
 - Fine-grained per-service secret access policies
@@ -635,43 +626,42 @@ All API inputs are validated using **Zod** before reaching any business logic. V
 
 ```typescript
 // schemas/video.schema.ts
-import { z } from 'zod';
+import { z } from "zod";
 
 export const analyzeVideoSchema = z.object({
-  url: z
-    .string()
-    .url('Must be a valid URL')
+  url: z.string()
+    .url("Must be a valid URL")
     .refine(
-      (url) => url.includes('youtube.com/watch') || url.includes('youtu.be'),
-      'Must be a YouTube video URL',
+      (url) => url.includes("youtube.com/watch") || url.includes("youtu.be"),
+      "Must be a YouTube video URL"
     ),
 });
 
 // routes/v1/videos.routes.ts
-fastify.post('/api/v1/videos/analyze', {
+fastify.post("/api/v1/videos/analyze", {
   schema: {
     body: zodToJsonSchema(analyzeVideoSchema),
   },
-  preHandler: [authenticate, requirePlan('starter')],
+  preHandler: [authenticate, requirePlan("starter")],
   handler: videoController.analyze,
 });
 ```
 
 ### Validation Rules
 
-| Input type      | Validation applied                                           |
-| --------------- | ------------------------------------------------------------ |
-| Email addresses | RFC 5322 format check + lowercase normalisation              |
-| Passwords       | Length (10–128), common password blocklist                   |
-| URLs            | Valid URL format + allowed domain allowlist for YouTube URLs |
-| UUIDs           | UUID v4 format                                               |
-| Dates           | ISO 8601 format                                              |
-| Enums           | Must be one of the defined values (no `string` catch-alls)   |
-| Numbers         | Type check + range check (min/max)                           |
-| Strings         | `trim()` applied, max length enforced per field              |
-| Arrays          | Max length enforced to prevent memory exhaustion             |
-| JSONB fields    | Validated against a defined sub-schema                       |
-| File uploads    | Type, size, and content validation (see Section 17)          |
+| Input type | Validation applied |
+|---|---|
+| Email addresses | RFC 5322 format check + lowercase normalisation |
+| Passwords | Length (10–128), common password blocklist |
+| URLs | Valid URL format + allowed domain allowlist for YouTube URLs |
+| UUIDs | UUID v4 format |
+| Dates | ISO 8601 format |
+| Enums | Must be one of the defined values (no `string` catch-alls) |
+| Numbers | Type check + range check (min/max) |
+| Strings | `trim()` applied, max length enforced per field |
+| Arrays | Max length enforced to prevent memory exhaustion |
+| JSONB fields | Validated against a defined sub-schema |
+| File uploads | Type, size, and content validation (see Section 17) |
 
 ### Validation Response
 
@@ -699,13 +689,13 @@ Failed validation always returns `422 Unprocessable Entity` with structured fiel
 
 ### Prevention Strategy
 
-| Layer                       | Control                       | Implementation                                                    |
-| --------------------------- | ----------------------------- | ----------------------------------------------------------------- |
-| **Frontend output**         | Automatic escaping            | React escapes all dynamic content by default                      |
-| **User-generated content**  | HTML sanitisation             | `DOMPurify` on any user content rendered as HTML                  |
-| **Content Security Policy** | Restricts script sources      | CSP header set by Helmet.js (see below)                           |
-| **Cookie flags**            | Prevents cookie theft via XSS | `HttpOnly`, `Secure`, `SameSite=Strict` on all cookies            |
-| **API responses**           | JSON only                     | API never returns HTML; `Content-Type: application/json` enforced |
+| Layer | Control | Implementation |
+|---|---|---|
+| **Frontend output** | Automatic escaping | React escapes all dynamic content by default |
+| **User-generated content** | HTML sanitisation | `DOMPurify` on any user content rendered as HTML |
+| **Content Security Policy** | Restricts script sources | CSP header set by Helmet.js (see below) |
+| **Cookie flags** | Prevents cookie theft via XSS | `HttpOnly`, `Secure`, `SameSite=Strict` on all cookies |
+| **API responses** | JSON only | API never returns HTML; `Content-Type: application/json` enforced |
 
 ### Content Security Policy
 
@@ -730,13 +720,13 @@ Content-Security-Policy:
 ### DOMPurify Usage
 
 ```typescript
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 // Only used when rendering user-supplied content as HTML
 // (e.g. video descriptions that may contain basic formatting)
 const sanitized = DOMPurify.sanitize(userContent, {
-  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'],
-  ALLOWED_ATTR: ['href'],
+  ALLOWED_TAGS: ["b", "i", "em", "strong", "a"],
+  ALLOWED_ATTR: ["href"],
   FORCE_HTTPS: true,
 });
 ```
@@ -767,15 +757,18 @@ CSRF attacks target browser-based sessions (cookie auth). They are not a risk fo
 
 ```typescript
 // API middleware: validate CSRF token
-export async function validateCsrf(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function validateCsrf(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
   // Skip for non-browser auth (API keys)
   if (request.isApiKeyAuth) return;
 
-  const cookieToken = request.cookies['csrf_token'];
-  const headerToken = request.headers['x-csrf-token'];
+  const cookieToken = request.cookies["csrf_token"];
+  const headerToken = request.headers["x-csrf-token"];
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    throw new AppError('CSRF_VALIDATION_FAILED', 'Invalid CSRF token.', 403);
+    throw new AppError("CSRF_VALIDATION_FAILED", "Invalid CSRF token.", 403);
   }
 }
 ```
@@ -799,12 +792,17 @@ All database queries use Drizzle ORM's query builder, which generates parameteri
 const videos = await db
   .select()
   .from(videosTable)
-  .where(and(eq(videosTable.orgId, orgId), gte(videosTable.viralScore, minScore)))
+  .where(
+    and(
+      eq(videosTable.orgId, orgId),
+      gte(videosTable.viralScore, minScore)
+    )
+  )
   .limit(limit);
 
 // ❌ Prohibited — raw string interpolation
 const videos = await db.execute(
-  `SELECT * FROM videos WHERE org_id = '${orgId}'`, // NEVER DO THIS
+  `SELECT * FROM videos WHERE org_id = '${orgId}'`  // NEVER DO THIS
 );
 ```
 
@@ -856,14 +854,14 @@ The authentication middleware validates the token before any route handler execu
 
 ### API Key Design
 
-| Property          | Value                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| **Format**        | `vs_live_<40-char-random-hex>` (production) / `vs_test_<40-char-random-hex>` (test)    |
-| **Storage**       | `sha256(key)` only — plaintext never stored                                            |
-| **Scopes**        | Fine-grained: `videos:read`, `trends:read`, `analytics:read`, `watchlists:write`, etc. |
-| **Expiry**        | Optional — set at creation; `null` means no expiry                                     |
-| **Revocation**    | Immediate — deleting the record from `api_keys` invalidates the key on next request    |
-| **Rate limiting** | Per API key, per plan tier                                                             |
+| Property | Value |
+|---|---|
+| **Format** | `vs_live_<40-char-random-hex>` (production) / `vs_test_<40-char-random-hex>` (test) |
+| **Storage** | `sha256(key)` only — plaintext never stored |
+| **Scopes** | Fine-grained: `videos:read`, `trends:read`, `analytics:read`, `watchlists:write`, etc. |
+| **Expiry** | Optional — set at creation; `null` means no expiry |
+| **Revocation** | Immediate — deleting the record from `api_keys` invalidates the key on next request |
+| **Rate limiting** | Per API key, per plan tier |
 
 **API key lookup:**
 
@@ -872,10 +870,10 @@ export async function authenticateApiKey(rawKey: string): Promise<ApiKeyAuth> {
   const keyHash = sha256(rawKey);
   const apiKey = await apiKeyRepository.findByHash(keyHash);
 
-  if (!apiKey) throw new AppError('AUTHENTICATION_REQUIRED', 'Invalid API key.', 401);
-  if (apiKey.revokedAt) throw new AppError('AUTHENTICATION_REQUIRED', 'API key revoked.', 401);
+  if (!apiKey) throw new AppError("AUTHENTICATION_REQUIRED", "Invalid API key.", 401);
+  if (apiKey.revokedAt) throw new AppError("AUTHENTICATION_REQUIRED", "API key revoked.", 401);
   if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
-    throw new AppError('TOKEN_EXPIRED', 'API key has expired.', 401);
+    throw new AppError("TOKEN_EXPIRED", "API key has expired.", 401);
   }
 
   // Update last used timestamp (async, non-blocking)
@@ -890,32 +888,41 @@ export async function authenticateApiKey(rawKey: string): Promise<ApiKeyAuth> {
 All incoming webhooks verify the provider's signature before processing:
 
 **Stripe:**
-
 ```typescript
-import Stripe from 'stripe';
+import Stripe from "stripe";
 
 export async function verifyStripeWebhook(
   payload: string,
-  signature: string,
+  signature: string
 ): Promise<Stripe.Event> {
   try {
-    return stripe.webhooks.constructEvent(payload, signature, process.env.STRIPE_WEBHOOK_SECRET);
+    return stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
-    throw new AppError('INVALID_WEBHOOK_SIGNATURE', 'Webhook signature verification failed.', 400);
+    throw new AppError("INVALID_WEBHOOK_SIGNATURE",
+      "Webhook signature verification failed.", 400);
   }
 }
 ```
 
 **Custom outbound webhooks:**
-
 ```typescript
 // Verify incoming acknowledgement-style webhooks
-const expectedSig = crypto.createHmac('sha256', webhookSecret).update(rawPayload).digest('hex');
+const expectedSig = crypto
+  .createHmac("sha256", webhookSecret)
+  .update(rawPayload)
+  .digest("hex");
 
-const actualSig = request.headers['x-viralscopes-signature']?.replace('sha256=', '');
+const actualSig = request.headers["x-viralscopes-signature"]?.replace("sha256=", "");
 
-if (!crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(actualSig ?? ''))) {
-  throw new AppError('INVALID_WEBHOOK_SIGNATURE', '...', 400);
+if (!crypto.timingSafeEqual(
+  Buffer.from(expectedSig),
+  Buffer.from(actualSig ?? "")
+)) {
+  throw new AppError("INVALID_WEBHOOK_SIGNATURE", "...", 400);
 }
 ```
 
@@ -927,13 +934,13 @@ if (!crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(actualSig ?? '
 // plugins/cors.plugin.ts
 fastify.register(cors, {
   origin: [
-    'https://app.viralscopes.io',
-    'https://staging.viralscopes.io',
-    ...(process.env.APP_ENV === 'development' ? ['http://localhost:3000'] : []),
+    "https://app.viralscopes.io",
+    "https://staging.viralscopes.io",
+    ...(process.env.APP_ENV === "development" ? ["http://localhost:3000"] : []),
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID'],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Request-ID"],
   maxAge: 86400,
 });
 ```
@@ -949,7 +956,7 @@ fastify.register(helmet, {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https://cdn.viralscopes.io'],
+      imgSrc: ["'self'", "data:", "https://cdn.viralscopes.io"],
       connectSrc: ["'self'"],
       frameAncestors: ["'none'"],
     },
@@ -959,8 +966,8 @@ fastify.register(helmet, {
     includeSubDomains: true,
     preload: true,
   },
-  frameguard: { action: 'deny' },
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  frameguard: { action: "deny" },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   permittedCrossDomainPolicies: false,
   xContentTypeOptions: true,
   xDnsPrefetchControl: { allow: false },
@@ -983,36 +990,36 @@ fastify.register(fastifyRateLimit, {
     return request.apiKeyId ?? request.user?.id ?? request.ip;
   },
   max: async (request) => {
-    const plan = request.user?.planTier ?? 'free';
+    const plan = request.user?.planTier ?? "free";
     return RATE_LIMITS[plan].perMinute;
   },
-  timeWindow: '1 minute',
+  timeWindow: "1 minute",
   errorResponseBuilder: () => ({
     success: false,
     error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Rate limit exceeded. Upgrade your plan or wait for the window to reset.',
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Rate limit exceeded. Upgrade your plan or wait for the window to reset.",
     },
   }),
   addHeaders: {
-    'x-ratelimit-limit': true,
-    'x-ratelimit-remaining': true,
-    'x-ratelimit-reset': true,
-    'retry-after': true,
+    "x-ratelimit-limit": true,
+    "x-ratelimit-remaining": true,
+    "x-ratelimit-reset": true,
+    "retry-after": true,
   },
 });
 ```
 
 ### Auth Endpoint Rate Limits (Per IP)
 
-| Endpoint                     | Limit | Window     | Lockout                                |
-| ---------------------------- | ----- | ---------- | -------------------------------------- |
-| `POST /auth/login`           | 10    | 1 minute   | Block for 5 minutes after 10th attempt |
-| `POST /auth/register`        | 5     | 1 minute   | —                                      |
-| `POST /auth/forgot-password` | 5     | 15 minutes | —                                      |
-| `POST /auth/reset-password`  | 3     | 15 minutes | —                                      |
-| `POST /auth/verify-email`    | 5     | 15 minutes | —                                      |
-| `GET /auth/oauth/*`          | 20    | 1 minute   | —                                      |
+| Endpoint | Limit | Window | Lockout |
+|---|---|---|---|
+| `POST /auth/login` | 10 | 1 minute | Block for 5 minutes after 10th attempt |
+| `POST /auth/register` | 5 | 1 minute | — |
+| `POST /auth/forgot-password` | 5 | 15 minutes | — |
+| `POST /auth/reset-password` | 3 | 15 minutes | — |
+| `POST /auth/verify-email` | 5 | 15 minutes | — |
+| `GET /auth/oauth/*` | 20 | 1 minute | — |
 
 ### Brute Force Account Lockout
 
@@ -1032,25 +1039,25 @@ Counters stored in Redis with TTL matching the lockout duration.
 
 ### Cloudflare Protection Layers
 
-| Layer              | Protection                                         | Configuration                                  |
-| ------------------ | -------------------------------------------------- | ---------------------------------------------- |
-| **L3/L4 DDoS**     | Cloudflare Magic Transit (or included in Pro plan) | Auto-mitigation for volumetric attacks         |
-| **L7 HTTP DDoS**   | Cloudflare HTTP DDoS managed ruleset               | Enabled — blocks common attack patterns        |
-| **WAF Rules**      | Cloudflare WAF managed rules                       | OWASP Core Rule Set enabled                    |
-| **IP Reputation**  | Cloudflare Threat Score                            | Block IPs with score > 50                      |
-| **Bot Management** | Cloudflare Bot Fight Mode                          | Enabled on auth endpoints                      |
-| **Rate limiting**  | Cloudflare rate limiting rules                     | 100 req/min per IP on `/api/*`                 |
-| **Geo-blocking**   | Cloudflare Firewall Rules                          | Block known high-risk countries (configurable) |
+| Layer | Protection | Configuration |
+|---|---|---|
+| **L3/L4 DDoS** | Cloudflare Magic Transit (or included in Pro plan) | Auto-mitigation for volumetric attacks |
+| **L7 HTTP DDoS** | Cloudflare HTTP DDoS managed ruleset | Enabled — blocks common attack patterns |
+| **WAF Rules** | Cloudflare WAF managed rules | OWASP Core Rule Set enabled |
+| **IP Reputation** | Cloudflare Threat Score | Block IPs with score > 50 |
+| **Bot Management** | Cloudflare Bot Fight Mode | Enabled on auth endpoints |
+| **Rate limiting** | Cloudflare rate limiting rules | 100 req/min per IP on `/api/*` |
+| **Geo-blocking** | Cloudflare Firewall Rules | Block known high-risk countries (configurable) |
 
 ### Application-Level DDoS Mitigation
 
-| Control               | Implementation                                                    |
-| --------------------- | ----------------------------------------------------------------- |
-| Request size limit    | Max 1MB body size on all endpoints; 10MB on file upload endpoints |
-| Timeout               | 30-second request timeout on all endpoints                        |
-| Connection limit      | Traefik limits concurrent connections per IP                      |
-| Slow loris prevention | Traefik `readTimeout` and `writeTimeout` configured               |
-| JSON parsing limit    | Fastify `bodyLimit: 1048576` (1MB)                                |
+| Control | Implementation |
+|---|---|
+| Request size limit | Max 1MB body size on all endpoints; 10MB on file upload endpoints |
+| Timeout | 30-second request timeout on all endpoints |
+| Connection limit | Traefik limits concurrent connections per IP |
+| Slow loris prevention | Traefik `readTimeout` and `writeTimeout` configured |
+| JSON parsing limit | Fastify `bodyLimit: 1048576` (1MB) |
 
 ---
 
@@ -1070,13 +1077,8 @@ At MVP, ViralScopes does not accept direct file uploads from users. The only fil
 async function downloadThumbnail(thumbnailUrl: string): Promise<Buffer> {
   // Validate URL is from YouTube CDN before downloading
   const parsed = new URL(thumbnailUrl);
-  const allowedHosts = [
-    'i.ytimg.com',
-    'i1.ytimg.com',
-    'i2.ytimg.com',
-    'img.youtube.com',
-    'yt3.ggpht.com',
-  ];
+  const allowedHosts = ["i.ytimg.com", "i1.ytimg.com", "i2.ytimg.com",
+                        "img.youtube.com", "yt3.ggpht.com"];
 
   if (!allowedHosts.includes(parsed.hostname)) {
     throw new Error(`Untrusted thumbnail host: ${parsed.hostname}`);
@@ -1086,8 +1088,8 @@ async function downloadThumbnail(thumbnailUrl: string): Promise<Buffer> {
     signal: AbortSignal.timeout(10000), // 10-second timeout
   });
 
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.startsWith('image/')) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.startsWith("image/")) {
     throw new Error(`Unexpected content type: ${contentType}`);
   }
 
@@ -1095,7 +1097,7 @@ async function downloadThumbnail(thumbnailUrl: string): Promise<Buffer> {
 
   // Enforce max thumbnail size (5MB)
   if (buffer.byteLength > 5 * 1024 * 1024) {
-    throw new Error('Thumbnail exceeds maximum size');
+    throw new Error("Thumbnail exceeds maximum size");
   }
 
   return Buffer.from(buffer);
@@ -1129,16 +1131,16 @@ When user file uploads are introduced (e.g. custom thumbnail uploads, logo uploa
 
 Every significant security event generates an immutable entry in the `audit_logs` table. Audit logs are never modified or deleted (except per the 2-year retention policy).
 
-| Event category     | Events logged                                                                                |
-| ------------------ | -------------------------------------------------------------------------------------------- |
-| **Authentication** | Login (success/failure), logout, password reset, email verification, OAuth connect           |
-| **Account**        | Email change, password change, account deletion request, account suspension                  |
-| **Organisation**   | Created, plan changed, member invited, member removed, role changed, ownership transferred   |
-| **Billing**        | Subscription started, plan upgraded, plan downgraded, payment failed, subscription cancelled |
-| **API Keys**       | Created, revoked                                                                             |
-| **Data access**    | Export created, export downloaded                                                            |
-| **Admin actions**  | User suspended, plan overridden, dead-letter job retried, quota reset, workflow triggered    |
-| **Security**       | Failed login attempts, account lockout, session revocation, anomaly detected                 |
+| Event category | Events logged |
+|---|---|
+| **Authentication** | Login (success/failure), logout, password reset, email verification, OAuth connect |
+| **Account** | Email change, password change, account deletion request, account suspension |
+| **Organisation** | Created, plan changed, member invited, member removed, role changed, ownership transferred |
+| **Billing** | Subscription started, plan upgraded, plan downgraded, payment failed, subscription cancelled |
+| **API Keys** | Created, revoked |
+| **Data access** | Export created, export downloaded |
+| **Admin actions** | User suspended, plan overridden, dead-letter job retried, quota reset, workflow triggered |
+| **Security** | Failed login attempts, account lockout, session revocation, anomaly detected |
 
 ### Audit Log Entry Structure
 
@@ -1180,47 +1182,47 @@ Every significant security event generates an immutable entry in the `audit_logs
 
 ### GDPR (General Data Protection Regulation)
 
-| Requirement                | Implementation                                                    | Status                                         |
-| -------------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
-| **Lawful basis**           | Legitimate interest (analytics) + contract (service delivery)     | Documented in Privacy Policy                   |
-| **Data minimisation**      | Only data needed for the feature is collected                     | Enforced in schema design                      |
-| **Purpose limitation**     | Data collected for content analysis is not used for advertising   | Policy commitment + no ad network integrations |
-| **Right to access**        | `GET /api/v1/account/export` — returns all user data as JSON      | MVP                                            |
-| **Right to deletion**      | `DELETE /api/v1/account` — hard deletes PII within 30 days        | MVP                                            |
-| **Right to rectification** | Users can update all personal data via Settings                   | MVP                                            |
-| **Data portability**       | Export in machine-readable JSON format                            | MVP                                            |
-| **Consent**                | Cookie consent banner; no non-essential cookies before consent    | MVP                                            |
-| **Privacy policy**         | Legally reviewed, linked from all auth pages and footer           | MVP                                            |
-| **DPA**                    | Data Processing Agreements available for Enterprise customers     | MVP                                            |
-| **Breach notification**    | 72-hour notification to ICO + affected users                      | Incident response plan                         |
-| **Data transfers**         | AI APIs (OpenAI, Anthropic) are US-based; covered by DPA and SCCs | Documented                                     |
+| Requirement | Implementation | Status |
+|---|---|---|
+| **Lawful basis** | Legitimate interest (analytics) + contract (service delivery) | Documented in Privacy Policy |
+| **Data minimisation** | Only data needed for the feature is collected | Enforced in schema design |
+| **Purpose limitation** | Data collected for content analysis is not used for advertising | Policy commitment + no ad network integrations |
+| **Right to access** | `GET /api/v1/account/export` — returns all user data as JSON | MVP |
+| **Right to deletion** | `DELETE /api/v1/account` — hard deletes PII within 30 days | MVP |
+| **Right to rectification** | Users can update all personal data via Settings | MVP |
+| **Data portability** | Export in machine-readable JSON format | MVP |
+| **Consent** | Cookie consent banner; no non-essential cookies before consent | MVP |
+| **Privacy policy** | Legally reviewed, linked from all auth pages and footer | MVP |
+| **DPA** | Data Processing Agreements available for Enterprise customers | MVP |
+| **Breach notification** | 72-hour notification to ICO + affected users | Incident response plan |
+| **Data transfers** | AI APIs (OpenAI, Anthropic) are US-based; covered by DPA and SCCs | Documented |
 
 ### CCPA (California Consumer Privacy Act)
 
-| Requirement                  | Implementation                                        |
-| ---------------------------- | ----------------------------------------------------- |
-| **Right to know**            | Data export endpoint covers CCPA right to know        |
-| **Right to delete**          | Account deletion endpoint covers CCPA right to delete |
-| **Right to opt out of sale** | ViralScopes does not sell personal data               |
-| **Non-discrimination**       | No discrimination for exercising CCPA rights          |
+| Requirement | Implementation |
+|---|---|
+| **Right to know** | Data export endpoint covers CCPA right to know |
+| **Right to delete** | Account deletion endpoint covers CCPA right to delete |
+| **Right to opt out of sale** | ViralScopes does not sell personal data |
+| **Non-discrimination** | No discrimination for exercising CCPA rights |
 
 ### Data Processing Locations
 
-| Data                   | Processed where             | Legal basis                              |
-| ---------------------- | --------------------------- | ---------------------------------------- |
-| User PII (email, name) | EU (Supabase Frankfurt)     | GDPR contract                            |
+| Data | Processed where | Legal basis |
+|---|---|---|
+| User PII (email, name) | EU (Supabase Frankfurt) | GDPR contract |
 | Video content analysis | US (OpenAI, Anthropic APIs) | GDPR standard contractual clauses (SCCs) |
-| Payment data           | US (Stripe)                 | Stripe DPA + SCCs                        |
-| Email delivery         | US (SendGrid)               | SendGrid DPA + SCCs                      |
+| Payment data | US (Stripe) | Stripe DPA + SCCs |
+| Email delivery | US (SendGrid) | SendGrid DPA + SCCs |
 
 ### Cookies
 
-| Cookie                | Purpose                | Duration | Consent required        |
-| --------------------- | ---------------------- | -------- | ----------------------- |
-| `refresh_token`       | Session authentication | 30 days  | No (strictly necessary) |
-| `csrf_token`          | CSRF protection        | Session  | No (strictly necessary) |
-| `cookie_consent`      | Records consent choice | 1 year   | No (functional)         |
-| Any analytics cookies | Not used in MVP        | —        | Yes (not set at MVP)    |
+| Cookie | Purpose | Duration | Consent required |
+|---|---|---|---|
+| `refresh_token` | Session authentication | 30 days | No (strictly necessary) |
+| `csrf_token` | CSRF protection | Session | No (strictly necessary) |
+| `cookie_consent` | Records consent choice | 1 year | No (functional) |
+| Any analytics cookies | Not used in MVP | — | Yes (not set at MVP) |
 
 ---
 
@@ -1244,7 +1246,6 @@ Every significant security event generates an immutable entry in the `audit_logs
 ### Automated Dependency Updates
 
 Dependabot is configured to open PRs for:
-
 - All `npm` packages weekly
 - Docker base images weekly
 - GitHub Actions weekly
@@ -1253,17 +1254,16 @@ Update PRs are auto-merged for patch versions (if CI passes). Minor and major ve
 
 ### Penetration Testing
 
-| Stage         | Frequency                    | Type                                          | Who                       |
-| ------------- | ---------------------------- | --------------------------------------------- | ------------------------- |
-| Stage 1 (MVP) | None                         | —                                             | —                         |
-| Stage 2       | Annually                     | External black-box + grey-box                 | Third-party security firm |
-| Stage 3       | Annually + on major releases | External black-box + grey-box + source review | Specialist security firm  |
-| Stage 4       | Bi-annually                  | Full red team exercise                        | Enterprise security firm  |
+| Stage | Frequency | Type | Who |
+|---|---|---|---|
+| Stage 1 (MVP) | None | — | — |
+| Stage 2 | Annually | External black-box + grey-box | Third-party security firm |
+| Stage 3 | Annually + on major releases | External black-box + grey-box + source review | Specialist security firm |
+| Stage 4 | Bi-annually | Full red team exercise | Enterprise security firm |
 
 ### Bug Bounty Programme
 
 Planned for v2.0. Will cover:
-
 - Authentication bypass
 - IDOR (Insecure Direct Object Reference) / tenant data leakage
 - SQL injection
@@ -1293,12 +1293,12 @@ The following are checked in every code review and in CI:
 
 ### Severity Levels
 
-| Level             | Definition                                                | Response time | Example                                      |
-| ----------------- | --------------------------------------------------------- | ------------- | -------------------------------------------- |
-| **P1 — Critical** | Active breach, data exfiltration, service completely down | < 15 minutes  | Database breach, all users locked out        |
-| **P2 — High**     | Significant vulnerability, partial service disruption     | < 1 hour      | Auth bypass discovered, API partially down   |
-| **P3 — Medium**   | Security vulnerability with no active exploitation        | < 24 hours    | XSS discovered in non-critical page          |
-| **P4 — Low**      | Minor security issue, low impact                          | < 7 days      | Verbose error message, minor info disclosure |
+| Level | Definition | Response time | Example |
+|---|---|---|---|
+| **P1 — Critical** | Active breach, data exfiltration, service completely down | < 15 minutes | Database breach, all users locked out |
+| **P2 — High** | Significant vulnerability, partial service disruption | < 1 hour | Auth bypass discovered, API partially down |
+| **P3 — Medium** | Security vulnerability with no active exploitation | < 24 hours | XSS discovered in non-critical page |
+| **P4 — Low** | Minor security issue, low impact | < 7 days | Verbose error message, minor info disclosure |
 
 ### Incident Response Procedure
 
@@ -1313,7 +1313,6 @@ The following are checked in every code review and in CI:
 #### Phase 2 — Contain (15–60 minutes for P1)
 
 **If active breach suspected:**
-
 - [ ] Immediately revoke all active sessions for affected accounts
 - [ ] Rotate JWT secrets (using dual-validation rotation procedure)
 - [ ] Temporarily enable IP allowlisting on admin endpoints
@@ -1321,7 +1320,6 @@ The following are checked in every code review and in CI:
 - [ ] Preserve evidence: snapshot affected logs before any remediation
 
 **For all incidents:**
-
 - [ ] Identify the attack vector
 - [ ] Determine blast radius: which accounts, which data, which systems
 - [ ] Notify the founding team immediately for P1/P2
@@ -1343,12 +1341,10 @@ The following are checked in every code review and in CI:
 #### Phase 5 — Communicate
 
 **Internal:**
-
 - [ ] Update the incident Slack channel continuously
 - [ ] Brief company leadership within 1 hour of P1 confirmation
 
 **External (for P1/P2 involving user data):**
-
 - [ ] Notify affected users within 72 hours (GDPR requirement)
 - [ ] Notify the ICO (UK) within 72 hours if personal data was involved
 - [ ] Post a status update on `status.viralscopes.io` (Post-MVP)
@@ -1357,7 +1353,6 @@ The following are checked in every code review and in CI:
 #### Phase 6 — Post-Mortem (within 5 days)
 
 A blameless post-mortem document is published internally covering:
-
 - Timeline of events
 - Root cause analysis
 - Contributing factors
@@ -1406,7 +1401,6 @@ A blameless post-mortem document is published internally covering:
 Use this checklist for every feature review and before each release.
 
 ### Authentication & Sessions
-
 - [ ] All protected endpoints require valid JWT or API key
 - [ ] Access tokens expire in 15 minutes
 - [ ] Refresh tokens are stored HTTP-only, Secure, SameSite=Strict
@@ -1416,14 +1410,12 @@ Use this checklist for every feature review and before each release.
 - [ ] Email verification is required before dashboard access
 
 ### Authorisation
-
 - [ ] RBAC checks at both route middleware and service layer
 - [ ] Tenant isolation enforced (org_id filter on all tenant queries)
 - [ ] RLS policies active on all tenant-scoped tables
 - [ ] No privilege escalation vectors
 
 ### Input & Output
-
 - [ ] All inputs validated with Zod before any processing
 - [ ] All user-generated content sanitised before rendering
 - [ ] No raw SQL string interpolation
@@ -1431,7 +1423,6 @@ Use this checklist for every feature review and before each release.
 - [ ] Error responses never expose stack traces or internal details
 
 ### Transport & Headers
-
 - [ ] HTTPS enforced; HTTP redirects to HTTPS
 - [ ] HSTS enabled with preload
 - [ ] CSP header set and tested
@@ -1440,7 +1431,6 @@ Use this checklist for every feature review and before each release.
 - [ ] CSRF protection on browser-session state-changing endpoints
 
 ### Secrets & Keys
-
 - [ ] No secrets in source code or Docker images
 - [ ] No secrets in application logs
 - [ ] API keys stored as sha256 hash only
@@ -1448,14 +1438,12 @@ Use this checklist for every feature review and before each release.
 - [ ] OAuth state parameter validated on callback
 
 ### Audit & Monitoring
-
 - [ ] All auth events logged to audit_logs
 - [ ] All admin actions logged to audit_logs
 - [ ] Prometheus alert configured for auth failure rate spike
 - [ ] Prometheus alert configured for anomalous API usage
 
 ### Dependencies & Infrastructure
-
 - [ ] npm audit passes with no high/critical CVEs
 - [ ] All Docker base images pinned to specific digest
 - [ ] Coolify environment variables used for all secrets
@@ -1463,12 +1451,11 @@ Use this checklist for every feature review and before each release.
 
 ---
 
-_This document is reviewed and updated quarterly, after every penetration test, and immediately following any security incident. All changes require a pull request with at least two approving reviews._
+*This document is reviewed and updated quarterly, after every penetration test, and immediately following any security incident. All changes require a pull request with at least two approving reviews.*
 
 ---
 
 **Related Documents:**
-
 - [PROJECT_RULES.md](./PROJECT_RULES.md) — Security requirements in engineering standards
 - [Database_Schema.md](./Database_Schema.md) — RLS policy design and data security
 - [URL_&_API_Structure.md](./URL_and_API_Structure.md) — API authentication and rate limiting

@@ -137,6 +137,16 @@ Each version entry uses the following change categories:
 
 - Log redaction verified directly against real output (not assumed): a test log call with `password`/`email`/`name`/`ip_address` fields produces `[REDACTED]`; confirmed this doesn't affect Pino's own error serialization (`err.type`, not `err.name`)
 
+### Fixed (Phase 2 Milestone 6 — Deployment & Release Readiness)
+
+- Added `.gitattributes` (`* text=auto eol=lf`) — fixes a real, recurring issue where a fresh checkout on Windows with `core.autocrlf=true` converted every text file to CRLF, causing `npm run format:check` to report ~47 files as having formatting issues that didn't actually exist in the committed content. Verified via two fresh clones: before the fix, `apps/api/src/config.ts` checked out as CRLF; after, it checks out as clean LF and `format:check` passes with zero warnings.
+- Confirmed (not assumed) that an `apps/web` build failure encountered while testing from a deeply-nested scratch directory was a Windows `MAX_PATH` limitation specific to that test location, not a code defect — the same clean checkout builds successfully from a short path.
+
+### Documentation (Phase 2 Milestone 6)
+
+- Audited all core docs for broken internal links. Found 6 references (in `README.md` and `PROJECT_STATUS.md` DEC-001 through DEC-005) to `docs/decisions/ADR-*.md` and a GDPR guide that were never written — pre-existing from Pre-Development, not introduced by Phase 2. Logged as TD-007 rather than fixed silently or fabricated under time pressure.
+- **Phase 2 — Infrastructure & DevOps is complete** (6/6 milestones). TD-006 logged for infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify staging/production deploy, Alertmanager/PagerDuty, Grafana dashboards against real metrics) — tracked forward to Phase 14 and ongoing work, not silently dropped.
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

@@ -220,6 +220,64 @@ Every organisation's data is isolated using **Row Level Security (RLS)** at the 
 
 All AI calls are **asynchronous** — triggered by the n8n workflow engine, never blocking API request handlers. All prompts are **versioned in the database**. All AI outputs are **validated against Zod schemas** before storage.
 
+### API Endpoints Reference
+
+Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`) and requires `Authorization: Bearer <accessToken>` unless noted otherwise. Full auto-generated OpenAPI/Swagger docs are not yet published (TD-018) — this table is the source of truth until then.
+
+**Authentication (Phase 4 — `/api/v1/auth`)**
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/register` | None | Email + password registration |
+| POST | `/login` | None | Email + password login |
+| POST | `/logout` | Session + CSRF | Revoke current session |
+| POST | `/refresh` | Refresh cookie | Rotate access/refresh token pair |
+| POST | `/verify-email` | None | Consume email-verification token |
+| POST | `/forgot-password` | None | Request password-reset email |
+| POST | `/reset-password` | None | Consume reset token, set new password |
+| GET | `/sessions` | JWT | List own active sessions |
+| DELETE | `/sessions/:id` | JWT + CSRF | Revoke one session |
+| DELETE | `/sessions` | JWT + CSRF | Revoke all other sessions |
+| GET | `/oauth/google`, `/oauth/github` | None | Start OAuth flow |
+| GET | `/oauth/google/callback`, `/oauth/github/callback` | None | OAuth provider callback |
+
+**Content — read-only, global data (Phase 5 — no org required)**
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/videos` | List videos (filters: platform, category, language, minViralScore, publishedAfter/Before) |
+| GET | `/api/v1/videos/:id` | Video detail + joined analysis/thumbnail/title/transcript |
+| GET | `/api/v1/channels` | List channels (filters: platform, search, minSubscribers, minGrowthScore) |
+| GET | `/api/v1/channels/:id` | Channel profile (current snapshot only — no growth-history table exists yet) |
+| GET | `/api/v1/trends` | List trend snapshots (filters: status, platform, language, minVelocity, latestSnapshotOnly) |
+| GET | `/api/v1/trends/opportunities` | Trends ranked by opportunity score, latest snapshot |
+
+**Organisation-scoped (Phase 5 — requires org membership, RLS via `withTenant()`)**
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/recommendations` | List org's recommendations |
+| GET | `/api/v1/recommendations/:videoId` | Recommendations for one video |
+| GET / POST / PUT / DELETE | `/api/v1/watchlists`, `/api/v1/watchlists/:id` | Watchlist CRUD (plan-limited, creator/owner/admin can modify) |
+| GET / POST / PUT / DELETE | `/api/v1/alerts/rules`, `/api/v1/alerts/rules/:id` | Alert rule CRUD (plan-limited) |
+| GET | `/api/v1/alerts/events` | Alert dispatch history (read-only — written by Phase 6, not built yet) |
+| GET / POST / DELETE | `/api/v1/api-keys`, `/api-keys/:id` | API key CRUD (plan-gated; plaintext key returned once on create) |
+| GET | `/api/v1/usage` | Current-period usage vs plan quota |
+| GET | `/api/v1/analytics/overview` | Org KPIs: watchlists, alert rules, alert events (30d), API keys, usage |
+
+**Admin — platform-wide, `super_admin` only (Phase 5 — `/api/v1/admin`)**
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/users` | List all users |
+| GET | `/organizations` | List all organisations |
+| GET | `/jobs` | n8n job execution log (filters: status, workflowName) |
+| GET | `/dead-letter` | Dead-letter job queue (filter: resolved) |
+| POST | `/dead-letter/:id/retry` | Increment retry counter — does **not** re-execute (no job runner exists yet, n8n is Phase 6) |
+| GET | `/metrics` | Basic platform counts (users, orgs, job status last 24h, unresolved dead-letter) |
+
+**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-019):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, and the OpenAPI/Swagger spec itself.
+
 ---
 
 ## 5. Installation
@@ -482,7 +540,7 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 | `DATABASE_URL` | `packages/db` (migrate/seed/reset/setup-roles) | Postgres superuser/owner connection — DDL privileges, used only for migrations, seeding, and admin scripts. **Never** what the running application queries with (see §6 "Database Setup" for why). | — |
 | `DATABASE_POOL_SIZE` | reserved | Pool size for a future PgBouncer-fronted connection | `10` |
 | `APP_DB_USER` / `APP_DB_PASSWORD` | `packages/db/src/setup-roles.ts` | Credentials for the restricted, non-superuser role RLS-protected application queries run as | `app_user` / — |
-| `DATABASE_APP_URL` | reserved for apps/api (Phase 5) | Connection string using the `app_user` role — what the API will actually connect with once it exists | — |
+| `DATABASE_APP_URL` | apps/api (`db.plugin.ts`, since Phase 4) | Connection string using the `app_user` role — what the running API actually connects with | — |
 | `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_APP_URL` | apps/web (public) | Frontend build-time public URLs | — |
 
 > Production still targets a Supabase-hosted Postgres instance (see `Database_Schema.md` header), but only Postgres itself — this project authenticates with its own JWT/OAuth system, not Supabase Auth, so Supabase's `anon`/`service_role` API keys are never used and intentionally aren't in `.env.example`.
@@ -491,10 +549,10 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 
 | Variable | Description |
 |---|---|
-| `REDIS_URL` | Redis connection URL (the container already runs; no client reads this yet) |
-| `S3_BUCKET` / `S3_REGION` / `S3_ENDPOINT` | Object storage location |
-| `S3_FORCE_PATH_STYLE` | `true` for MinIO (path-style addressing); `false` for Cloudflare R2 / AWS S3 (virtual-hosted style) |
-| `YOUTUBE_API_KEY` / `YOUTUBE_QUOTA_LIMIT` / `RAPIDAPI_YOUTUBE_KEY` | Video discovery |
+| `REDIS_URL` | Read by `redis.plugin.ts` since Phase 4 (lockout, auth rate limiting); Phase 5's business-rate-limit middleware and OAuth/session flows also depend on it |
+| `S3_BUCKET` / `S3_REGION` / `S3_ENDPOINT` | Object storage location — not yet consumed; the Exports endpoints that would need it are deferred (TD-017) |
+| `S3_FORCE_PATH_STYLE` | `true` for MinIO (path-style addressing); `false` for Cloudflare R2 / AWS S3 (virtual-hosted style) — same deferred status as above |
+| `YOUTUBE_API_KEY` / `YOUTUBE_QUOTA_LIMIT` / `RAPIDAPI_YOUTUBE_KEY` | Video discovery — not yet consumed; the YouTube Quota Manager and `POST /videos/analyze`/`/refresh` that would need it are deferred (TD-014) |
 
 ### Required Starting Phase 4 — Authentication & Authorisation
 

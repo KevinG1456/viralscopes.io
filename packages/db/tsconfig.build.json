@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // BLK-004: the default tsconfig.json is noEmit:true because packages/db
+    // is consumed via tsx (dev: apps/api's tsx watch resolves package.json's
+    // "main" straight to src/index.ts and transforms it on the fly) or run
+    // directly (migrate.ts/seeds via `tsx src/migrate.ts`). Neither of those
+    // needs compiled JS. A production Docker image running apps/api's
+    // compiled dist/index.js under plain `node` does -- `node` cannot import
+    // a .ts file, and package.json's "main" has to point somewhere plain
+    // Node can resolve. This build-only config emits real JS/d.ts to dist/,
+    // used only by `npm run build` (see package.json) for that path.
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  }
+}

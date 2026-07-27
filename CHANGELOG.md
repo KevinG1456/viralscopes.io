@@ -51,6 +51,24 @@ Each version entry uses the following change categories:
 - Fixed an authentication oracle in `POST /api/v1/auth/login`: a correct password against an unverified account previously returned a distinct `403 EMAIL_NOT_VERIFIED` (and skipped the lockout counter), letting an attacker confirm a guessed/stuffed password was correct without completing login. Now returns the identical `401 INVALID_CREDENTIALS` as a wrong password or nonexistent account, and counts toward account lockout the same way. See DEC-015 in `PROJECT_STATUS.md`.
 - Fixed silent OAuth account-linking: a Google/GitHub sign-in matching an existing, unverified local account (e.g. one an attacker pre-registered with a different email owner's address) previously linked automatically and issued a session with no verification check. OAuth linking now requires the existing account to already be verified; otherwise the attempt is refused (`OAUTH_ACCOUNT_REQUIRES_VERIFICATION`) and the real owner reclaims the account via the existing password-reset flow. See DEC-016 in `PROJECT_STATUS.md` and `Security_Architecture.md` §5.
 
+### Added (Phase 5 — Core Backend API)
+
+- `GET /api/v1/videos`, `/videos/:id`, `/channels`, `/channels/:id`, `/trends`, `/trends/opportunities` — paginated reads over global content
+- `GET /api/v1/recommendations`, `/recommendations/:videoId` — org-scoped reads
+- Watchlists (`/api/v1/watchlists`) and Alert Rules (`/api/v1/alerts/rules`) full CRUD, both plan-tier quota-enforced per `Pricing_Strategy.md`, with creator-or-org-owner/admin write authorisation; `GET /api/v1/alerts/events` read-only dispatch history
+- API Keys (`/api/v1/api-keys`) CRUD — sha256-hashed storage, plaintext key returned once on creation, gated to plans with API access
+- `GET /api/v1/usage` — current-period usage vs plan quota; `GET /api/v1/analytics/overview` — org KPIs
+- `/api/v1/admin/*` — users, organizations, jobs, dead-letter queue (+ retry), platform metrics, gated by a new super-admin middleware
+- Plan-tier-aware Redis rate limiting on all Phase 5 endpoints (`Pricing_Strategy.md` §2.6/§3 ceilings)
+- `withTenant()` (built in Phase 3) is now actually used — every org-scoped query in this release runs inside it
+
+### Fixed (Phase 5)
+
+- Fixed a query-parameter bug affecting the dead-letter (`?resolved=`) and trends (`?latestSnapshotOnly=`) filters: `z.coerce.boolean()` coerced the literal string `"false"` to `true` (any non-empty string is JS-truthy), silently inverting the filter. Replaced with an explicit `"true"`/`"false"` enum-and-transform.
+- Fixed plan-tier rate-limit resolution: Free/Starter tiers (which have no documented API rate limit because they have no API access at all) were falling through to the same generous fallback intended for Enterprise's "Custom" limit, instead of the conservative placeholder ceiling intended for tiers with no API access.
+- Fixed `apps/api`'s production Docker image crashing on boot (`ERR_MODULE_NOT_FOUND` on `@viralscopes/db`) on any database-touching request — pre-existing since Phase 4 first added that runtime dependency, only caught now via an actual container boot test (BLK-004 in `PROJECT_STATUS.md`). `packages/db` gained a real build step (previously TS-source-only, tsx-consumption-only) and `Dockerfile.api`'s runner stage now includes its compiled output.
+- Fixed a fresh-checkout CI failure caused by the above: `turbo.json`'s `type-check` task didn't depend on upstream `build` tasks, so `apps/api`'s type-check ran before `packages/db`'s newly-required `dist/` existed. Added `dependsOn: ["^build"]` to `type-check`, matching `build`/`test`.
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

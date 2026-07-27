@@ -145,6 +145,16 @@ export async function verifyPassword(
 - Reset: Unlock via email link (sent automatically on lockout) or manual Super Admin unlock
 - Failed attempts counter resets on successful login
 
+### Generic Login Failure Response (DEC-015)
+
+`POST /api/v1/auth/login` returns the **same** `401 INVALID_CREDENTIALS` response — same status code, same error code, same message — for all three of:
+
+- No account exists for the submitted email
+- The account exists but the password is wrong
+- The account exists, the password is *correct*, but the email is not yet verified
+
+The third case is intentionally not distinguished from the second: revealing it via a different status code (the original implementation used `403 EMAIL_NOT_VERIFIED`) lets an attacker confirm a guessed or credential-stuffed password is correct without ever completing login, and without necessarily tripping lockout. All three branches now also count identically toward the account-lockout counter above. The true reason for rejection remains fully visible server-side via a structured log line (`userId`, no password/token material), so operational diagnosis is unaffected — only the client-visible signal was collapsed.
+
 ```typescript
 // Lockout check in auth.service.ts
 async function checkAccountLockout(userId: string): Promise<void> {
@@ -411,6 +421,16 @@ Secret rotation is performed:
 - State parameter: CSRF protection (random nonce, verified on callback)
 - PKCE: Proof Key for Code Exchange — prevents code interception attacks
 - Redirect URI: hardcoded in the OAuth app configuration — not passed by the client
+
+### Account Linking Policy (DEC-016)
+
+Step 7 above ("API upserts user record") is not an unconditional upsert-by-email. Three cases, in order:
+
+1. **An `oauth_accounts` row already links this `(provider, providerUid)` to a local user** — reuse that user. This is a returning OAuth user; no ambiguity.
+2. **No existing link, but a local `users` row matches the profile's email, and that row is already `email_verified = true`** — link the new provider to it. Both the existing verification (password + email-verification link, or a prior OAuth provider) and this new OAuth login independently prove control of the same mailbox, so they're treated as the same person with no extra friction.
+3. **No existing link, and a matching local `users` row exists but is `email_verified = false`** — **refuse the link** (`OAUTH_ACCOUNT_REQUIRES_VERIFICATION`, 409; redirects to `${APP_URL}/login?error=account_requires_verification`). An unverified row means nobody has ever proven ownership of it — it may be a password an unrelated party set on a pre-registered account they don't own (a pre-registration/"Classic-Federated Merge" hijack: attacker registers `victim@example.com` with a password only they know; victim later signs in with a real Google account on that address). Auto-linking here would silently hand the real owner's identity to whichever password the other party chose. The real owner reclaims the account explicitly via `POST /api/v1/auth/forgot-password` → `reset-password` (which emails a reset link to the mailbox they've just proven, via the OAuth provider, that they control) — an intentional, explicit action rather than an implicit merge. No duplicate account is created in this case; the pre-existing row is left untouched until reclaimed.
+
+If none of the above match, a brand-new user is created with `email_verified = true` (the OAuth provider has already verified the address) and no password hash.
 
 ---
 

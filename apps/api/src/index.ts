@@ -1,9 +1,15 @@
+// Matches packages/db's scripts (migrate.ts, seeds/run.ts, ...): loads
+// `.env` from cwd. apps/api never did this before Phase 4 because nothing
+// it read was actually required; JWT_SECRET/DATABASE_APP_URL/REDIS_URL now
+// are, so without this, local dev silently never sees `.env` at all.
+import 'dotenv/config';
+
 import { loadConfig } from './config.js';
 import { buildServer } from './server.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const app = buildServer(config);
+  const app = await buildServer(config);
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
 

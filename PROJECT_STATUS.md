@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-27 (Phase 4 Authentication + Session Management merged, PR #16; feature branch deleted; DEC-015/016, TD-010–013 added)
-> **Status:** Phase 4 — Authentication & Authorisation (in progress, 9/31 tasks — see §2)
+> **Last Updated:** 2026-07-27 (Phase 5 Core Backend API — 36/57 tasks live-verified; DEC-017, TD-014–019 added; BLK-004 Docker boot crash found and resolved same day)
+> **Status:** Phase 5 — Core Backend API (in progress, 36/57 tasks — see §2)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 4 — Authentication & Authorisation (Authentication + Session Management sub-tracks complete and merged, PR #16; Transactional Email Service, RBAC route-enforcement, and Organisation/Workspace Management still pending — see §5/§12) |
-| **Overall MVP completion** | ~19% |
+| **Current phase** | Phase 5 — Core Backend API (36/57 ROADMAP tasks — read/CRUD business endpoints, RBAC enforcement, and plan-tier rate limiting live; YouTube Quota Manager, Search, Export, Webhooks, OpenAPI spec deferred — see §5/§12) |
+| **Overall MVP completion** | ~27% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 4 remainder (Transactional Email, RBAC route-enforcement, Org/Workspace Management) — does not block starting Phase 5 (see §2) |
-| **Active blockers** | None |
-| **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
+| **Critical path item** | RISK-01 (YouTube API quota strategy) remains unresolved — blocks TD-014 (video analysis triggering + quota manager), not the rest of Phase 5 |
+| **Active blockers** | None (BLK-004 — production Docker image crash — resolved 2026-07-27, see §8) |
+| **Open risks** | 2 (YouTube API quota strategy — still unresolved past its Week 6 target, AI cost model) |
 | **Last status update** | 2026-07-27 |
-| **Next milestone** | M4 — Auth Complete (Week 6) |
+| **Next milestone** | M5 — API v1 Complete (Week 9) |
 
 ---
 
@@ -139,9 +139,34 @@ All 8 core project documents have been authored and are ready for engineering ha
 - [ ] Organisation & Workspace Management (org CRUD, member invitation, member removal/role change, multi-workspace support, project management, ownership transfer) — JWT org context is currently read-only against Phase 3 seed data
 - [ ] Audit log writes for auth events (login/logout/password-reset/etc.) — `audit_logs` table has existed since Phase 3 but nothing writes to it yet
 
-### Next Phase: Phase 5 — Core Backend API
+### In Progress: Phase 5 — Core Backend API (36/57 ROADMAP tasks)
 
-**Start condition:** Per `ROADMAP.md`'s dependency graph (§6), Phase 5 depends on Phase 4 — specifically the JWT verification middleware, session management, and RBAC scaffolding, all of which are now in place and live-verified. The Phase 4 items still outstanding (email templates, org/workspace CRUD, audit logging) are not on Phase 5's critical path; Phase 5 can begin. See §14 for the full readiness note.
+**Scope note:** `ROADMAP.md`'s Phase 5 checklist spans API Foundation, Rate Limiting & Quota, YouTube API Quota Manager, and 13 endpoint groups (57 checkbox items total — corrects this document's earlier placeholder count of 58). This pass implemented every endpoint group that does **not** depend on the still-unresolved RISK-01 (YouTube quota strategy), a real job runner (n8n, Phase 6), or unbuilt Phase 9 billing infrastructure (Stripe) — 36 tasks. The remainder is logged as TD-014 through TD-019, not silently dropped.
+
+**Key deliverables (merged):**
+- ✅ Standard response envelope extended with pagination `meta`; every list endpoint paginated (page/limit, capped at 100)
+- ✅ `withTenant()` (built in Phase 3, unused until now) wired into every org-scoped repository query — RLS is no longer just "enabled," it's actually the enforcement path live traffic goes through
+- ✅ Plan-tier-aware business rate limiting (Redis-backed, per-authenticated-user, ceilings from `Pricing_Strategy.md` §2.6/§3: Professional 50/min, Business 200/min, Free/Starter a conservative fallback since neither has documented API access)
+- ✅ Plan-tier quota enforcement on watchlists, alert rules, and API-key creation (`PLAN_LIMITS`, sourced from the same pricing doc — FR-37)
+- ✅ Read endpoints for Videos, Channels, Trends/Opportunities (global content, no RLS) and Recommendations (org-scoped)
+- ✅ Full CRUD for Watchlists and Alert Rules, with creator-or-org-manager (`owner`/`admin`) write authorisation — the "application-layer business logic" migration 0003_rls_policies.sql explicitly deferred to this phase
+- ✅ API Keys CRUD (sha256-hashed, plaintext shown once, plan-gated) and Usage (current-period quota vs plan limit)
+- ✅ Analytics overview (org KPIs from unambiguously org-scoped data — see TD-019 for what's excluded and why)
+- ✅ Admin endpoints (users/organizations/jobs/dead-letter/metrics), gated by a new `requireSuperAdmin` middleware that reads `users.role` live from the DB rather than trusting a JWT claim — this is what actually puts Phase 4's `requireRole()`/RBAC pattern into use for the first time (see TD-012, now resolved for every route this phase built)
+- ✅ Two real bugs found and fixed during live verification (not just type-checked): a `z.coerce.boolean()` query-param footgun that silently coerced `?resolved=false` to `true`, and a plan-tier rate-limit fallback bug that gave Free/Starter tiers the generous Enterprise ceiling instead of the conservative one — both confirmed via before/after live requests, not just code review
+
+**Not done — deferred, see TD-014 through TD-019:**
+- [ ] YouTube API Quota Manager, `POST /videos/analyze`, `POST /videos/refresh`, `POST /admin/quota/reset` — blocked on RISK-01 (YouTube quota strategy), which was never resolved and remains open past its Week 6 target
+- [ ] Unified `GET /search` — cross-entity search with cursor pagination
+- [ ] Export endpoints (`POST /exports`, status, signed download) — needs Cloudflare R2/S3 wiring, not yet configured
+- [ ] Webhooks — Stripe signature verification (Phase 9 billing doesn't exist yet) and outgoing alert-channel dispatch (needs Phase 6's dispatcher)
+- [ ] OpenAPI/Swagger auto-generated spec at `/api/v1/docs` — endpoints documented in README.md §4 instead for now
+- [ ] `GET /analytics/viral-scores` and `/analytics/engagement` — would require a defined join between org-scoped data and global video/channel content that isn't specified anywhere in `Database_Schema.md`
+- [ ] Per-day API rate limit and 80%-quota warning email (needs TD-010's real email service); Redis-cached feature flags
+
+### Next Phase: Phase 6 (n8n Workflow Engine) / Phase 8 (Frontend Dashboard)
+
+**Start condition:** Both run parallel to Phase 5 per `ROADMAP.md`'s dependency graph (§6) and can begin now. Phase 6 is what will actually populate the `videos`/`channels`/`trends` tables this phase's read endpoints query, and unblocks TD-014 (quota manager, analyze/refresh) once RISK-01 is resolved.
 
 ---
 
@@ -155,7 +180,7 @@ Phase 1          ████████████████████  1
 Phase 2          ████████████████████  100%  ✅ Complete (see TD-006 for deferred infra items)
 Phase 3          ███████████████░░░░░   76%  ✅ Schema/migrations/seeds complete (see TD-008/TD-009 for deferred automation)
 Phase 4          █████░░░░░░░░░░░░░░░   29%  🚧 Authentication + Session Management complete (see TD-010–013 for deferred remainder)
-Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 5          █████████████░░░░░░░   63%  🚧 Read/CRUD business endpoints + RBAC live (see TD-014–019 for deferred remainder)
 Phase 6          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 7          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 8          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -166,7 +191,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      ███░░░░░░░░░░░░░░░░░   19%  🚧 In progress
+Overall MVP      █████░░░░░░░░░░░░░░░   27%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -178,7 +203,7 @@ Overall MVP      ███░░░░░░░░░░░░░░░░░   
 | Phase 2 — Infrastructure | 28 | 23 | 0 | 5 |
 | Phase 3 — Database | 42 | 32 | 0 | 10 |
 | Phase 4 — Auth | 31 | 9 | 0 | 22 |
-| Phase 5 — Backend API | 58 | 0 | 0 | 58 |
+| Phase 5 — Backend API | 57 | 36 | 0 | 21 |
 | Phase 6 — n8n Workflows | 52 | 0 | 0 | 52 |
 | Phase 7 — Prompt Library | 12 | 0 | 0 | 12 |
 | Phase 8 — Frontend | 48 | 0 | 0 | 48 |
@@ -188,7 +213,7 @@ Overall MVP      ███░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **449** | **86** | **0** | **363** |
+| **Total** | **448** | **122** | **0** | **326** |
 
 ---
 
@@ -201,8 +226,8 @@ Overall MVP      ███░░░░░░░░░░░░░░░░░   
 | Phase 2 | Infrastructure & DevOps | ✅ Complete | 23/28 tasks | Week 1–3 | All 6 milestones done; 5 tasks deferred to Phase 14/ongoing (TD-006), not silently dropped |
 | Phase 3 | Database & Core Schema | ✅ Complete (schema layer) | 32/42 tasks | Week 3–4 | Retention/partition automation + dead-letter admin endpoint deferred (TD-008, TD-009) — business logic/API, out of this phase's scope |
 | Phase 4 | Authentication & Authorisation | 🚧 In progress | 9/31 tasks (29%) | Week 4–6 | Authentication + Session Management merged (PR #16); Email Service, RBAC route-enforcement, Org/Workspace Management remain (TD-010–013) — does not block Phase 5 |
-| Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Ready to begin — auth middleware/session management it depends on is in place |
-| Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 |
+| Phase 5 | Core Backend API | 🚧 In progress | 36/57 tasks (63%) | Week 6–9 | Read/CRUD business endpoints, RBAC, plan-tier rate limiting live; YouTube Quota Manager/Search/Export/Webhooks/OpenAPI deferred (TD-014–019) |
+| Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 — will populate the content tables Phase 5's read endpoints query |
 | Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 |
 | Phase 8 | Frontend Dashboard | ⏳ Not started | 0% | Week 6–13 | Parallel with Phase 5 |
 | Phase 9 | Subscription & Billing | ⏳ Not started | 0% | Week 13–15 | Depends on Phase 5 |
@@ -288,11 +313,35 @@ Overall MVP      ███░░░░░░░░░░░░░░░░░   
 - [ ] Organisation & Workspace Management: org CRUD, member invitation/removal/role-change, multi-workspace support, project management, ownership transfer — TD-011
 - [ ] Audit log writes for auth events (`audit_logs` table has existed since Phase 3, nothing writes to it yet) — TD-013
 
+### Phase 5 — Core Backend API (36/57) 🚧
+
+- [x] Standard response envelope extended with pagination `meta` (page/limit/total/totalPages); shared `paginationQuerySchema`/`paginationMeta()` helpers used by every list endpoint
+- [x] `withTenant()` (built in Phase 3, never called until now) wired into every org-scoped repository — RLS is now actually exercised by live traffic, not just policy definitions
+- [x] `GET /videos`, `GET /videos/:id` (joined analysis/thumbnail/title/transcript), `GET /channels`, `GET /channels/:id`, `GET /trends`, `GET /trends/opportunities` — global content, no org required
+- [x] `GET /recommendations`, `GET /recommendations/:videoId` — org-scoped
+- [x] Watchlists full CRUD — plan-tier quota enforced (Free 1 / Starter 5 / Professional 20 / Business+ unlimited, `Pricing_Strategy.md` §2.6), creator-or-org-owner/admin write authorisation
+- [x] Alert Rules full CRUD (same plan-tier quota pattern) + `GET /alerts/events` (read-only dispatch history)
+- [x] API Keys CRUD — sha256-hashed storage, plaintext key shown once, gated to plans with documented API access (Professional+)
+- [x] `GET /usage` — current-period `usage_events` aggregation vs plan's monthly video-analysis quota
+- [x] `GET /analytics/overview` — org KPIs built only from unambiguously org-scoped data (watchlists/alerts/api-keys/usage)
+- [x] Admin endpoints (`/admin/users`, `/organizations`, `/jobs`, `/dead-letter`, `/dead-letter/:id/retry`, `/metrics`) gated by a new `requireSuperAdmin` middleware — live DB read of `users.role`, not a JWT claim, so a demoted admin loses access immediately rather than at token expiry
+- [x] Plan-tier-aware business rate limiting (Redis INCR/EXPIRE per authenticated user per minute; ceilings from `Pricing_Strategy.md` — Professional 50/min, Business 200/min)
+- [x] Two real bugs found and fixed during live verification: a `z.coerce.boolean()` query-param bug (`?resolved=false` silently coerced to `true`) affecting the dead-letter and trends filters, and a rate-limit plan-tier fallback bug that gave Free/Starter the Enterprise-tier ceiling instead of the intended conservative one — both confirmed via before/after live HTTP requests
+
+**Not done — deferred, see TD-014 through TD-019:**
+- [ ] YouTube API Quota Manager, `POST /videos/analyze`, `POST /videos/refresh`, `POST /admin/quota/reset` — TD-014 (blocked on RISK-01, unresolved)
+- [ ] Unified `GET /search` — TD-015
+- [ ] Export endpoints (`POST /exports`, status, signed download) — TD-016 (needs R2/S3 wiring)
+- [ ] Stripe webhook handler + outgoing alert-channel webhook dispatch — TD-017
+- [ ] OpenAPI/Swagger spec at `/api/v1/docs` — TD-018 (endpoints documented in README.md §4 instead)
+- [ ] `GET /analytics/viral-scores`, `GET /analytics/engagement` — TD-019 (undefined org↔global-content join)
+- [ ] Per-day API rate limit, 80%-quota warning email, Redis-cached feature flags
+
 ---
 
 ## 6. In-Progress Tasks
 
-*No tasks are actively in progress right now. Phase 4's Authentication and Session Management sub-tracks are merged (PR #16); its remaining task groups (Transactional Email Service — TD-010, RBAC route-enforcement — TD-012, Organisation & Workspace Management — TD-011) are not started and not currently assigned. Phase 5 (Core Backend API) is ready to begin — see §2 and §14.*
+*No tasks are actively in progress right now. Phase 5's read/CRUD business endpoints, RBAC enforcement, and plan-tier rate limiting are merged; its remaining task groups (YouTube Quota Manager — TD-014, Search — TD-015, Export — TD-016, Webhooks — TD-017, OpenAPI spec — TD-018, Analytics breakdowns — TD-019) are blocked or not started and not currently assigned. Phase 4's remainder (Transactional Email Service — TD-010, Organisation & Workspace Management — TD-011, auth audit logging — TD-013) is also still outstanding. Phase 6 (n8n Workflow Engine) and Phase 8 (Frontend Dashboard) are ready to begin in parallel — see §2 and §14.*
 
 ---
 
@@ -322,6 +371,20 @@ Overall MVP      ███░░░░░░░░░░░░░░░░░   
 ### Active Blockers
 
 *No active blockers at this time.*
+
+---
+
+### BLK-004 — Production Docker image for `apps/api` crashed on boot (`@viralscopes/db` unresolved)
+- **Raised:** 2026-07-27
+- **Raised by:** Engineering (AI-assisted), discovered while Docker-verifying Phase 5
+- **Severity:** High
+- **Phases affected:** Phase 2 (Dockerfile authored), Phase 4 (first runtime dependency on `@viralscopes/db`), Phase 5
+- **Description:** `infra/docker/Dockerfile.api`'s runner stage (final production image) copied `/app/node_modules`, `/app/apps/api/dist`, and `/app/apps/api/package.json` — but never `/app/packages/db`. `node_modules/@viralscopes/db` is an npm-workspaces symlink into `packages/db`; with that directory absent from the image, the symlink target doesn't exist and the container crashed immediately with `ERR_MODULE_NOT_FOUND` on the first import of `@viralscopes/db` (`db.plugin.ts`, required at server boot, not lazily). A second, related gap: `packages/db` had no build step at all (`tsconfig.json` sets `noEmit: true`, and `package.json`'s `main`/`types` pointed straight at `src/index.ts`) — it was designed purely for tsx/Node-with-a-TS-loader consumption, which plain `node` (the runner stage's `CMD`) cannot execute regardless of whether the directory was present.
+- **Impact:** The built production image could not run at all — a boot-time crash — for any code path touching the database, true since Phase 4 added `db.plugin.ts`. Phase 2's Docker verification milestone predated that dependency and only confirmed the (then dependency-free) image booted; nobody re-verified a real container boot since. Local development (`tsx` directly against source, no container) was unaffected, which is exactly why this went uncaught through Phase 4 and most of Phase 5.
+- **Owner:** Engineering (AI-assisted)
+- **Status:** Resolved
+- **Resolution:** Gave `packages/db` a real build path without touching its zero-build dev workflow: added `tsconfig.build.json` (extends the existing config, overrides `noEmit`/`declaration`/`outDir`/`rootDir` — the default `tsconfig.json` stays `noEmit: true` for `type-check` and tsx dev) and a `"build": "tsc -p tsconfig.build.json"` script. Changed `package.json`'s `main`/`types` from `src/index.ts` to `dist/index.js`/`dist/index.d.ts` — this is a real (disclosed) workflow change: `packages/db` must now be built (`npm run build --workspace=packages/db`, or via `turbo`) before its compiled output reflects source edits, in dev or Docker. Updated `Dockerfile.api`'s builder stage to run `turbo run build --filter=@viralscopes/api`, which turbo's dependency graph (`turbo.json`'s `build` task has `dependsOn: ["^build"]`) automatically expands to build `@viralscopes/db` first; added two `COPY` lines so the runner stage includes `packages/db/dist` and `packages/db/package.json`, giving the workspace symlink a real target. Live-verified end-to-end: rebuilt the image, booted it against the real dev Postgres/Redis containers, and successfully ran a login + a Phase 5 business endpoint + an admin endpoint entirely through the container (not just `/ready`). Also re-verified no regression to local dev: `tsc --noEmit`, `eslint`, and a full `tsx`-mode boot + login + endpoint call all still pass after the `package.json` change.
+- **Resolved:** 2026-07-27
 
 ---
 
@@ -779,6 +842,22 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-017 — Platform-admin authorisation reads `users.role` live from the DB, not the JWT
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | `requireSuperAdmin` (Phase 5's `/api/v1/admin/*` gate) queries the `users` table on every request instead of adding a platform-role claim to the access token |
+| **Decided by** | Engineering Lead (found while building Phase 5's Admin endpoints, not assumed to be needed upfront) |
+
+**Context:** The JWT payload (Phase 4, `buildAccessTokenPayload`) carries `orgRole` (org-level: owner/admin/member/viewer) but not `users.role` (platform-level: `super_admin`/`user`) — the two are different concepts serving different endpoints (`requireRole()` for org-scoped resources vs. platform-wide admin access). Adding `role` to the JWT would have been a one-line change, but would mean a super_admin who gets demoted keeps admin API access for up to the access token's 15-minute lifetime.
+
+**Decision:** `requireSuperAdmin` (`apps/api/src/middleware/require-super-admin.ts`) does a live `findUserById` lookup and checks `role === 'super_admin'` on every admin request, rather than trusting a token claim. The cost is one extra indexed query per admin request — admin traffic volume doesn't make this meaningful, and it closes the revocation-lag gap immediately rather than accepting up to 15 minutes of stale access.
+
+**Consequence:** Deliberately did not modify `apps/api/src/lib/jwt.ts` or `auth.service.ts`'s `buildAccessTokenPayload` — Phase 5 needed a way to gate admin routes, not a reason to touch Phase 4's token-signing code, so no JWT payload shape changed.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -983,13 +1062,13 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 | **Logged** | 2026-07-27 |
 | **Severity** | Low |
 | **Phases affected** | Phase 4, Phase 5 |
-| **Status** | Accepted (intentional, deferred) |
+| **Status** | Partially resolved (Phase 5) |
 
 **Description:** `requireRole()` (`apps/api/src/middleware/require-role.ts`) is implemented — it reads `request.user.orgRole` (set by `authenticate` from the verified JWT) and enforces a role allowlist — but no route in this PR uses it. Service-layer permission checks (Layer 2 of the three-layer defence described in `Security_Architecture.md` §3) are likewise not demonstrated.
 
 **Why accepted:** There is nothing to protect yet — Phase 4 built identity/session endpoints, not the org-scoped business resources (watchlists, alert rules, API keys, billing) that Layer-1/Layer-2 RBAC is meant to gate. Wiring `requireRole()` onto routes that don't exist would be unverifiable scaffolding.
 
-**Resolution plan:** Apply `requireRole()` and service-layer permission checks as Phase 5's actual business endpoints are built, per the existing permission matrix in `Security_Architecture.md` §3.
+**Resolution (Phase 5, 2026-07-27):** Every business route Phase 5 built now enforces authorization, live-verified — but not via literally calling `requireRole()`. Two new, purpose-fitted mechanisms replaced it: (1) service-layer `assertCanManage()` checks in `watchlist.service.ts`/`alert.service.ts` comparing `request.user.orgRole` against an allowlist AND the resource's `createdBy`, which `requireRole()`'s pure allowlist check can't express; (2) a new `requireSuperAdmin` middleware for platform-admin routes that reads `users.role` live from the DB rather than the JWT, since platform role (`super_admin`/`user`) and org role (`owner`/`admin`/`member`/`viewer`) are different concepts — see DEC-017. `requireRole()` itself remains unused dead code; it may still fit some future route shape (a pure org-role allowlist with no ownership component), so it wasn't deleted, but nothing currently calls it — hence "partially," not fully, resolved.
 
 ---
 
@@ -1007,6 +1086,108 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 **Why accepted:** Wiring a new table write into every auth code path is separable, mechanical follow-up work once the auth flows themselves were verified correct and secure — sequencing security-correctness first was the higher priority for this PR.
 
 **Resolution plan:** Add `audit_logs` writes to `register`, `login`, `logout`, `refresh` (on rotation and on reuse-detection), `verifyEmail`, `resetPassword`, and both OAuth callback paths before Phase 4 is considered fully complete.
+
+---
+
+### TD-014 — YouTube API Quota Manager and video-analysis-triggering endpoints not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | High |
+| **Phases affected** | Phase 5, Phase 6 |
+| **Status** | Accepted (blocked, not deferred by choice) |
+
+**Description:** `ROADMAP.md`'s Phase 5 checklist calls for a YouTube API Quota Manager (daily unit tracking against the 10,000/day free-tier limit, per-org quota allocation, cache-first strategy, RapidAPI/Apify fallback, admin override endpoint), plus `POST /videos/analyze`, `POST /videos/refresh`, and `POST /admin/quota/reset`. None of this was built.
+
+**Why accepted:** This is not a scoping choice the way TD-015/016/017 are — it's blocked on **RISK-01** (§9), which this same document has carried as "Open — decision required before Phase 5 begins" since 2026-07-20 and was never resolved (no owner assigned, no paid-tier/RapidAPI/Apify evaluation done, no per-plan daily allocation defined). Building a quota manager or an analyze-trigger endpoint without that decision would mean inventing the strategy mid-implementation rather than implementing a decision that was actually made. Per-org daily quota allocation specifically depends on Phase 9's subscription/plan enforcement being real, which it also isn't yet.
+
+**Resolution plan:** Resolve RISK-01 first (owner assignment, tier/vendor evaluation, ADR-006). Only then can the quota manager, analyze/refresh endpoints, and admin quota-reset be built against an actual decision instead of a guess.
+
+---
+
+### TD-015 — Unified search endpoint not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 5 checklist calls for `GET /api/v1/search` — unified cross-entity search with cursor-based pagination and "all filter types." Not built.
+
+**Why accepted:** A genuinely unified search (videos + channels + trends + recommendations in one ranked result set) is a distinct piece of design work — what's searched, how relevance is ranked across heterogeneous entity types, and cursor-pagination semantics across a UNION are all open product questions, not implementation details. The individual entities are already searchable via their own list endpoints' filters (e.g. `channels`' `search` param).
+
+**Resolution plan:** Design the cross-entity ranking/pagination contract, then implement — likely alongside or after TD-003's Typesense/full-text-search decision, since a real "search" experience benefits from the same infrastructure.
+
+---
+
+### TD-016 — Export endpoints not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 5 checklist calls for `POST /exports` (async, CSV/Excel/JSON/PDF), `GET /exports/:id` (status), and `GET /exports/:id/download` (signed S3 URL). Not built.
+
+**Why accepted:** Needs Cloudflare R2/S3 wiring (DEC-006 selected R2, but no client/bucket is configured in `apps/api` yet — same unprovisioned-account category as TD-006) and an async job mechanism to generate the file, which doesn't exist before Phase 6's job runner.
+
+**Resolution plan:** Wire an S3-compatible client once R2 is provisioned; implement export generation as an n8n-triggered (or equivalent) background job once Phase 6 lands.
+
+---
+
+### TD-017 — Webhook endpoints not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5, Phase 9 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 5 checklist calls for a Stripe webhook handler (signature verification) and outgoing webhook dispatch for user alert channels. Neither exists.
+
+**Why accepted:** The Stripe webhook handler has nothing to verify against — Phase 9 (Subscription & Billing) hasn't built the Stripe integration this would receive events from. Outgoing alert-channel webhook dispatch is Phase 6's Alert Dispatch workflow's job (`alert_events.delivery_channel = 'webhook'` is already a valid value in the schema — the dispatcher that would populate it isn't built yet).
+
+**Resolution plan:** Stripe webhook handler lands with Phase 9. Outgoing webhook dispatch lands with Phase 6's Alert Dispatch workflow.
+
+---
+
+### TD-018 — OpenAPI/Swagger spec not published
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 5 API Foundation checklist calls for an auto-generated OpenAPI/Swagger spec at `/api/v1/docs` via `fastify-swagger`, generated from the Zod request schemas. Not built — endpoints are documented as a plain markdown reference table in `README.md` §4 instead.
+
+**Why accepted:** Wiring `fastify-swagger` plus a Zod-to-OpenAPI schema converter correctly (and verifying the generated spec is actually accurate, not just present) is a self-contained, moderate-effort piece of work independent of any single endpoint's business logic — better done as one deliberate pass over all endpoints at once than bolted on incrementally.
+
+**Resolution plan:** Add `fastify-swagger` + `zod-to-openapi` (or equivalent) and generate the spec from the same Zod schemas already used for request validation, so the two can never drift.
+
+---
+
+### TD-019 — Analytics viral-scores/engagement breakdowns not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 5 checklist calls for `GET /analytics/viral-scores` (score distribution over time) and `GET /analytics/engagement` (engagement trends) alongside `GET /analytics/overview` (built). Only `overview` was implemented.
+
+**Why accepted:** `overview` was built from data unambiguously scoped to the caller's org (watchlists, alert rules, alert events, API keys, usage). Viral scores and engagement metrics live on `videos`/`video_analyses` — global, shared-across-tenants content (see `videos.ts`'s own "no RLS" comment) — so an org-level breakdown of them requires a defined join (most plausibly via an org's watchlisted channels/keywords) that isn't specified anywhere in `Database_Schema.md` or `PRD.md`. Building it now would mean guessing a product decision (which videos "belong" to an org's analytics) rather than implementing a specified one.
+
+**Resolution plan:** Define the org↔content attribution model (likely: videos matching an org's active watchlists) as a product decision, then implement both endpoints against it.
 
 ---
 
@@ -1041,24 +1222,27 @@ When a known issue is identified, log it in this format:
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
+| 🔴 P1 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Overdue — target was "before Phase 5 begins" (Week 6); Phase 5 proceeded without it by scoping out everything that depends on it (TD-014) rather than guessing |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 4 remainder + Phase 5 kickoff
+### Next Up — Phase 5 remainder + Phase 6/8 kickoff
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Begin Phase 5 (Core Backend API) | Engineer | Auth middleware/session management it depends on is merged and live-verified (PR #16) |
+| 🔴 P1 | Resolve RISK-01 (YouTube quota strategy) | Engineering Lead | Blocks TD-014 specifically — quota manager, `/videos/analyze`, `/videos/refresh`, `/admin/quota/reset` |
+| 🔴 P1 | Begin Phase 6 (n8n Workflow Engine) | Engineer | Populates the `videos`/`channels`/`trends` tables Phase 5's read endpoints currently query against empty data |
+| 🟠 P2 | Begin Phase 8 (Frontend Dashboard) | Engineer | Parallel with Phase 5/6 per `ROADMAP.md` §6; can consume the endpoints documented in README.md §4 |
 | 🟠 P2 | Transactional email service: provision SendGrid/Resend, build 7 templates, SPF/DKIM/DMARC | Engineer / Repo owner | TD-010 — needed before any staging deployment with real user signups |
-| 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing), not before Phase 5 |
-| 🟡 P3 | Wire `requireRole()` and service-layer permission checks onto Phase 5's new business routes as they land | Engineer | TD-012 |
+| 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing) |
+| 🟡 P3 | OpenAPI/Swagger spec generation | Engineer | TD-018 |
 | 🟡 P3 | Add `audit_logs` writes to all auth code paths | Engineer | TD-013 |
 | 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category |
 
 ### Backlog (Next 4 Weeks)
 
-- Begin Phase 5 (Core Backend API) — auth foundation it depends on is in place
-- Phase 4 remainder (Transactional Email Service, Organisation & Workspace Management, RBAC route-enforcement, auth audit logging) — can proceed in parallel with Phase 5, per `ROADMAP.md`'s parallel-development notes
+- Begin Phase 6 (n8n Workflow Engine) and Phase 8 (Frontend Dashboard) in parallel with Phase 5's remainder, per `ROADMAP.md`'s parallel-development notes
+- Phase 5 remainder once unblocked: YouTube Quota Manager + analyze/refresh (needs RISK-01), Search, Export (needs R2 provisioning), Webhooks (needs Phase 9), OpenAPI spec, Analytics viral-scores/engagement
+- Phase 4 remainder: Transactional Email Service, Organisation & Workspace Management, auth audit logging
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
 ---
@@ -1075,6 +1259,8 @@ When a known issue is identified, log it in this format:
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 6 (Deployment & Release Readiness) complete — **Phase 2 is now fully complete (6/6 milestones)**. Verified a genuinely fresh `git clone` builds cleanly end-to-end (lint/type-check/build/format all pass); found and fixed a real Windows `MAX_PATH` false-negative (test location artifact, not a code defect — confirmed by retrying in a short path) and a real, recurring `core.autocrlf` false-positive affecting `format:check` on every fresh Windows checkout, root-caused and fixed with a new `.gitattributes` file (verified via a second fresh clone: 47 previously-flagged files now check out clean). Audited all core docs for broken references — found 6 pre-existing (Pre-Development-era) links to ADR documents and a GDPR guide that were never written; not introduced by Phase 2, logged as TD-007 rather than silently ignored or hastily fabricated. TD-006 logged for the infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify deploy, PagerDuty, real Grafana dashboards) so it's tracked forward, not forgotten. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 3 — Database & Core Schema (schema/migrations/seeds layer) complete, per approved scope of schema and data layer only. Recovered and verified the pre-reset Drizzle schema (26 tables, commit `b747f97` + 2 fix-up commits) against the current `Database_Schema.md`; implemented as 4 hand-written, reversible SQL migrations applied by a custom runner (`packages/db/src/migrate.ts` — DEC-013, since `drizzle-kit` has no rollback command). Found and fixed a real doc/reality mismatch: `Database_Schema.md` §12 documented Supabase Auth's `auth.uid()` RLS pattern, inconsistent with the project's own custom-JWT auth (confirmed against `Security_Architecture.md` §5, `PRD.md` FR-43) — corrected to the `current_setting()` session-variable pattern actually implemented. Functionally verified RLS (not just "enabled"): an initial test returned all tenants' rows because Postgres superusers/table owners bypass RLS unconditionally — fixed by adding a dedicated, unprivileged `app_user` role (DEC-014), re-verified with real per-tenant isolation and fail-closed behaviour with no tenant context set. Local Postgres via a plain container, not the Supabase CLI (DEC-012). Full clean-slate cycle verified against a live Postgres instance: `db:reset` → `db:migrate up` → `db:setup-roles` → `db:seed` (and re-seed, confirming idempotency) → `db:migrate down 4` (clean teardown) → `db:migrate up` again (reproducibility). Retention/partition-rotation automation and the dead-letter admin endpoint/Grafana panel are business logic/API surface, explicitly out of scope — logged as TD-008/TD-009, not silently dropped. ERD source written as Mermaid (`docs/database-erd.mmd`); PNG export failed on a broken local `mermaid-cli`/`puppeteer-core` dependency resolution — an environment issue, reported as such rather than claimed done. |
 | 2026-07-27 | Engineering (AI-assisted) | Phase 4 — Authentication & Authorisation: Authentication and Session Management task groups merged to `main` (PR #16, squash commit `0bb43eb`) — JWT + refresh-token session management, email/password auth with bcrypt/lockout/common-password blocklist, Google/GitHub OAuth, email verification, password reset, CSRF double-submit, Redis-backed rate limiting, active-session listing and remote revocation. A pre-merge security review found and fixed two issues before merge: a login response that let an attacker confirm a guessed password was correct for an unverified account without completing login (DEC-015), and OAuth sign-in silently auto-linking to an existing but unverified local account, a pre-account-hijack pattern (DEC-016) — both live-verified against a real Postgres/Redis instance, not just type-checked. CodeQL's Advanced Security scan additionally flagged missing rate limiting on `/logout` and both OAuth callbacks as high severity; fixed before merge rather than bypassing the check. Merged via the REST API per BLK-003's documented resolution (`gh pr merge --admin` still doesn't invoke the configured bypass correctly). Corrected this document's Phase 4 task count from an unreconciled placeholder (26) to the actual `ROADMAP.md` checklist total (31); 9 of 31 are complete. Transactional Email Service, RBAC route/service-layer enforcement, and Organisation & Workspace Management remain and are logged as TD-010 through TD-013 — Phase 4 is **not** fully complete, but Phase 5 (Core Backend API) can begin per the dependency graph, since the specific auth primitives it needs (JWT verification, session management, RBAC middleware scaffolding) are in place. Deleted the merged feature branch; confirmed only `main`/`develop` remain and no open PRs reference it. |
+| 2026-07-27 | Engineering (AI-assisted) | Phase 5 — Core Backend API: 36 of 57 `ROADMAP.md` tasks implemented and live-verified against real Postgres/Redis (corrects this document's earlier placeholder count of 58). Delivered: paginated Videos/Channels/Trends/Opportunities reads (global content), org-scoped Recommendations reads, full Watchlist and Alert Rule CRUD with plan-tier quota enforcement (`Pricing_Strategy.md` §2.6/§3) and creator-or-org-manager write authorisation, Alert Events reads, API Keys CRUD (sha256-hashed, plaintext shown once, plan-gated), Usage and Analytics-overview endpoints, and Admin endpoints (users/organizations/jobs/dead-letter/metrics) behind a new `requireSuperAdmin` middleware that reads `users.role` live from the DB rather than the JWT (DEC-017) — this is what actually puts Phase 4's RBAC pattern into practice for the first time (TD-012, now partially resolved). `withTenant()`, built in Phase 3 and never called until now, is wired into every org-scoped query. Added plan-tier-aware Redis rate limiting reusing the `planTier` JWT claim. Found and fixed two real bugs during live verification, not just type-checking: a `z.coerce.boolean()` query-param bug that silently coerced the literal string `"false"` to `true` (affecting the dead-letter and trends filters), and a rate-limit fallback bug that gave Free/Starter tiers the generous Enterprise ceiling instead of the intended conservative one — both confirmed via before/after live HTTP requests against dedicated test fixtures (cleaned up afterward). Deliberately did not build: the YouTube Quota Manager or `/videos/analyze`/`/refresh` (blocked on RISK-01, which this document flagged as "decision required before Phase 5 begins" on 2026-07-20 and which was never resolved — logged as TD-014 rather than guessing a quota strategy), unified Search (TD-015), Export (TD-016, needs R2 provisioning), Webhooks (TD-017, needs Phase 9), the OpenAPI/Swagger spec (TD-018, documented as a markdown table in README.md §4 instead), and Analytics viral-scores/engagement (TD-019, undefined org↔global-content join). README.md's API reference and stale Phase-4-era environment-variable descriptions (`DATABASE_APP_URL`/`REDIS_URL` were described as "not yet consumed" — inaccurate since Phase 4) were corrected. Docker-verified `apps/api`'s production image per Phase 5's verification requirements — found and logged BLK-004: the runner stage never copies `packages/db`, so the `@viralscopes/db` workspace symlink dangles and the container crashes on boot on the first database-touching request. Pre-existing since Phase 4 (the first phase to add a runtime dependency on `@viralscopes/db`), not introduced by Phase 5, and not fixed here — reported rather than silently expanding scope into deployment-infrastructure changes. Does not affect local/dev-mode operation, which is how Phase 4 and Phase 5 were both live-verified. |
+| 2026-07-27 | Engineering (AI-assisted) | BLK-004 resolved: gave `packages/db` a real build path (`tsconfig.build.json`, `npm run build` emitting `dist/` with declarations) without disturbing its existing zero-build tsx dev workflow's underlying mechanism — only its package.json `main`/`types` now point at compiled output instead of source, which is a disclosed workflow change (packages/db must be rebuilt after source edits, in dev or Docker). `Dockerfile.api`'s builder stage now runs `turbo run build --filter=@viralscopes/api`, which turbo's own dependency graph expands to build `@viralscopes/db` first automatically; the runner stage now also copies `packages/db/dist` and its `package.json`, giving the workspace symlink a real target. Live-verified twice: rebuilt and booted the Docker image against real dev Postgres/Redis, ran a login + a Phase 5 endpoint + an admin endpoint entirely through the container (previously an instant `ERR_MODULE_NOT_FOUND` crash); separately re-ran `tsc --noEmit`/`eslint`/a full `tsx`-mode boot + login + endpoint call to confirm zero regression to local dev from the `package.json` change. |
 
 ---
 

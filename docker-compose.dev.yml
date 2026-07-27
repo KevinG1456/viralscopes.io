@@ -2,12 +2,16 @@
 #
 # apps/web and apps/api run natively on the host (`npm run dev`) for fast
 # hot reload — see README.md §6. This file starts everything they and the
-# workflow engine depend on: Redis, n8n, MinIO (local S3), and the
+# workflow engine depend on: Postgres, Redis, n8n, MinIO (local S3), and the
 # Prometheus/Grafana/Loki monitoring stack.
 #
-# PostgreSQL is deliberately not included here — local Postgres is
-# provisioned via the Supabase CLI in Phase 3 (Database & Core Schema),
-# not via this compose file.
+# Postgres is a plain postgres:17-alpine container, not the Supabase CLI
+# stack. This project authenticates with its own JWT/OAuth system (see
+# Security_Architecture.md §5), not Supabase Auth, so the app never touches
+# Supabase's GoTrue/Storage/Realtime services — only Postgres itself, which
+# is what production (Supabase-hosted Postgres) is too. See PROJECT_STATUS.md
+# DEC-012 for the full reasoning; this supersedes an earlier comment here
+# that assumed the Supabase CLI would be used.
 #
 # Usage: docker compose -f docker-compose.dev.yml up -d
 
@@ -16,6 +20,7 @@ networks:
     driver: bridge
 
 volumes:
+  postgres-data:
   n8n-data:
   minio-data:
   prometheus-data:
@@ -23,6 +28,25 @@ volumes:
   loki-data:
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-viralscopes}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - viralscopes
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped

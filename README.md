@@ -128,7 +128,7 @@ ViralScopes.io analyses **patterns**, not content. It will never:
 | Technology | Version | Purpose |
 |---|---|---|
 | [PostgreSQL](https://www.postgresql.org/) | 15+ | Primary relational database |
-| [Supabase](https://supabase.com/) | Latest | PostgreSQL hosting, Auth, RLS, PgBouncer |
+| [Supabase](https://supabase.com/) | Latest | PostgreSQL hosting + PgBouncer only — this project uses its own JWT/OAuth auth, not Supabase Auth |
 | [Redis](https://redis.io/) | 7.x | Cache, rate limiting, BullMQ queue backend |
 | [Drizzle ORM](https://orm.drizzle.team/) | Latest | Schema definition and migrations |
 
@@ -214,7 +214,7 @@ ViralScopes.io analyses **patterns**, not content. It will never:
 
 ### Multi-Tenancy
 
-Every organisation's data is isolated using **Row Level Security (RLS)** at the PostgreSQL level. The API enforces `org_id` filtering at the service layer as a second line of defence.
+Every organisation's data is isolated using **Row Level Security (RLS)** at the PostgreSQL level (active since Phase 3 — see `Database_Schema.md` §12), scoped via session-local settings (`app.current_org_id` / `app.current_user_id`) rather than Supabase Auth's `auth.uid()`, since this project uses its own JWT/OAuth system. The API enforces `org_id` filtering at the service layer as a second line of defence.
 
 ### AI Pipeline
 
@@ -274,6 +274,7 @@ docker compose -f docker-compose.dev.yml up -d
 ```
 
 This starts:
+- **Postgres** on port `5432`
 - **Redis** on port `6379`
 - **n8n** on port `5678`
 - **MinIO** (local S3) on port `9000` (console on `9001`)
@@ -281,9 +282,9 @@ This starts:
 - **Grafana** on port `3002`
 - **Loki** on port `3100`
 
-> **This entire file is optional for basic frontend/API development.** `apps/web` and `apps/api` run natively (see below) and don't require any of these containers to start up, build, or serve their placeholder content. You only need this stack running if you're working on something that actually talks to Redis, n8n, or the monitoring tools — it is not a prerequisite for `npm run dev`.
+> **This entire file is optional for basic frontend/API development.** `apps/web` and `apps/api` run natively (see below) and don't require any of these containers to start up, build, or serve their placeholder content. You only need this stack running if you're working on something that actually talks to Postgres, Redis, n8n, or the monitoring tools — it is not a prerequisite for `npm run dev`.
 
-> **PostgreSQL is not part of this file.** Local Postgres is provisioned via the Supabase CLI, added in Phase 3 — Database & Core Schema. `DATABASE_URL` in `.env.local` won't resolve to anything until then.
+> **Postgres is a plain `postgres:17-alpine` container, not the Supabase CLI.** This project authenticates with its own JWT/OAuth system (see §7 and `Security_Architecture.md` §5), not Supabase Auth, so the app only ever needs Postgres itself — which is also all that Supabase provides in production. Running the Supabase CLI locally would start GoTrue/Storage/Realtime containers the app never talks to.
 
 Check everything came up healthy:
 
@@ -291,7 +292,7 @@ Check everything came up healthy:
 docker compose -f docker-compose.dev.yml ps
 ```
 
-`redis` and `minio` report a Docker-level health status; the rest are considered up once their container status shows `Up`.
+`postgres`, `redis`, and `minio` report a Docker-level health status; the rest are considered up once their container status shows `Up`.
 
 Then, in separate terminals:
 
@@ -321,7 +322,7 @@ npm run dev
 | Prometheus | http://localhost:9090 |
 | Loki | http://localhost:3100 |
 
-> API Swagger docs and Supabase Studio aren't live yet — those land with the API endpoints (Phase 5) and the local Supabase setup (Phase 3) respectively.
+> API Swagger docs aren't live yet — those land with the API endpoints (Phase 5). Drizzle Studio (`npm run db:studio`, since Phase 3) is the DB browser instead of Supabase Studio, since this project doesn't run the Supabase CLI locally (see above).
 
 ### Health Checks
 
@@ -350,7 +351,32 @@ The following fields are redacted (`[REDACTED]`) wherever they appear in a logge
 
 ### Database Setup
 
-Not available yet — `packages/db` is an empty stub until Phase 3 (Database & Core Schema) adds the schema, migrations, and `db:*` scripts.
+`packages/db` holds the Drizzle schema (26 tables — see `Database_Schema.md`), hand-written SQL migrations, and dev seed data. First-time setup, once Postgres is running (`docker compose -f docker-compose.dev.yml up -d postgres`):
+
+```bash
+npm run db:migrate         # Apply all pending migrations (idempotent — skips already-applied ones)
+npm run db:setup-roles     # Create/update the restricted app_user role RLS-protected queries run as
+npm run db:seed            # Insert dev seed data (idempotent — safe to re-run)
+```
+
+`db:migrate` and `db:seed` both read `DATABASE_URL` (the Postgres superuser/owner connection — required for DDL). `db:setup-roles` additionally reads `APP_DB_USER`/`APP_DB_PASSWORD` and creates the role that `DATABASE_APP_URL` points at.
+
+**Why a separate app role matters:** Postgres superusers and table owners bypass Row Level Security unconditionally, regardless of policies. `DATABASE_URL`'s role owns the tables (it ran the migrations), so it must never be what the running application queries with — RLS would silently do nothing. From Phase 5 onward, the API connects via `DATABASE_APP_URL` (the `app_user` role) instead. This was confirmed the hard way while verifying Phase 3: a tenant-isolation test returned all tenants' rows when run as the migration role, and correctly isolated per-tenant once run as `app_user`.
+
+Other database commands:
+
+```bash
+npm run db:migrate:status  # List which migrations are applied vs pending
+npm run db:migrate:down    # Roll back the most recently applied migration (down N to roll back N)
+npm run db:reset           # Drop and recreate the public schema (local dev only — refuses non-localhost hosts)
+npm run db:studio          # Open Drizzle Studio (visual DB browser) against DATABASE_URL
+```
+
+A full reset-and-rebuild cycle:
+
+```bash
+npm run db:reset && npm run db:migrate && npm run db:setup-roles && npm run db:seed
+```
 
 ### Building the Production Docker Images
 
@@ -385,11 +411,13 @@ npm run test:unit        # Run unit tests only
 npm run test:integration # Run integration tests only
 npm run test:e2e         # Run Playwright E2E tests
 
-# Database
+# Database (see "Database Setup" above for the full explanation)
 npm run db:migrate       # Apply pending migrations
-npm run db:migrate:dry   # Preview migrations without applying
-npm run db:seed          # Seed development data
-npm run db:reset         # Drop, migrate, and seed
+npm run db:migrate:down  # Roll back the most recently applied migration
+npm run db:migrate:status # List applied vs pending migrations
+npm run db:setup-roles   # Create/update the restricted app_user role
+npm run db:seed          # Seed development data (idempotent)
+npm run db:reset         # Drop and recreate the public schema (local only)
 npm run db:studio        # Open Drizzle Studio (visual DB browser)
 
 # Code generation
@@ -450,15 +478,14 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 | `GRAFANA_ADMIN_PASSWORD` | Docker Compose | Grafana admin password | `admin` in dev only |
 | `REDIS_PASSWORD` | Docker Compose | Redis auth password | none in dev (see `INFRASTRUCTURE_GROWTH_PLAN.md` §8.3); required in prod |
 | `APP_DOMAIN` / `API_DOMAIN` / `N8N_DOMAIN` / `GRAFANA_DOMAIN` | `docker-compose.prod.yml` | Traefik routing rules | example `viralscopes.io` subdomains — not deployed anywhere yet |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Docker Compose | Local Postgres container credentials | `postgres` / `postgres` / `viralscopes` |
+| `DATABASE_URL` | `packages/db` (migrate/seed/reset/setup-roles) | Postgres superuser/owner connection — DDL privileges, used only for migrations, seeding, and admin scripts. **Never** what the running application queries with (see §6 "Database Setup" for why). | — |
+| `DATABASE_POOL_SIZE` | reserved | Pool size for a future PgBouncer-fronted connection | `10` |
+| `APP_DB_USER` / `APP_DB_PASSWORD` | `packages/db/src/setup-roles.ts` | Credentials for the restricted, non-superuser role RLS-protected application queries run as | `app_user` / — |
+| `DATABASE_APP_URL` | reserved for apps/api (Phase 5) | Connection string using the `app_user` role — what the API will actually connect with once it exists | — |
 | `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_APP_URL` | apps/web (public) | Frontend build-time public URLs | — |
 
-### Required Starting Phase 3 — Database & Core Schema
-
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `DATABASE_POOL_SIZE` | PgBouncer pool size (default `10`) |
-| `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Supabase project credentials |
+> Production still targets a Supabase-hosted Postgres instance (see `Database_Schema.md` header), but only Postgres itself — this project authenticates with its own JWT/OAuth system, not Supabase Auth, so Supabase's `anon`/`service_role` API keys are never used and intentionally aren't in `.env.example`.
 
 ### Required Starting Phase 5 — Core Backend API
 

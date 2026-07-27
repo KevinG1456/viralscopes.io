@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-27 (DEC-015, DEC-016 added — Phase 4 pre-merge security review)
-> **Status:** Pre-Development — Documentation Complete
+> **Last Updated:** 2026-07-27 (Phase 4 Authentication + Session Management merged, PR #16; feature branch deleted; DEC-015/016, TD-010–013 added)
+> **Status:** Phase 4 — Authentication & Authorisation (in progress, 9/31 tasks — see §2)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 3 — Database & Core Schema (schema/migrations/seeds layer complete; see TD-008/TD-009 for deferred operational automation) |
-| **Overall MVP completion** | ~13% |
+| **Current phase** | Phase 4 — Authentication & Authorisation (Authentication + Session Management sub-tracks complete and merged, PR #16; Transactional Email Service, RBAC route-enforcement, and Organisation/Workspace Management still pending — see §5/§12) |
+| **Overall MVP completion** | ~19% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 4 — Authentication & Authorisation |
+| **Critical path item** | Phase 4 remainder (Transactional Email, RBAC route-enforcement, Org/Workspace Management) — does not block starting Phase 5 (see §2) |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
-| **Last status update** | 2026-07-26 |
-| **Next milestone** | M3 — Schema Complete (Week 4) |
+| **Last status update** | 2026-07-27 |
+| **Next milestone** | M4 — Auth Complete (Week 6) |
 
 ---
 
@@ -120,9 +120,28 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 **What was found, not assumed:** `Database_Schema.md`'s RLS section documented Supabase Auth's `auth.uid()` pattern, which cannot work in this project — it defines its own `users`/`sessions` tables with bcrypt password hashes (Security_Architecture.md §5, PRD.md FR-43), not Supabase Auth. Separately, an initial RLS functional test returned all tenants' rows instead of isolating them — root-caused to Postgres superusers/table owners unconditionally bypassing RLS, which is how migrations necessarily run. Fixed by adding a dedicated, unprivileged `app_user` role (DEC-014) that the application will actually query with from Phase 5 onward.
 
-### Next Phase: Phase 4 — Authentication & Authorisation
+### In Progress: Phase 4 — Authentication & Authorisation (9/31 ROADMAP tasks)
 
-**Start condition:** Phase 3 fully complete.
+**Scope note:** `ROADMAP.md`'s Phase 4 checklist spans five task groups: Authentication, Transactional Email Service, RBAC, Organisation & Workspace Management, and Session Management (31 checkbox items total — corrects this document's earlier placeholder count of 26, logged before the phase started). PR #16 (merged 2026-07-27) completed the **Authentication** group in full and the **Session Management** group's listing/revocation items — 9 tasks — plus found and fixed two pre-merge security issues during review (DEC-015, DEC-016). The remaining three groups (Transactional Email Service, RBAC route/service-layer enforcement, Organisation & Workspace Management) are not started; see TD-010 through TD-013.
+
+**Key deliverables (merged):**
+- ✅ JWT access tokens (15-min expiry, HS256, algorithm-pinned on verify) + opaque refresh tokens (HMAC-hashed, rotated on every use, replay/reuse detection kills all sessions for the user)
+- ✅ Email + password registration and login (bcrypt cost 12, common-password blocklist, 10–128 char length)
+- ✅ Google OAuth and GitHub OAuth (code-complete against `@fastify/oauth2`; not yet exercised against real provider credentials — no OAuth app has been provisioned, same category as TD-006)
+- ✅ Password reset (1-hour opaque token) and email verification (24-hour opaque token) flows
+- ✅ Progressive account lockout (5/10/15 failed attempts → 15min/1hr/24hr, Redis-backed)
+- ✅ Active session listing and remote revocation (single session + "sign out all other devices")
+- ✅ Two security issues found and fixed during pre-merge review (see DEC-015, DEC-016, `Security_Architecture.md` §2/§5) and one CodeQL-flagged gap (missing rate limiting on `/logout` and both OAuth callbacks) closed before merge
+
+**Not done — deferred, see TD-010 through TD-013:**
+- [ ] Transactional email service (SendGrid/Resend integration, all 7 templates, SPF/DKIM/DMARC, audit logging) — only a dev/test-only logging stub exists, which refuses to run in staging/production
+- [ ] RBAC role-based middleware wired onto real routes (`requireRole()` exists but nothing to protect yet — no business routes exist before Phase 5) and service-layer permission checks
+- [ ] Organisation & Workspace Management (org CRUD, member invitation, member removal/role change, multi-workspace support, project management, ownership transfer) — JWT org context is currently read-only against Phase 3 seed data
+- [ ] Audit log writes for auth events (login/logout/password-reset/etc.) — `audit_logs` table has existed since Phase 3 but nothing writes to it yet
+
+### Next Phase: Phase 5 — Core Backend API
+
+**Start condition:** Per `ROADMAP.md`'s dependency graph (§6), Phase 5 depends on Phase 4 — specifically the JWT verification middleware, session management, and RBAC scaffolding, all of which are now in place and live-verified. The Phase 4 items still outstanding (email templates, org/workspace CRUD, audit logging) are not on Phase 5's critical path; Phase 5 can begin. See §14 for the full readiness note.
 
 ---
 
@@ -135,7 +154,7 @@ Pre-Development  ████████████████████  1
 Phase 1          ████████████████████  100%  ✅ Complete
 Phase 2          ████████████████████  100%  ✅ Complete (see TD-006 for deferred infra items)
 Phase 3          ███████████████░░░░░   76%  ✅ Schema/migrations/seeds complete (see TD-008/TD-009 for deferred automation)
-Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 4          █████░░░░░░░░░░░░░░░   29%  🚧 Authentication + Session Management complete (see TD-010–013 for deferred remainder)
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 6          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 7          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -147,7 +166,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      ██░░░░░░░░░░░░░░░░░░   13%  🚧 In progress
+Overall MVP      ███░░░░░░░░░░░░░░░░░   19%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -158,7 +177,7 @@ Overall MVP      ██░░░░░░░░░░░░░░░░░░   
 | Phase 1 — Foundation | 14 | 14 | 0 | 0 |
 | Phase 2 — Infrastructure | 28 | 23 | 0 | 5 |
 | Phase 3 — Database | 42 | 32 | 0 | 10 |
-| Phase 4 — Auth | 26 | 0 | 0 | 26 |
+| Phase 4 — Auth | 31 | 9 | 0 | 22 |
 | Phase 5 — Backend API | 58 | 0 | 0 | 58 |
 | Phase 6 — n8n Workflows | 52 | 0 | 0 | 52 |
 | Phase 7 — Prompt Library | 12 | 0 | 0 | 12 |
@@ -169,7 +188,7 @@ Overall MVP      ██░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **444** | **77** | **0** | **367** |
+| **Total** | **449** | **86** | **0** | **363** |
 
 ---
 
@@ -181,8 +200,8 @@ Overall MVP      ██░░░░░░░░░░░░░░░░░░   
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
 | Phase 2 | Infrastructure & DevOps | ✅ Complete | 23/28 tasks | Week 1–3 | All 6 milestones done; 5 tasks deferred to Phase 14/ongoing (TD-006), not silently dropped |
 | Phase 3 | Database & Core Schema | ✅ Complete (schema layer) | 32/42 tasks | Week 3–4 | Retention/partition automation + dead-letter admin endpoint deferred (TD-008, TD-009) — business logic/API, out of this phase's scope |
-| Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Ready to begin |
-| Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
+| Phase 4 | Authentication & Authorisation | 🚧 In progress | 9/31 tasks (29%) | Week 4–6 | Authentication + Session Management merged (PR #16); Email Service, RBAC route-enforcement, Org/Workspace Management remain (TD-010–013) — does not block Phase 5 |
+| Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Ready to begin — auth middleware/session management it depends on is in place |
 | Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 |
 | Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 |
 | Phase 8 | Frontend Dashboard | ⏳ Not started | 0% | Week 6–13 | Parallel with Phase 5 |
@@ -249,11 +268,31 @@ Overall MVP      ██░░░░░░░░░░░░░░░░░░   
 - [ ] Grafana dead-letter queue depth panel
 - [ ] ERD PNG render (`docs/database-erd.mmd` written and verified as valid Mermaid; PNG export via `@mermaid-js/mermaid-cli` failed on a broken local `puppeteer-core`/`ws` module resolution — environment issue, not a content issue)
 
+### Phase 4 — Authentication & Authorisation (9/31) 🚧
+
+- [x] JWT access tokens (15-min expiry, HS256 pinned on both sign and verify) + opaque refresh token rotation in HTTP-only, Secure, SameSite=Strict cookies
+- [x] Email + password registration and login (bcrypt cost 12, ~300-entry common-password blocklist, 10–128 char length)
+- [x] Google OAuth integration (code-complete; not yet exercised against a real provisioned OAuth app)
+- [x] GitHub OAuth integration (code-complete; not yet exercised against a real provisioned OAuth app)
+- [x] Password reset flow (opaque token, sha256-hashed, 1-hour expiry)
+- [x] Email verification required before login (opaque token, sha256-hashed, 24-hour expiry)
+- [x] Account lockout after 5 consecutive failed login attempts (progressive: 15min/1hr/24hr at 5/10/15 failures, Redis-backed)
+- [x] Active session listing per user (`GET /api/v1/auth/sessions`)
+- [x] Remote session revocation — individual (`DELETE /sessions/:id`) and "sign out all other devices" (`DELETE /sessions`)
+- [x] Two pre-merge security fixes found and closed during review: login information oracle (DEC-015) and silent OAuth account-linking to unverified accounts (DEC-016)
+- [x] CodeQL-flagged missing rate limiting on `/logout` and both OAuth callback routes, fixed before merge
+
+**Not done — deferred, see TD-010 through TD-013:**
+- [ ] Transactional email service (SendGrid/Resend, all 7 templates, SPF/DKIM/DMARC, unsubscribe/preference management, audit logging of sent emails) — TD-010
+- [ ] RBAC role-based middleware wired onto real routes and service-layer permission checks (`requireRole()` exists but nothing to protect yet) — TD-012
+- [ ] Organisation & Workspace Management: org CRUD, member invitation/removal/role-change, multi-workspace support, project management, ownership transfer — TD-011
+- [ ] Audit log writes for auth events (`audit_logs` table has existed since Phase 3, nothing writes to it yet) — TD-013
+
 ---
 
 ## 6. In-Progress Tasks
 
-*No tasks are currently in progress. Phase 3 (schema/migrations/seeds layer) is complete; Phase 4 has not yet started.*
+*No tasks are actively in progress right now. Phase 4's Authentication and Session Management sub-tracks are merged (PR #16); its remaining task groups (Transactional Email Service — TD-010, RBAC route-enforcement — TD-012, Organisation & Workspace Management — TD-011) are not started and not currently assigned. Phase 5 (Core Backend API) is ready to begin — see §2 and §14.*
 
 ---
 
@@ -903,6 +942,74 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-010 — Transactional email service not integrated (dev-only logging stub)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Medium |
+| **Phases affected** | Phase 4 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 4 checklist calls for a real transactional email provider (SendGrid or Resend) with 7 templates (welcome, email verification, password reset, member invitation, alert digest, billing confirmation, usage quota warning), SPF/DKIM/DMARC configuration, unsubscribe/preference management, and audit logging of every sent email. What actually exists is `createLoggingEmailService` (`apps/api/src/services/email.service.ts`): it logs the verification/reset URL (containing the plaintext single-use token) via `logger.warn` in development/test only, and throws at construction time if used in staging or production.
+
+**Why accepted:** A real provider needs an account that doesn't exist yet — same category as TD-006's deferred infrastructure accounts. Building 7 branded templates and configuring sending-domain authentication is substantial, separable work from the auth logic itself, and the guard that refuses to run this stub outside dev/test prevents it from silently reaching a real user.
+
+**Resolution plan:** Provision a SendGrid or Resend account, implement the 7 templates, configure SPF/DKIM/DMARC on the sending domain, and wire sent-email audit logging — before any staging deployment that exercises real user signups.
+
+---
+
+### TD-011 — Organisation & Workspace Management not built
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Medium |
+| **Phases affected** | Phase 4, Phase 9 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 4 checklist includes organisation CRUD, a member invitation flow (email invite → accept → join), member removal and role change with audit logging, multiple workspace support per organisation, project management within workspaces, and an ownership transfer flow. None of this exists. `findActiveOrgContext` (`apps/api/src/repositories/org-membership.repository.ts`) only reads the first `organization_members` row for a user — sufficient to embed `orgId`/`orgRole`/`planTier` in the JWT for Phase 3's seeded dev org, but there is no API path for a user to create an organisation, invite anyone, or manage membership.
+
+**Why accepted:** This is a distinct, sizeable feature area from session/credential management (the rest of Phase 4), and every account this phase can create is a single-org user (via seed data) — org-switching/multi-membership logic was explicitly out of scope per `org-membership.repository.ts`'s own comment.
+
+**Resolution plan:** Build before Phase 9 (Billing), which the dependency graph (`ROADMAP.md` §6) marks as depending on both Phase 4 and Phase 5. Not required to start Phase 5's video/channel/trend endpoints, which can operate against the existing seeded org.
+
+---
+
+### TD-012 — RBAC middleware built but not wired onto any route
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 4, Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `requireRole()` (`apps/api/src/middleware/require-role.ts`) is implemented — it reads `request.user.orgRole` (set by `authenticate` from the verified JWT) and enforces a role allowlist — but no route in this PR uses it. Service-layer permission checks (Layer 2 of the three-layer defence described in `Security_Architecture.md` §3) are likewise not demonstrated.
+
+**Why accepted:** There is nothing to protect yet — Phase 4 built identity/session endpoints, not the org-scoped business resources (watchlists, alert rules, API keys, billing) that Layer-1/Layer-2 RBAC is meant to gate. Wiring `requireRole()` onto routes that don't exist would be unverifiable scaffolding.
+
+**Resolution plan:** Apply `requireRole()` and service-layer permission checks as Phase 5's actual business endpoints are built, per the existing permission matrix in `Security_Architecture.md` §3.
+
+---
+
+### TD-013 — No audit-log writes for authentication events
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 4 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 4 Session Management group calls for "audit log for all auth events." The `audit_logs` table has existed since Phase 3, but nothing in `auth.service.ts` or `oauth.service.ts` writes to it — login, logout, registration, password reset, and OAuth linking all currently leave no audit trail beyond the structured Pino application logs (which are operational logs, not the queryable, retained audit record `audit_logs` is designed for).
+
+**Why accepted:** Wiring a new table write into every auth code path is separable, mechanical follow-up work once the auth flows themselves were verified correct and secure — sequencing security-correctness first was the higher priority for this PR.
+
+**Resolution plan:** Add `audit_logs` writes to `register`, `login`, `logout`, `refresh` (on rotation and on reuse-detection), `verifyEmail`, `resetPassword`, and both OAuth callback paths before Phase 4 is considered fully complete.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -937,18 +1044,21 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 4: Authentication & Authorisation
+### Next Up — Phase 4 remainder + Phase 5 kickoff
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Implement JWT + OAuth (Google/GitHub) auth against the `users`/`oauth_accounts`/`sessions` schema Phase 3 already built | Engineer | Phase 4 critical path — schema (DEC-014's `app_user` role, RLS policies) is ready to receive it |
-| 🟠 P2 | Wire `apps/api`'s `/ready` endpoint to a real database check (`packages/db`'s `createDbClient`) | Engineer | `/ready` already reports `not_implemented` honestly for this — see `health.plugin.ts` |
-| 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category — not a Phase 4 blocker |
+| 🔴 P1 | Begin Phase 5 (Core Backend API) | Engineer | Auth middleware/session management it depends on is merged and live-verified (PR #16) |
+| 🟠 P2 | Transactional email service: provision SendGrid/Resend, build 7 templates, SPF/DKIM/DMARC | Engineer / Repo owner | TD-010 — needed before any staging deployment with real user signups |
+| 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing), not before Phase 5 |
+| 🟡 P3 | Wire `requireRole()` and service-layer permission checks onto Phase 5's new business routes as they land | Engineer | TD-012 |
+| 🟡 P3 | Add `audit_logs` writes to all auth code paths | Engineer | TD-013 |
+| 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category |
 
 ### Backlog (Next 4 Weeks)
 
-- Begin Phase 4 (Authentication & Authorisation)
-- Begin Phase 5 (Core Backend API) once auth lands — this is where `DATABASE_APP_URL`/`app_user` (DEC-014) gets its first real caller
+- Begin Phase 5 (Core Backend API) — auth foundation it depends on is in place
+- Phase 4 remainder (Transactional Email Service, Organisation & Workspace Management, RBAC route-enforcement, auth audit logging) — can proceed in parallel with Phase 5, per `ROADMAP.md`'s parallel-development notes
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
 ---
@@ -964,6 +1074,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 5 (Monitoring & Health Checks) complete: added structured Pino logging (`apps/api/src/plugins/logger.plugin.ts`) with `service`/`version`/`environment` base fields, ISO timestamps, and PII/secret redaction — all verified directly against actual log output, not assumed (redaction confirmed on `password`/`email`/`name`/`ip_address`; `LOG_LEVEL=error` confirmed to suppress `warn`/`info`; Pino's error serializer confirmed unaffected). `LOG_LEVEL` added to the Zod config schema (DEC-011). Re-verified (not just trusted from Milestone 1) that both Docker images still build and report `healthy`, and that all 6 `docker-compose.dev.yml` services (Redis, n8n, MinIO, Prometheus, Grafana, Loki) start cleanly and respond correctly — the monitoring stack remains explicitly optional, not required for `npm run dev`. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 6 (Deployment & Release Readiness) complete — **Phase 2 is now fully complete (6/6 milestones)**. Verified a genuinely fresh `git clone` builds cleanly end-to-end (lint/type-check/build/format all pass); found and fixed a real Windows `MAX_PATH` false-negative (test location artifact, not a code defect — confirmed by retrying in a short path) and a real, recurring `core.autocrlf` false-positive affecting `format:check` on every fresh Windows checkout, root-caused and fixed with a new `.gitattributes` file (verified via a second fresh clone: 47 previously-flagged files now check out clean). Audited all core docs for broken references — found 6 pre-existing (Pre-Development-era) links to ADR documents and a GDPR guide that were never written; not introduced by Phase 2, logged as TD-007 rather than silently ignored or hastily fabricated. TD-006 logged for the infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify deploy, PagerDuty, real Grafana dashboards) so it's tracked forward, not forgotten. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 3 — Database & Core Schema (schema/migrations/seeds layer) complete, per approved scope of schema and data layer only. Recovered and verified the pre-reset Drizzle schema (26 tables, commit `b747f97` + 2 fix-up commits) against the current `Database_Schema.md`; implemented as 4 hand-written, reversible SQL migrations applied by a custom runner (`packages/db/src/migrate.ts` — DEC-013, since `drizzle-kit` has no rollback command). Found and fixed a real doc/reality mismatch: `Database_Schema.md` §12 documented Supabase Auth's `auth.uid()` RLS pattern, inconsistent with the project's own custom-JWT auth (confirmed against `Security_Architecture.md` §5, `PRD.md` FR-43) — corrected to the `current_setting()` session-variable pattern actually implemented. Functionally verified RLS (not just "enabled"): an initial test returned all tenants' rows because Postgres superusers/table owners bypass RLS unconditionally — fixed by adding a dedicated, unprivileged `app_user` role (DEC-014), re-verified with real per-tenant isolation and fail-closed behaviour with no tenant context set. Local Postgres via a plain container, not the Supabase CLI (DEC-012). Full clean-slate cycle verified against a live Postgres instance: `db:reset` → `db:migrate up` → `db:setup-roles` → `db:seed` (and re-seed, confirming idempotency) → `db:migrate down 4` (clean teardown) → `db:migrate up` again (reproducibility). Retention/partition-rotation automation and the dead-letter admin endpoint/Grafana panel are business logic/API surface, explicitly out of scope — logged as TD-008/TD-009, not silently dropped. ERD source written as Mermaid (`docs/database-erd.mmd`); PNG export failed on a broken local `mermaid-cli`/`puppeteer-core` dependency resolution — an environment issue, reported as such rather than claimed done. |
+| 2026-07-27 | Engineering (AI-assisted) | Phase 4 — Authentication & Authorisation: Authentication and Session Management task groups merged to `main` (PR #16, squash commit `0bb43eb`) — JWT + refresh-token session management, email/password auth with bcrypt/lockout/common-password blocklist, Google/GitHub OAuth, email verification, password reset, CSRF double-submit, Redis-backed rate limiting, active-session listing and remote revocation. A pre-merge security review found and fixed two issues before merge: a login response that let an attacker confirm a guessed password was correct for an unverified account without completing login (DEC-015), and OAuth sign-in silently auto-linking to an existing but unverified local account, a pre-account-hijack pattern (DEC-016) — both live-verified against a real Postgres/Redis instance, not just type-checked. CodeQL's Advanced Security scan additionally flagged missing rate limiting on `/logout` and both OAuth callbacks as high severity; fixed before merge rather than bypassing the check. Merged via the REST API per BLK-003's documented resolution (`gh pr merge --admin` still doesn't invoke the configured bypass correctly). Corrected this document's Phase 4 task count from an unreconciled placeholder (26) to the actual `ROADMAP.md` checklist total (31); 9 of 31 are complete. Transactional Email Service, RBAC route/service-layer enforcement, and Organisation & Workspace Management remain and are logged as TD-010 through TD-013 — Phase 4 is **not** fully complete, but Phase 5 (Core Backend API) can begin per the dependency graph, since the specific auth primitives it needs (JWT verification, session management, RBAC middleware scaffolding) are in place. Deleted the merged feature branch; confirmed only `main`/`develop` remain and no open PRs reference it. |
 
 ---
 

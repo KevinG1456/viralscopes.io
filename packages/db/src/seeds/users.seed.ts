@@ -50,8 +50,13 @@ async function insertUserIfMissing(
 export async function seedUsers(
   db: Database,
 ): Promise<{ admin: InferSelectModel<typeof users>; member: InferSelectModel<typeof users> }> {
-  // bcrypt hash of "devpassword" -- fixed for reproducible seed data, never used outside dev.
-  const passwordHash = '$2b$10$K7Lz1rF3z7z0z0z0z0z0z.eZ0z0z0z0z0z0z0z0z0z0z0z0z0z0z0';
+  // Real bcrypt hash (cost 12) of "devpassword", verified against
+  // bcryptjs.compareSync -- fixed for reproducible seed data, never used
+  // outside dev. The hash originally here (Phase 3) was a fabricated
+  // placeholder string that didn't actually match "devpassword"; caught
+  // while building Phase 4 login, which was the first code to actually
+  // verify it.
+  const passwordHash = '$2b$12$QQEwSQlM//KZT2oVFUBZ8.Uji3h/2.uZbDQiw7Qc73Q/nY94m7KxO';
 
   const admin = await insertUserIfMissing(db, {
     email: 'admin@viralscopes.dev',

@@ -2,7 +2,7 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-20
+> **Last Updated:** 2026-07-27 (DEC-015, DEC-016 added — Phase 4 pre-merge security review)
 > **Status:** Pre-Development — Documentation Complete
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
@@ -705,6 +705,38 @@ Significant decisions are logged here with context, options considered, and rati
 **Context:** While functionally verifying RLS (not just checking that policies exist), a tenant-isolation test returned every organisation's rows instead of isolating them. Root cause: Postgres superusers and table owners bypass Row Level Security unconditionally, regardless of policies — and the connection used for migrations (which owns every table) is exactly that.
 
 **Decision:** `setup-roles.ts` creates `app_user` with `NOSUPERUSER NOBYPASSRLS` and grants it `SELECT`/`INSERT`/`UPDATE`/`DELETE` (not ownership) on all tables. `DATABASE_APP_URL` (`.env.example`) is what the application will connect with from Phase 5 onward; `DATABASE_URL` (the owner connection) is reserved for migrations/seeds/admin scripts only. Re-verified the same isolation test as `app_user`: each organisation saw only its own row, and a connection with no tenant context set saw zero rows (fail-closed).
+
+---
+
+### DEC-015 — Generic response for every login failure, including "email not verified"
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | `POST /api/v1/auth/login` returns the identical `401 INVALID_CREDENTIALS` response for a wrong password, a nonexistent account, and a *correct* password on an unverified account — the three are indistinguishable to the caller |
+| **Decided by** | Engineering Lead (found and fixed during a Phase 4 pre-merge security review, not assumed to be needed upfront) |
+
+**Context:** The initial implementation checked password validity, then separately checked `emailVerified`, returning a distinct `403 EMAIL_NOT_VERIFIED` only when the password was correct. This let an attacker running a credential-stuffing list confirm a guessed password was genuinely correct for any email/password registrant still in the unverified window — without ever completing login, and without tripping account lockout (`recordFailedLogin` only ran on the wrong-password branch, so this specific probe was free beyond the route's IP rate limit).
+
+**Decision:** `login()` now treats "wrong password" and "correct password but unverified" as a single outcome: both throw `INVALID_CREDENTIALS` (401) and both call `recordFailedLogin`. The real reason is still fully visible server-side via a structured `logger.info` line (`"Login rejected: password correct but email not verified."`, keyed by `userId`) for legitimate diagnostics — only the client-visible response was collapsed, not the operational signal.
+
+**Consequence:** A legitimate user who forgets to verify their email before attempting to log in no longer gets a specific "please verify your email" message from `/login` itself — they still received it once at registration time (`"Verification email sent. Please check your inbox."`). Building a self-service "resend verification email" endpoint (which would need to preserve the same anti-oracle property `forgotPassword()` already has) is noted as a follow-up UX improvement, not a Phase 4 blocker.
+
+---
+
+### DEC-016 — OAuth account-linking requires the existing account to already be verified
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | An OAuth callback (`google`/`github`) only auto-links to an existing local account found by email match when that account's `emailVerified` is already `true`. If the existing account is unverified, the OAuth attempt is refused (`OAUTH_ACCOUNT_REQUIRES_VERIFICATION`, 409) instead of silently linking |
+| **Decided by** | Engineering Lead (found and fixed during a Phase 4 pre-merge security review, not assumed to be needed upfront) |
+
+**Context:** `register()` lets anyone create a `users` row for any email with an attacker-chosen password (`emailVerified: false` until the link is clicked). The original `findOrCreateUserFromOAuth` linked any OAuth login to an existing local account purely on email match, with no check of that account's verification state, then issued a session directly (bypassing `login()`'s checks entirely). This is the "Classic-Federated Merge" pre-hijack pattern: an attacker pre-registers `victim@example.com`, the real victim later signs in with "Sign in with Google" on that same address, and the two identities merge onto one row — with an attacker-known password sitting on what is now the victim's account — with no re-authentication challenge and no notification to either party.
+
+**Decision:** Account-linking policy is now: an OAuth identity may only be silently linked to an existing local account whose email ownership has *already* been independently established (`emailVerified === true` — e.g. via the password + email-verification flow, or a prior OAuth link). Both proofs anchor to the same mailbox, so the same person almost certainly controls it, and no extra friction is warranted. An **unverified** existing account means nobody has ever proven they control that row; linking is refused, and the real owner reclaims the account through the existing, already-anti-enumeration-safe password-reset flow (`forgotPassword`/`resetPassword`) — an explicit, intentional action rather than an implicit merge. See `Security_Architecture.md` §5, "Account Linking Policy".
+
+**Consequence:** No new account/duplicate identity is ever created in this scenario (the pre-registered row is preserved, untouched, until its real owner resets its password). The OAuth callback redirects to `${APP_URL}/login?error=account_requires_verification` instead of completing the merge, so the frontend can render an explanatory message; implementing that frontend message is tracked as Phase 4 frontend follow-up work, not a backend blocker.
 
 ---
 

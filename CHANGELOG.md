@@ -46,6 +46,11 @@ Each version entry uses the following change categories:
 > Changes merged to `develop` but not yet released to production.
 > This section is moved to a versioned entry on each production release.
 
+### Security
+
+- Fixed an authentication oracle in `POST /api/v1/auth/login`: a correct password against an unverified account previously returned a distinct `403 EMAIL_NOT_VERIFIED` (and skipped the lockout counter), letting an attacker confirm a guessed/stuffed password was correct without completing login. Now returns the identical `401 INVALID_CREDENTIALS` as a wrong password or nonexistent account, and counts toward account lockout the same way. See DEC-015 in `PROJECT_STATUS.md`.
+- Fixed silent OAuth account-linking: a Google/GitHub sign-in matching an existing, unverified local account (e.g. one an attacker pre-registered with a different email owner's address) previously linked automatically and issued a session with no verification check. OAuth linking now requires the existing account to already be verified; otherwise the attempt is refused (`OAUTH_ACCOUNT_REQUIRES_VERIFICATION`) and the real owner reclaims the account via the existing password-reset flow. See DEC-016 in `PROJECT_STATUS.md` and `Security_Architecture.md` §5.
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 import type { AppConfig } from '../config.js';
@@ -7,27 +8,29 @@ interface HealthPluginOptions extends FastifyPluginOptions {
 }
 
 interface DependencyCheck {
-  status: 'ok' | 'not_implemented';
+  status: 'ok' | 'not_implemented' | 'error';
   detail: string;
 }
 
 // Readiness dependencies land here as each is actually wired into the API.
 // Never mark a check "ok" without a real connectivity test behind it —
 // an unimplemented dependency is reported honestly as not_ready, not faked.
-function checkDatabase(): DependencyCheck {
-  return {
-    status: 'not_implemented',
-    detail:
-      'No database client is wired into the API yet (packages/db is an empty stub — see Phase 3: Database & Core Schema).',
-  };
+async function checkDatabase(fastify: FastifyInstance): Promise<DependencyCheck> {
+  try {
+    await fastify.db.execute(sql`SELECT 1`);
+    return { status: 'ok', detail: 'Connected via DATABASE_APP_URL.' };
+  } catch (err) {
+    return { status: 'error', detail: err instanceof Error ? err.message : String(err) };
+  }
 }
 
-function checkRedis(): DependencyCheck {
-  return {
-    status: 'not_implemented',
-    detail:
-      'The Redis container is running in docker-compose.dev.yml, but no Redis client exists in the API yet (see Phase 5: Core Backend API, cache.service.ts).',
-  };
+async function checkRedis(fastify: FastifyInstance): Promise<DependencyCheck> {
+  try {
+    await fastify.redis.ping();
+    return { status: 'ok', detail: 'Connected.' };
+  } catch (err) {
+    return { status: 'error', detail: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 function checkQueue(): DependencyCheck {
@@ -57,8 +60,8 @@ export async function healthPlugin(
   // "not_implemented", not silently skipped or faked as "ok".
   fastify.get('/ready', async (_request, reply) => {
     const checks: Record<string, DependencyCheck> = {
-      database: checkDatabase(),
-      redis: checkRedis(),
+      database: await checkDatabase(fastify),
+      redis: await checkRedis(fastify),
       queue: checkQueue(),
     };
 

@@ -71,25 +71,32 @@ export async function registerOAuthRoutes(
       pkce: 'S256',
     });
 
-    fastify.get('/oauth/google/callback', async (request, reply) => {
-      const { token } = await fastify.oauth2Google!.getAccessTokenFromAuthorizationCodeFlow(
-        request,
-        reply,
-      );
-      const profile = await fetchGoogleProfile(token.access_token);
-      let resolved;
-      try {
-        resolved = await findOrCreateUserFromOAuth(fastify.db, 'google', profile);
-      } catch (err) {
-        if (isOAuthLinkingRefusal(err)) {
-          return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);
+    fastify.get(
+      '/oauth/google/callback',
+      { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+      async (request, reply) => {
+        const { token } = await fastify.oauth2Google!.getAccessTokenFromAuthorizationCodeFlow(
+          request,
+          reply,
+        );
+        const profile = await fetchGoogleProfile(token.access_token);
+        let resolved;
+        try {
+          resolved = await findOrCreateUserFromOAuth(fastify.db, 'google', profile);
+        } catch (err) {
+          if (isOAuthLinkingRefusal(err)) {
+            return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);
+          }
+          throw err;
         }
-        throw err;
-      }
-      const { refreshToken } = await authService.issueSession(resolved.user, requestMeta(request));
-      setAuthCookies(reply, config, refreshToken);
-      return reply.redirect(`${config.appUrl}/${resolved.isNewUser ? 'onboarding' : 'home'}`);
-    });
+        const { refreshToken } = await authService.issueSession(
+          resolved.user,
+          requestMeta(request),
+        );
+        setAuthCookies(reply, config, refreshToken);
+        return reply.redirect(`${config.appUrl}/${resolved.isNewUser ? 'onboarding' : 'home'}`);
+      },
+    );
   }
 
   if (config.oauth.github) {
@@ -105,24 +112,31 @@ export async function registerOAuthRoutes(
       callbackUri: `${config.apiUrl}/api/v1/auth/oauth/github/callback`,
     });
 
-    fastify.get('/oauth/github/callback', async (request, reply) => {
-      const { token } = await fastify.oauth2Github!.getAccessTokenFromAuthorizationCodeFlow(
-        request,
-        reply,
-      );
-      const profile = await fetchGitHubProfile(token.access_token);
-      let resolved;
-      try {
-        resolved = await findOrCreateUserFromOAuth(fastify.db, 'github', profile);
-      } catch (err) {
-        if (isOAuthLinkingRefusal(err)) {
-          return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);
+    fastify.get(
+      '/oauth/github/callback',
+      { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+      async (request, reply) => {
+        const { token } = await fastify.oauth2Github!.getAccessTokenFromAuthorizationCodeFlow(
+          request,
+          reply,
+        );
+        const profile = await fetchGitHubProfile(token.access_token);
+        let resolved;
+        try {
+          resolved = await findOrCreateUserFromOAuth(fastify.db, 'github', profile);
+        } catch (err) {
+          if (isOAuthLinkingRefusal(err)) {
+            return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);
+          }
+          throw err;
         }
-        throw err;
-      }
-      const { refreshToken } = await authService.issueSession(resolved.user, requestMeta(request));
-      setAuthCookies(reply, config, refreshToken);
-      return reply.redirect(`${config.appUrl}/${resolved.isNewUser ? 'onboarding' : 'home'}`);
-    });
+        const { refreshToken } = await authService.issueSession(
+          resolved.user,
+          requestMeta(request),
+        );
+        setAuthCookies(reply, config, refreshToken);
+        return reply.redirect(`${config.appUrl}/${resolved.isNewUser ? 'onboarding' : 'home'}`);
+      },
+    );
   }
 }

@@ -65,16 +65,23 @@ export async function authRoutes(fastify: FastifyInstance, opts: AuthRoutesOptio
     },
   );
 
-  fastify.post('/logout', { preHandler: [authenticate, validateCsrf] }, async (request, reply) => {
-    const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE_NAME];
-    if (refreshToken) {
-      const hash = hashRefreshToken(config.jwt.refreshSecret, refreshToken);
-      const session = await findSessionByHash(fastify.db, hash);
-      if (session) await authService.logout(session.id);
-    }
-    clearAuthCookies(reply);
-    return reply.code(200).send(ok({ message: 'Logged out successfully.' }));
-  });
+  fastify.post(
+    '/logout',
+    {
+      preHandler: [authenticate, validateCsrf],
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    },
+    async (request, reply) => {
+      const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE_NAME];
+      if (refreshToken) {
+        const hash = hashRefreshToken(config.jwt.refreshSecret, refreshToken);
+        const session = await findSessionByHash(fastify.db, hash);
+        if (session) await authService.logout(session.id);
+      }
+      clearAuthCookies(reply);
+      return reply.code(200).send(ok({ message: 'Logged out successfully.' }));
+    },
+  );
 
   fastify.post('/refresh', async (request, reply) => {
     const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE_NAME];

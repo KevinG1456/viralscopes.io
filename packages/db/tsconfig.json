@@ -1,6 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // Overrides the base's Bundler-oriented resolution: packages/db runs
+    // via tsx/Node directly (migrate.ts, seeds), not through a bundler, so
+    // it needs Node's actual ESM resolution rules -- explicit .js
+    // extensions on relative imports, matching apps/api's tsconfig.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "noEmit": true
   },
   "include": ["src/**/*.ts"],

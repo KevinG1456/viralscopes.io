@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 2 — Infrastructure & DevOps (complete, all 6 milestones) |
-| **Overall MVP completion** | ~10% |
+| **Current phase** | Phase 3 — Database & Core Schema (schema/migrations/seeds layer complete; see TD-008/TD-009 for deferred operational automation) |
+| **Overall MVP completion** | ~13% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | Phase 3 — Database & Core Schema |
+| **Critical path item** | Phase 4 — Authentication & Authorisation |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy, AI cost model) |
 | **Last status update** | 2026-07-26 |
-| **Next milestone** | M2 — Infrastructure Live (Week 3) |
+| **Next milestone** | M3 — Schema Complete (Week 4) |
 
 ---
 
@@ -104,9 +104,25 @@ All 8 core project documents have been authored and are ready for engineering ha
 
 **What Phase 3 builds on:** `packages/db` is still an empty stub — Phase 3 initialises the actual Supabase project, Drizzle schema, migrations, and RLS policies. The `apps/api` config schema (DEC-010) and `/ready` endpoint are already structured to accept a real database check the moment a client exists — no rework needed, just an addition to `envSchema` and `checkDatabase()`. Docker Compose deliberately has no Postgres service (Phase 3 owns that via the Supabase CLI, not `docker-compose.dev.yml`).
 
-### Next Phase: Phase 3 — Database & Core Schema
+### Complete: Phase 3 — Database & Core Schema (schema/migrations/seeds layer)
 
-**Start condition:** Phase 2 fully complete.
+**Scope note:** per explicit direction, this phase covered schema and data layer only — no business logic, API endpoints, or authentication. Operational automation that ROADMAP.md's Phase 3 checklist also lists (nightly retention purge jobs, monthly partition rotation, a dead-letter admin endpoint, a Grafana dead-letter panel) is business logic / API surface by nature and is deferred — logged as TD-008 and TD-009, not silently dropped.
+
+**Key deliverables:**
+- ✅ All 26 tables from `Database_Schema.md` implemented as Drizzle schema (`packages/db/src/schema/`), recovered and verified against the pre-reset implementation (commit `b747f97` and its two fix-up commits) plus a fresh diff against the current doc
+- ✅ 4 hand-written, reversible SQL migrations (`0001_initial_schema`, `0002_updated_at_triggers`, `0003_rls_policies`, `0004_partitioning`), applied by a custom runner (`packages/db/src/migrate.ts`) — drizzle-kit's own migration journal has no `down` command, which doesn't meet the "every migration must be reversible" rule in `Database_Schema.md` §14
+- ✅ RLS active on all 14 tenant/user-scoped tables, verified functionally (not just "enabled") — see DEC-014
+- ✅ `usage_events` and `job_logs` partitioned by month from creation, with initial `2026_07`/`2026_08` partitions
+- ✅ Deterministic, idempotent dev seed data (2 users, 1 org, 2 memberships, 1 workspace) — verified via two consecutive `db:seed` runs producing identical row counts
+- ✅ Local Postgres via a plain `postgres:17-alpine` container in `docker-compose.dev.yml` (see DEC-012), superseding the Milestone-1 comment that assumed the Supabase CLI
+- ✅ Corrected `Database_Schema.md` §12 (RLS pattern) and §14 (migration tooling), which had drifted from what the rest of the document (and Security_Architecture.md, PRD.md FR-43) actually specifies
+- ✅ Full clean-slate verification cycle: `db:reset` → `db:migrate up` → `db:setup-roles` → `db:seed` → re-seed (idempotency) → `db:migrate down 4` (clean teardown, verified via `\dt`) → `db:migrate up` again (reproducibility)
+
+**What was found, not assumed:** `Database_Schema.md`'s RLS section documented Supabase Auth's `auth.uid()` pattern, which cannot work in this project — it defines its own `users`/`sessions` tables with bcrypt password hashes (Security_Architecture.md §5, PRD.md FR-43), not Supabase Auth. Separately, an initial RLS functional test returned all tenants' rows instead of isolating them — root-caused to Postgres superusers/table owners unconditionally bypassing RLS, which is how migrations necessarily run. Fixed by adding a dedicated, unprivileged `app_user` role (DEC-014) that the application will actually query with from Phase 5 onward.
+
+### Next Phase: Phase 4 — Authentication & Authorisation
+
+**Start condition:** Phase 3 fully complete.
 
 ---
 
@@ -118,7 +134,7 @@ All 8 core project documents have been authored and are ready for engineering ha
 Pre-Development  ████████████████████  100%  ✅ Complete
 Phase 1          ████████████████████  100%  ✅ Complete
 Phase 2          ████████████████████  100%  ✅ Complete (see TD-006 for deferred infra items)
-Phase 3          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 3          ███████████████░░░░░   76%  ✅ Schema/migrations/seeds complete (see TD-008/TD-009 for deferred automation)
 Phase 4          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 5          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 6          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -131,7 +147,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      █░░░░░░░░░░░░░░░░░░░   10%  🚧 In progress
+Overall MVP      ██░░░░░░░░░░░░░░░░░░   13%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -141,7 +157,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Pre-Development (docs) | 8 | 8 | 0 | 0 |
 | Phase 1 — Foundation | 14 | 14 | 0 | 0 |
 | Phase 2 — Infrastructure | 28 | 23 | 0 | 5 |
-| Phase 3 — Database | 42 | 0 | 0 | 42 |
+| Phase 3 — Database | 42 | 32 | 0 | 10 |
 | Phase 4 — Auth | 26 | 0 | 0 | 26 |
 | Phase 5 — Backend API | 58 | 0 | 0 | 58 |
 | Phase 6 — n8n Workflows | 52 | 0 | 0 | 52 |
@@ -153,7 +169,7 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **444** | **45** | **0** | **399** |
+| **Total** | **444** | **77** | **0** | **367** |
 
 ---
 
@@ -164,8 +180,8 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 | Pre-Dev | Documentation | ✅ Complete | 100% | Week 0 | All 8 documents authored |
 | Phase 1 | Foundation & Project Setup | ✅ Complete | 100% | Week 1 | BLK-001/BLK-002 resolved 2026-07-26 |
 | Phase 2 | Infrastructure & DevOps | ✅ Complete | 23/28 tasks | Week 1–3 | All 6 milestones done; 5 tasks deferred to Phase 14/ongoing (TD-006), not silently dropped |
-| Phase 3 | Database & Core Schema | ⏳ Not started | 0% | Week 3–4 | Ready to begin |
-| Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Depends on Phase 3 |
+| Phase 3 | Database & Core Schema | ✅ Complete (schema layer) | 32/42 tasks | Week 3–4 | Retention/partition automation + dead-letter admin endpoint deferred (TD-008, TD-009) — business logic/API, out of this phase's scope |
+| Phase 4 | Authentication & Authorisation | ⏳ Not started | 0% | Week 4–6 | Ready to begin |
 | Phase 5 | Core Backend API | ⏳ Not started | 0% | Week 6–9 | Parallel with Phase 8 |
 | Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 |
 | Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 |
@@ -209,11 +225,35 @@ Overall MVP      █░░░░░░░░░░░░░░░░░░░   
 - [x] Document all environment variables in `.env.example`
 - [x] Write initial README.md with setup instructions
 
+### Phase 3 — Database & Core Schema (32/42) ✅
+
+- [x] Set up Drizzle ORM with migration tooling (custom SQL-file runner, not `drizzle-kit generate` — see DEC-013)
+- [x] Add migration dry-run check equivalent: `db:migrate:status` lists applied vs pending
+- [x] Enable RLS on all tenant/user-scoped tables from creation, verified functionally with a dedicated app role (DEC-014)
+- [x] `users`, `oauth_accounts`, `sessions`, `organizations`, `organization_members`, `workspaces`, `projects`, `audit_logs`
+- [x] `subscriptions`, `invoices`, `usage_events`, `api_keys`
+- [x] `channels`, `videos`, `transcripts`, `thumbnail_analyses`, `title_analyses`, `video_analyses`, `recommendations`, `trends`, `prompt_library`
+- [x] `watchlists`, `alert_rules`, `alert_events`
+- [x] `job_logs`, `dead_letter_jobs`
+- [x] Define indexes on all foreign keys and frequently queried columns
+- [x] Implement table partitioning for `usage_events` and `job_logs` (structural `PARTITION BY RANGE` + initial monthly partitions)
+- [x] Write seed data scripts for development (idempotent, insert-if-missing)
+- [x] Local Postgres via Docker (plain container, not Supabase CLI — DEC-012)
+
+**Not done — deferred, see TD-008/TD-009 (explicitly out of this phase's schema-and-data-layer-only scope):**
+- [ ] Initialise hosted Supabase project (no server/account provisioned yet, same category as TD-006)
+- [ ] Configure PgBouncer connection pooling (no hosted DB to pool against yet)
+- [ ] Automated nightly data-retention purge jobs
+- [ ] Automated monthly partition creation/rotation job
+- [ ] Dead-letter admin endpoint (API surface — Phase 5)
+- [ ] Grafana dead-letter queue depth panel
+- [ ] ERD PNG render (`docs/database-erd.mmd` written and verified as valid Mermaid; PNG export via `@mermaid-js/mermaid-cli` failed on a broken local `puppeteer-core`/`ws` module resolution — environment issue, not a content issue)
+
 ---
 
 ## 6. In-Progress Tasks
 
-*No tasks are currently in progress. Phase 2 is complete; Phase 3 has not yet started.*
+*No tasks are currently in progress. Phase 3 (schema/migrations/seeds layer) is complete; Phase 4 has not yet started.*
 
 ---
 
@@ -626,6 +666,48 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-012 — Plain `postgres:17-alpine` container for local dev, not the Supabase CLI
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | `docker-compose.dev.yml` runs a plain Postgres container; the Supabase CLI (which would additionally start GoTrue/Storage/Realtime/Studio) is not used |
+| **Decided by** | Repo owner (approved via explicit question during Phase 3 planning) |
+
+**Context:** Milestone 1 (Phase 2) had left a comment assuming local Postgres would come from the Supabase CLI, per `ROADMAP.md`'s literal Phase 3 task wording ("Initialise Supabase project (local dev + hosted)"). While investigating Phase 3, recovering the pre-reset implementation (commit `b747f97`) showed the app was already built around its own JWT/OAuth auth (own `users`/`sessions` tables, bcrypt hashes), not Supabase Auth — confirmed against `Security_Architecture.md` §5 and `PRD.md` FR-43.
+
+**Decision:** Since the app never calls Supabase's GoTrue/Storage/Realtime services — only Postgres itself, which production (Supabase-hosted Postgres) is too — a plain `postgres:17-alpine` container is simpler, lighter, and equally correct. Supersedes the Milestone-1 comment.
+
+---
+
+### DEC-013 — Custom SQL-file migration runner instead of `drizzle-kit generate`/`migrate`
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | Migrations are hand-written SQL files (`packages/db/src/migrations/*.sql`) with `-- Up`/`-- Down` sections, applied by a small custom runner (`packages/db/src/migrate.ts`) that tracks state in a `_migrations` table |
+| **Decided by** | Engineering Lead (approved) |
+
+**Context:** `Database_Schema.md` §14 requires every migration to be reversible (up + down). `drizzle-kit`'s own migration journal is forward-only — there is no `down`/rollback command — which doesn't meet that requirement. Several of Phase 3's migrations (the `updated_at` trigger function, RLS policies using `current_setting()`, `PARTITION BY RANGE`) also aren't expressible through drizzle-kit's schema-diffing DSL at the installed version (`drizzle-kit@0.31.10`).
+
+**Decision:** Drizzle ORM remains the query builder and the source of column/type definitions (`packages/db/src/schema/*.ts`); the SQL migration files are hand-written to match those definitions exactly, and applied/reverted by the custom runner. Verified: a full `up` → `down 4` → `up` cycle against a live Postgres instance produces the same 26 tables + 4 partitions both times, and rollback leaves only the `_migrations` bookkeeping table.
+
+---
+
+### DEC-014 — Dedicated unprivileged `app_user` Postgres role for RLS-protected queries
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-26 |
+| **Decision** | The application will query via a separate, non-superuser, non-owning Postgres role (`app_user`, created by `packages/db/src/setup-roles.ts`) — never the role migrations run as |
+| **Decided by** | Engineering Lead (found and fixed during verification, not assumed to be needed upfront) |
+
+**Context:** While functionally verifying RLS (not just checking that policies exist), a tenant-isolation test returned every organisation's rows instead of isolating them. Root cause: Postgres superusers and table owners bypass Row Level Security unconditionally, regardless of policies — and the connection used for migrations (which owns every table) is exactly that.
+
+**Decision:** `setup-roles.ts` creates `app_user` with `NOSUPERUSER NOBYPASSRLS` and grants it `SELECT`/`INSERT`/`UPDATE`/`DELETE` (not ownership) on all tables. `DATABASE_APP_URL` (`.env.example`) is what the application will connect with from Phase 5 onward; `DATABASE_URL` (the owner connection) is reserved for migrations/seeds/admin scripts only. Re-verified the same isolation test as `app_user`: each organisation saw only its own row, and a connection with no tenant context set saw zero rows (fail-closed).
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -755,6 +837,40 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-008 — No automated data-retention purge or partition-rotation jobs yet
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-26 |
+| **Severity** | Low |
+| **Phases affected** | Phase 3, Phase 6 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `Database_Schema.md` §13/§18 and `ROADMAP.md`'s Phase 3 checklist call for automated nightly retention-purge jobs (transcripts, job_logs, usage_events, audit_logs, dead_letter_jobs) and a monthly partition creation/rotation job for `usage_events`/`job_logs`. Neither exists yet — only the structural pieces (partitioned tables, initial `2026_07`/`2026_08` partitions) were built.
+
+**Why accepted:** These are scheduled jobs — business logic/automation, not schema or data-layer structure — and were explicitly out of scope for Phase 3 per the approved scope ("schema and data layer only... no business logic"). n8n (the workflow engine these would naturally run on) doesn't exist yet either; it's Phase 6.
+
+**Resolution plan:** Implement as n8n scheduled workflows once Phase 6 (n8n Workflow Engine) lands. Until then, `usage_events`/`job_logs` will need a manually-created partition past 2026-08, and no retention data is purged (acceptable at current data volumes — zero production traffic exists yet).
+
+---
+
+### TD-009 — Dead-letter admin endpoint and Grafana panel not built (API/monitoring surface, not schema)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-26 |
+| **Severity** | Low |
+| **Phases affected** | Phase 3, Phase 5 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** `ROADMAP.md`'s Phase 3 checklist also lists "Admin endpoint to inspect, retry, and dismiss dead-letter jobs" and "Grafana panel: dead-letter queue depth over time" under the same "Dead-Letter Queue" heading as the `dead_letter_jobs` table itself. The table (schema) was built; the endpoint (API) and panel (monitoring dashboard) were not.
+
+**Why accepted:** An admin endpoint is API surface — explicitly excluded from Phase 3's approved scope. A Grafana panel needs a running API to query in the first place (same reasoning as TD-006's dashboard items).
+
+**Resolution plan:** Admin endpoint lands with Phase 5 (Core Backend API) or Phase 11 (Super Admin Panel); Grafana panel follows once that endpoint exposes real data.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -789,19 +905,18 @@ When a known issue is identified, log it in this format:
 | 🟠 P2 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Decision needed before Phase 5 |
 | 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
 
-### Next Up — Phase 3: Database & Core Schema
+### Next Up — Phase 4: Authentication & Authorisation
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Initialise Supabase project (local dev + hosted) | Engineer | Phase 3 critical path |
-| 🔴 P1 | Set up Drizzle ORM with migration tooling | Engineer | Phase 3 critical path |
-| 🟠 P2 | Define core schema (users, organisations, videos, ...) with RLS from creation | Engineer | Phase 3 deliverable |
-| 🟡 P3 | Provision a real Coolify server + domain | Repo owner | Unblocks the deferred Traefik/SSL/staging-deploy items (TD-006) whenever it happens — not a Phase 3 blocker |
+| 🔴 P1 | Implement JWT + OAuth (Google/GitHub) auth against the `users`/`oauth_accounts`/`sessions` schema Phase 3 already built | Engineer | Phase 4 critical path — schema (DEC-014's `app_user` role, RLS policies) is ready to receive it |
+| 🟠 P2 | Wire `apps/api`'s `/ready` endpoint to a real database check (`packages/db`'s `createDbClient`) | Engineer | `/ready` already reports `not_implemented` honestly for this — see `health.plugin.ts` |
+| 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category — not a Phase 4 blocker |
 
 ### Backlog (Next 4 Weeks)
 
-- Begin Phase 3 (Database Schema)
-- Begin Phase 4 (Auth) immediately after Phase 3 core schema is complete
+- Begin Phase 4 (Authentication & Authorisation)
+- Begin Phase 5 (Core Backend API) once auth lands — this is where `DATABASE_APP_URL`/`app_user` (DEC-014) gets its first real caller
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
 
 ---
@@ -816,6 +931,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 4 (Environment & Secrets) complete: `.env.example` reorganised into required-now/optional-now/required-starting-phase-N categories, restored `S3_FORCE_PATH_STYLE` and added `PORT`/`APP_VERSION` (both real, previously undocumented). Zod-based startup validation added to `apps/api/src/config.ts` — verified to fail fast with a specific error on invalid `PORT`/`APP_ENV`, and to pass a custom `APP_VERSION` through to `GET /health` (DEC-010). `.gitignore`'s env-file pattern replaced with a catch-all (`.env.*` + explicit `.env.example` exception), verified against 4 real cases. `.env.example` removed from `.secretlintignore` and confirmed it still passes secretlint — it's now actually scanned, not exempted. README §5/§7/§8 corrected: no environment variables are actually required to boot the app shell today (previously claimed `DATABASE_URL`/`JWT_SECRET`/etc. were required — they aren't, nothing reads them yet), and a second stale "PostgreSQL" reference in §8 (missed in Milestone 1) fixed. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 5 (Monitoring & Health Checks) complete: added structured Pino logging (`apps/api/src/plugins/logger.plugin.ts`) with `service`/`version`/`environment` base fields, ISO timestamps, and PII/secret redaction — all verified directly against actual log output, not assumed (redaction confirmed on `password`/`email`/`name`/`ip_address`; `LOG_LEVEL=error` confirmed to suppress `warn`/`info`; Pino's error serializer confirmed unaffected). `LOG_LEVEL` added to the Zod config schema (DEC-011). Re-verified (not just trusted from Milestone 1) that both Docker images still build and report `healthy`, and that all 6 `docker-compose.dev.yml` services (Redis, n8n, MinIO, Prometheus, Grafana, Loki) start cleanly and respond correctly — the monitoring stack remains explicitly optional, not required for `npm run dev`. |
 | 2026-07-26 | Engineering (AI-assisted) | Phase 2 Milestone 6 (Deployment & Release Readiness) complete — **Phase 2 is now fully complete (6/6 milestones)**. Verified a genuinely fresh `git clone` builds cleanly end-to-end (lint/type-check/build/format all pass); found and fixed a real Windows `MAX_PATH` false-negative (test location artifact, not a code defect — confirmed by retrying in a short path) and a real, recurring `core.autocrlf` false-positive affecting `format:check` on every fresh Windows checkout, root-caused and fixed with a new `.gitattributes` file (verified via a second fresh clone: 47 previously-flagged files now check out clean). Audited all core docs for broken references — found 6 pre-existing (Pre-Development-era) links to ADR documents and a GDPR guide that were never written; not introduced by Phase 2, logged as TD-007 rather than silently ignored or hastily fabricated. TD-006 logged for the infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify deploy, PagerDuty, real Grafana dashboards) so it's tracked forward, not forgotten. |
+| 2026-07-26 | Engineering (AI-assisted) | Phase 3 — Database & Core Schema (schema/migrations/seeds layer) complete, per approved scope of schema and data layer only. Recovered and verified the pre-reset Drizzle schema (26 tables, commit `b747f97` + 2 fix-up commits) against the current `Database_Schema.md`; implemented as 4 hand-written, reversible SQL migrations applied by a custom runner (`packages/db/src/migrate.ts` — DEC-013, since `drizzle-kit` has no rollback command). Found and fixed a real doc/reality mismatch: `Database_Schema.md` §12 documented Supabase Auth's `auth.uid()` RLS pattern, inconsistent with the project's own custom-JWT auth (confirmed against `Security_Architecture.md` §5, `PRD.md` FR-43) — corrected to the `current_setting()` session-variable pattern actually implemented. Functionally verified RLS (not just "enabled"): an initial test returned all tenants' rows because Postgres superusers/table owners bypass RLS unconditionally — fixed by adding a dedicated, unprivileged `app_user` role (DEC-014), re-verified with real per-tenant isolation and fail-closed behaviour with no tenant context set. Local Postgres via a plain container, not the Supabase CLI (DEC-012). Full clean-slate cycle verified against a live Postgres instance: `db:reset` → `db:migrate up` → `db:setup-roles` → `db:seed` (and re-seed, confirming idempotency) → `db:migrate down 4` (clean teardown) → `db:migrate up` again (reproducibility). Retention/partition-rotation automation and the dead-letter admin endpoint/Grafana panel are business logic/API surface, explicitly out of scope — logged as TD-008/TD-009, not silently dropped. ERD source written as Mermaid (`docs/database-erd.mmd`); PNG export failed on a broken local `mermaid-cli`/`puppeteer-core` dependency resolution — an environment issue, reported as such rather than claimed done. |
 
 ---
 

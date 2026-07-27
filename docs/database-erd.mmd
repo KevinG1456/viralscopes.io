@@ -1,0 +1,87 @@
+erDiagram
+    users ||--o{ oauth_accounts : "has"
+    users ||--o{ sessions : "has"
+    users ||--o{ organizations : "owns"
+    users ||--o{ organization_members : "is"
+    organizations ||--o{ organization_members : "has"
+    organizations ||--o{ workspaces : "has"
+    workspaces ||--o{ projects : "has"
+    organizations ||--o{ subscriptions : "has"
+    subscriptions ||--o{ invoices : "generates"
+    organizations ||--o{ invoices : "has"
+    organizations ||--o{ usage_events : "logs"
+    organizations ||--o{ api_keys : "has"
+    organizations ||--o{ audit_logs : "has"
+
+    channels ||--o{ videos : "has"
+    videos ||--|| transcripts : "has"
+    videos ||--|| thumbnail_analyses : "has"
+    videos ||--|| title_analyses : "has"
+    videos ||--|| video_analyses : "has"
+    videos ||--o{ recommendations : "generates"
+    organizations ||--o{ recommendations : "requests"
+
+    organizations ||--o{ watchlists : "has"
+    workspaces ||--o{ watchlists : "scopes"
+    watchlists ||--o{ alert_rules : "triggers"
+    organizations ||--o{ alert_rules : "has"
+    alert_rules ||--o{ alert_events : "fires"
+    organizations ||--o{ alert_events : "receives"
+
+    users ||--o{ prompt_library : "authors"
+    users ||--o{ dead_letter_jobs : "resolves"
+
+    users {
+        uuid id PK
+        text email UK
+        text role
+        boolean email_verified
+        timestamptz deleted_at
+    }
+    organizations {
+        uuid id PK
+        text slug UK
+        uuid owner_id FK
+        text plan
+        timestamptz deleted_at
+    }
+    workspaces {
+        uuid id PK
+        uuid org_id FK
+    }
+    projects {
+        uuid id PK
+        uuid workspace_id FK
+    }
+    channels {
+        uuid id PK
+        text platform
+        text platform_channel_id UK
+    }
+    videos {
+        uuid id PK
+        uuid channel_id FK
+        text platform_video_id UK
+        numeric viral_score
+        text analysis_status
+    }
+    recommendations {
+        uuid id PK
+        uuid video_id FK
+        uuid org_id FK
+    }
+    watchlists {
+        uuid id PK
+        uuid org_id FK
+        uuid workspace_id FK
+    }
+    alert_rules {
+        uuid id PK
+        uuid org_id FK
+        uuid watchlist_id FK
+    }
+    alert_events {
+        uuid id PK
+        uuid org_id FK
+        uuid alert_rule_id FK
+    }

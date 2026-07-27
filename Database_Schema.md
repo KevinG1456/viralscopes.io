@@ -1,8 +1,8 @@
 # Database_Schema.md
 # ViralScopes.io — Complete Database Schema
 
-> **Version:** 1.0
-> **Last Updated:** 2026-07-20
+> **Version:** 1.1 — corrected section 12 (RLS) and section 14 (migration tooling) to match the Phase 3 implementation; see the correction note in section 12.
+> **Last Updated:** 2026-07-26
 > **Database:** PostgreSQL 15+ (hosted on Supabase)
 > **ORM:** Drizzle ORM
 > **Cross-references:** [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) · [INFRASTRUCTURE_GROWTH_PLAN.md](./INFRASTRUCTURE_GROWTH_PLAN.md) · [Security_Architecture.md](./Security_Architecture.md)
@@ -322,6 +322,10 @@ CREATE TABLE workspaces (
 );
 
 CREATE INDEX idx_workspaces_org_id ON workspaces (org_id);
+-- Added in Phase 3 (not in the original design): makes the dev seed's
+-- "Default Workspace" insert a true idempotent insert-if-missing. Names
+-- aren't globally unique, only unique per organisation.
+CREATE UNIQUE INDEX uq_workspaces_org_name ON workspaces (org_id, name) WHERE deleted_at IS NULL;
 ```
 
 ---
@@ -1009,7 +1013,11 @@ Indexes are defined at table creation in the same migration file. The following 
 
 ## 12. Row Level Security Policies
 
-RLS is enabled on every table containing tenant-scoped data. The API uses the `authenticated` role (Supabase) for all user requests, and the `service_role` for admin operations.
+> **Correction (Phase 3, 2026-07-26):** this section previously showed Supabase Auth's `auth.uid()` pattern, inherited from a generic Supabase starting point. It was never consistent with the rest of this document — section 5 defines this project's own `users`/`oauth_accounts`/`sessions` tables with bcrypt `password_hash`, and Security_Architecture.md §5 and PRD.md FR-43 both specify a custom JWT + OAuth auth system, not Supabase Auth. `auth.uid()` only exists when Supabase's GoTrue auth service issues the session — it does not apply here. The pattern below (session-local settings read via `current_setting()`) is what's actually implemented in `packages/db/src/migrations/0003_rls_policies.sql`.
+
+RLS is enabled on every tenant-scoped table (see the RLS column in section 20). The application connects as a dedicated, unprivileged Postgres role (`app_user`, created by `packages/db/src/setup-roles.ts`) — Postgres superusers and table owners bypass RLS unconditionally, so the role that runs migrations (which owns the tables) must never be the role the running application uses.
+
+`packages/db/src/client.ts`'s `withTenant()` sets `app.current_org_id` and `app.current_user_id` as transaction-local settings at the start of every request. RLS policies read them back via `current_setting(..., true)`, which returns `NULL` (not an error) when unset — and a `NULL` comparison is never true, so a connection that never calls `withTenant()` sees zero rows by default (fail-closed, not fail-open).
 
 ### Common RLS Pattern
 
@@ -1017,40 +1025,19 @@ RLS is enabled on every table containing tenant-scoped data. The API uses the `a
 -- Enable RLS
 ALTER TABLE watchlists ENABLE ROW LEVEL SECURITY;
 
--- SELECT: users can only read their own org's data
-CREATE POLICY "watchlists_select_own_org"
-  ON watchlists FOR SELECT
-  TO authenticated
-  USING (
-    org_id IN (
-      SELECT org_id FROM organization_members
-      WHERE user_id = auth.uid()
-    )
-  );
-
--- INSERT: users can only insert into their own org
-CREATE POLICY "watchlists_insert_own_org"
-  ON watchlists FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    org_id IN (
-      SELECT org_id FROM organization_members
-      WHERE user_id = auth.uid()
-    )
-  );
-
--- UPDATE/DELETE: only admin and owner roles
-CREATE POLICY "watchlists_modify_admin_only"
-  ON watchlists FOR ALL
-  TO authenticated
-  USING (
-    org_id IN (
-      SELECT org_id FROM organization_members
-      WHERE user_id = auth.uid()
-      AND role IN ('admin', 'owner')
-    )
-  );
+-- Tenant isolation (SELECT/INSERT/UPDATE/DELETE): scoped to the caller's
+-- organisation, read from the session-local setting set by withTenant().
+CREATE POLICY watchlists_tenant_isolation ON watchlists
+  FOR ALL
+  USING (org_id = current_setting('app.current_org_id', true)::uuid)
+  WITH CHECK (org_id = current_setting('app.current_org_id', true)::uuid);
 ```
+
+A few tables have no `org_id` column and are scoped differently:
+- `oauth_accounts`, `sessions` — scoped by `user_id = current_setting('app.current_user_id', true)::uuid` (they belong to a user, not an org).
+- `projects` — scoped indirectly via `workspace_id IN (SELECT id FROM workspaces WHERE org_id = current_setting('app.current_org_id', true)::uuid)`, since `projects` only has `workspace_id`.
+
+RLS scope here is tenant isolation only (principle P4). Role-based write authorisation (e.g. "only admin/owner can delete a watchlist") is application-layer business logic, deferred to the API (Phase 5) — Phase 3 is schema and data layer only.
 
 ### Tables Without RLS (Global Data)
 
@@ -1116,21 +1103,19 @@ A monthly maintenance job (CRON, first day of each month):
 
 ### Tool
 
-**Drizzle ORM** manages all schema migrations. The migration journal is stored in `packages/db/src/migrations/meta/_journal.json`.
+**Drizzle ORM** is the query builder/schema-type source (`packages/db/src/schema/*.ts`). Migrations themselves are hand-written SQL, applied by a small custom runner (`packages/db/src/migrate.ts`) rather than `drizzle-kit generate`/`migrate` — drizzle-kit's own migration journal is forward-only with no `down` command, which doesn't satisfy the "every migration must be reversible" rule below, and several of Phase 3's migrations (triggers, RLS policies with the `current_setting()` pattern, `PARTITION BY RANGE`) aren't expressible through drizzle-kit's schema-diffing DSL at the installed version anyway. The runner tracks applied migrations in a `_migrations` table and supports `up`, `down [n]`, and `status`.
 
 ### Migration File Convention
 
 ```
 packages/db/src/migrations/
 ├── 0001_initial_schema.sql
-├── 0002_add_rls_policies.sql
-├── 0003_add_partitioning.sql
-├── 0004_add_prompt_library.sql
-└── meta/
-    └── _journal.json
+├── 0002_updated_at_triggers.sql
+├── 0003_rls_policies.sql
+└── 0004_partitioning.sql
 ```
 
-Files are zero-padded 4-digit sequential numbers. Each file is a complete, idempotent SQL script with both `up` and `down` sections.
+Files are zero-padded 4-digit sequential numbers. Each file is a complete SQL script with both `-- Up` and `-- Down` sections, split and applied by `migrate.ts`.
 
 ### Migration File Template
 

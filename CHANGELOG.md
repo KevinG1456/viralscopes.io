@@ -147,6 +147,34 @@ Each version entry uses the following change categories:
 - Audited all core docs for broken internal links. Found 6 references (in `README.md` and `PROJECT_STATUS.md` DEC-001 through DEC-005) to `docs/decisions/ADR-*.md` and a GDPR guide that were never written — pre-existing from Pre-Development, not introduced by Phase 2. Logged as TD-007 rather than fixed silently or fabricated under time pressure.
 - **Phase 2 — Infrastructure & DevOps is complete** (6/6 milestones). TD-006 logged for infrastructure explicitly deferred at the Phase 2 approval gate (live Traefik/SSL, Coolify staging/production deploy, Alertmanager/PagerDuty, Grafana dashboards against real metrics) — tracked forward to Phase 14 and ongoing work, not silently dropped.
 
+### Added (Phase 3 — Database & Core Schema)
+
+- `packages/db/src/schema/*.ts` — all 26 tables from `Database_Schema.md` as Drizzle ORM schema (users/orgs, billing/usage, content, AI analysis, watchlists/alerts, operations), recovered and re-verified against the pre-reset implementation (commit `b747f97` and two follow-up fix commits)
+- `packages/db/src/migrations/0001_initial_schema.sql` through `0004_partitioning.sql` — hand-written, reversible SQL migrations (tables/indexes/constraints, `updated_at` triggers, RLS policies, `usage_events`/`job_logs` partitioning), applied by a custom runner (`packages/db/src/migrate.ts`) supporting `up`, `down [n]`, and `status`
+- `packages/db/src/client.ts` — `createDbClient()` and `withTenant()`, which sets `app.current_org_id`/`app.current_user_id` as transaction-local settings for RLS to read
+- `packages/db/src/setup-roles.ts` — creates/updates a dedicated, unprivileged `app_user` Postgres role that RLS-protected application queries will run as, since the migration/owner role bypasses RLS unconditionally
+- `packages/db/src/seeds/` — deterministic, idempotent dev seed data (2 users, 1 org, 2 memberships, 1 default workspace); insert-if-missing pattern (not upsert) so re-running never mutates existing rows
+- `packages/db/src/reset.ts` — drops and recreates the `public` schema for local dev; refuses to run against a non-localhost `DATABASE_URL`
+- Root-level `db:migrate` / `db:migrate:down` / `db:migrate:status` / `db:setup-roles` / `db:seed` / `db:reset` / `db:studio` npm scripts (pass through to `packages/db`)
+- `postgres` service in `docker-compose.dev.yml` (`postgres:17-alpine`) — supersedes the Milestone-1 comment that assumed the Supabase CLI, since the app doesn't use Supabase Auth (see Fixed, below)
+- `docs/database-erd.mmd` — Mermaid ER diagram source covering all 26 tables and their relationships
+
+### Fixed (Phase 3)
+
+- `Database_Schema.md` §12 (Row Level Security) documented Supabase Auth's `auth.uid()` pattern, which cannot work in this project — it defines its own `users`/`sessions` tables with bcrypt password hashes (Security_Architecture.md §5, PRD.md FR-43), not Supabase Auth. Corrected to the `current_setting('app.current_org_id'/'app.current_user_id')` session-variable pattern actually implemented in `0003_rls_policies.sql`.
+- `Database_Schema.md` §14 (Migration Strategy) claimed Drizzle ORM manages migrations directly; corrected to describe the actual hand-written-SQL-plus-custom-runner approach (see DEC-013 in PROJECT_STATUS.md for why).
+
+### Security (Phase 3)
+
+- Verified RLS functionally, not just as "enabled" flags: an initial tenant-isolation test returned every organisation's rows, because Postgres superusers/table owners bypass RLS unconditionally regardless of policy — and the role used to run migrations necessarily owns every table. Fixed by adding the dedicated `app_user` role (`setup-roles.ts`); re-verified with real per-tenant isolation (each org sees only its own rows) and fail-closed behaviour (zero rows visible with no tenant context set, whether reading or writing).
+- `packages/db/src/setup-roles.ts` validates `APP_DB_USER` against a strict identifier allowlist and escapes the role password via standard-conforming SQL string escaping before use in `CREATE ROLE`/`ALTER ROLE` DDL, since Postgres does not accept bind parameters in that position.
+
+### Known Limitations (Phase 3)
+
+- Retention purge jobs and monthly partition-rotation automation are not implemented — business logic/scheduled automation, explicitly out of this phase's schema-and-data-layer-only scope. Logged as TD-008.
+- The dead-letter queue admin endpoint and its Grafana panel are not implemented — API surface and a dashboard for that API, both explicitly out of scope. Logged as TD-009.
+- ERD PNG export via `@mermaid-js/mermaid-cli` failed on a broken local `puppeteer-core`/`ws` module resolution (an environment issue). The Mermaid source (`docs/database-erd.mmd`) is complete and renders correctly in GitHub and other Mermaid-aware viewers.
+
 ---
 
 ## [1.0.0-alpha.1] — Planned

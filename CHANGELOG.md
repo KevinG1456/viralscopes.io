@@ -67,6 +67,7 @@ Each version entry uses the following change categories:
 - Fixed a query-parameter bug affecting the dead-letter (`?resolved=`) and trends (`?latestSnapshotOnly=`) filters: `z.coerce.boolean()` coerced the literal string `"false"` to `true` (any non-empty string is JS-truthy), silently inverting the filter. Replaced with an explicit `"true"`/`"false"` enum-and-transform.
 - Fixed plan-tier rate-limit resolution: Free/Starter tiers (which have no documented API rate limit because they have no API access at all) were falling through to the same generous fallback intended for Enterprise's "Custom" limit, instead of the conservative placeholder ceiling intended for tiers with no API access.
 - Fixed `apps/api`'s production Docker image crashing on boot (`ERR_MODULE_NOT_FOUND` on `@viralscopes/db`) on any database-touching request — pre-existing since Phase 4 first added that runtime dependency, only caught now via an actual container boot test (BLK-004 in `PROJECT_STATUS.md`). `packages/db` gained a real build step (previously TS-source-only, tsx-consumption-only) and `Dockerfile.api`'s runner stage now includes its compiled output.
+- Fixed a fresh-checkout CI failure caused by the above: `turbo.json`'s `type-check` task didn't depend on upstream `build` tasks, so `apps/api`'s type-check ran before `packages/db`'s newly-required `dist/` existed. Added `dependsOn: ["^build"]` to `type-check`, matching `build`/`test`.
 
 ### Added
 

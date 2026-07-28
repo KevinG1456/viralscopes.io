@@ -54,7 +54,9 @@ export interface Session {
 export interface AnalyticsOverview {
   watchlists: { active: number };
   alertRules: { active: number };
-  alertEvents: { last30Days: number };
+  // Per-status breakdown (e.g. {sent: 5, failed: 1}), not a flat count --
+  // see countAlertEventsByStatusSince in the backend.
+  alertEvents: { last30Days: Record<string, number> };
   apiKeys: { active: number };
   usage: UsageSummary;
 }

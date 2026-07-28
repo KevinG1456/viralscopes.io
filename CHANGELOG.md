@@ -86,6 +86,18 @@ Each version entry uses the following change categories:
 - Fixed n8n blocking `$env` access inside node expressions by default, which silently evaluated the service-token check and the heartbeat's auth header to `undefined`. Added `N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'` (safe for this single-tenant self-hosted instance).
 - Fixed `BullMQ`'s queue-naming rejecting colons: `INFRASTRUCTURE_GROWTH_PLAN.md` documents a `viralscopes:<priority>:<workflow>` naming convention that BullMQ itself rejects at runtime; switched to dashes.
 
+### Added (Phase 7 — AI Prompt Library & Versioning)
+
+- Admin-only CRUD over `prompt_library` (`GET/POST /api/v1/admin/prompts/...`): list prompts, list/get a version, create a new version, activate a version (one active version per name, enforced transactionally), and a field-by-field diff between two versions
+- Seeded the 6 real AI prompts (`video_analysis`, `thumbnail_analysis`, `title_formula_detection`, `hook_classification`, `trend_clustering`, `ethical_recommendation`), transcribed from `AI_Strategy.md`/`n8n_Workflow_Diagrams.md` — corrects an earlier 8-item list that included two pipelines with no actual AI call. See DEC-020 in `PROJECT_STATUS.md`.
+- Redis AI-response cache (`vs:ai:{promptName}:{promptVersion}:{sha256(input)}`, 24h TTL) with real hit/miss counters now in `GET /api/v1/admin/metrics`'s new `aiCache` field; `POST /api/v1/internal/ai-cache/lookup` and `/store` let n8n workflows use it without a native Redis credential
+- Prompt test harness (`POST /api/v1/admin/prompts/:name/test`, `GET .../test/:jobId`) against 10 committed fixture videos (`apps/api/test-fixtures/videos/`), dispatched through the same queue→n8n pattern as every Phase 6 workflow (`infra/n8n-workflows/prompt-test.json`) rather than a synchronous in-request AI call
+- Regression runner (`npm run ai:regression`): every video-scoped active prompt against all 10 fixtures, reporting schema-validation results — deliberately not wired into CI as a merge-blocking gate (see TD-023)
+
+### Fixed (Phase 7)
+
+- None — no bugs found in previously-shipped code this phase; three genuine limitations were found and logged as TD-023 instead (no AI provider credentials anywhere in this environment, blocking the test harness's/regression runner's actual AI-call leg and any real cost estimate)
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

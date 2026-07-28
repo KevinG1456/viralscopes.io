@@ -1,0 +1,19 @@
+{
+  "id": "fixture-03",
+  "title": "Top 10 Ways to Actually Stick to a Morning Routine",
+  "description": "Ninety-three percent of people who start a new morning routine quit within two weeks. These ten changes are what actually made mine stick.",
+  "transcript": "Ninety-three percent of people who start a new morning routine quit within two weeks. I was one of them, three separate times, before something finally clicked. Here are the ten specific changes that made the difference.",
+  "hook_text": "Ninety-three percent of people who start a new morning routine quit within two weeks.",
+  "duration_secs": 498,
+  "view_count": 95000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture03/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "statistic",
+    "story_structure": "Statistic-led listicle with personal failure-then-success framing",
+    "virality_drivers": ["surprising statistic", "listicle structure", "personal credibility"],
+    "formula_type": "top_n_x",
+    "formula_template": "Top [Number] Ways to [Action]",
+    "thumbnail_emotion": "anticipation",
+    "thumbnail_composition_type": "split"
+  }
+}

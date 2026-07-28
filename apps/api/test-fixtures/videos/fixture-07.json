@@ -1,0 +1,19 @@
+{
+  "id": "fixture-07",
+  "title": "How to Batch Cook a Full Week of Meals in 90 Minutes (Complete Guide)",
+  "description": "A complete, step-by-step guide to batch cooking five dinners, prepping ingredients, and cleaning up in under an hour and a half.",
+  "transcript": "In this video I'm going to show you exactly how I cook five full dinners, prep tomorrow's lunch, and clean the entire kitchen in ninety minutes flat, every single Sunday.",
+  "hook_text": "In this video I'm going to show you exactly how I cook five full dinners, prep tomorrow's lunch, and clean the entire kitchen in ninety minutes flat, every single Sunday.",
+  "duration_secs": 812,
+  "view_count": 152000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture07/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "promise",
+    "story_structure": "Step-by-step tutorial with a clear time-bound promise",
+    "virality_drivers": ["clear promise", "time efficiency angle", "recurring routine framing"],
+    "formula_type": "how_to_x",
+    "formula_template": "How to [Action] (Complete Guide)",
+    "thumbnail_emotion": "trust",
+    "thumbnail_composition_type": "leading_lines"
+  }
+}

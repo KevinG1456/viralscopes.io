@@ -60,6 +60,17 @@ export async function markJobLogCompleted(
     .where(eq(schema.jobLogs.executionId, executionId));
 }
 
+export async function findJobLogByExecutionId(
+  db: Database,
+  executionId: string,
+): Promise<JobLogRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(schema.jobLogs)
+    .where(eq(schema.jobLogs.executionId, executionId));
+  return row;
+}
+
 export async function markJobLogFailed(
   db: Database,
   executionId: string,

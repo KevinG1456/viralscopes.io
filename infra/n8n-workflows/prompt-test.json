@@ -1,0 +1,233 @@
+{
+  "name": "Prompt Test Harness (Phase 7: admin prompt test harness backend)",
+  "meta": {
+    "description": "Webhook-triggered by apps/api's prompt-test queue worker (services/prompt-test.service.ts), one call per POST /api/v1/admin/prompts/:name/test. Validates X-Service-Token, routes to Anthropic or OpenAI based on payload.model, normalises both providers' response shapes, caches a successful result via /api/v1/internal/ai-cache/store, and always responds with an explicit {success, output|message} body. TD-023 in PROJECT_STATUS.md: this environment has no ANTHROPIC_API_KEY/OPENAI_API_KEY configured, so the AI-provider call legs cannot be live-verified end to end -- everything up to and including that HTTP call (auth, routing, response normalisation, error handling) has been."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prompt-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1f11111-1111-4111-8111-111111111111",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "prompt-test"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "b2f22222-2222-4222-8222-222222222222",
+              "leftValue": "={{$json.headers['x-service-token']}}",
+              "rightValue": "={{$env.N8N_SERVICE_TOKEN}}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3f33333-3333-4333-8333-333333333333",
+      "name": "Valid Service Token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, message: \"Invalid service token\" } }}",
+        "options": { "responseCode": 401 }
+      },
+      "id": "d4f44444-4444-4444-8444-444444444444",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [440, 160]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "e5f55555-5555-4555-8555-555555555555",
+              "leftValue": "={{$json.body.payload.model}}",
+              "rightValue": "claude",
+              "operator": { "type": "string", "operation": "startsWith" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f6f66666-6666-4666-8666-666666666666",
+      "name": "Is Anthropic Model?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{$env.ANTHROPIC_API_KEY}}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $json.body.payload.model, max_tokens: 2048, system: $json.body.payload.systemPrompt, messages: [{ role: 'user', content: $json.body.payload.userMessage }] }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "g7f77777-7777-4777-8777-777777777777",
+      "name": "Call Anthropic",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -180],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{$env.OPENAI_API_KEY}}" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $json.body.payload.model, messages: [{ role: 'system', content: $json.body.payload.systemPrompt }, { role: 'user', content: $json.body.payload.userMessage }] }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "h8f88888-8888-4888-8888-888888888888",
+      "name": "Call OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 20],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nif (item.error) {\n  const message = typeof item.error === 'string' ? item.error : (item.error.message || JSON.stringify(item.error));\n  return { json: { success: false, message } };\n}\nif (Array.isArray(item.content) && item.content[0] && item.content[0].text) {\n  return { json: { success: true, output: item.content[0].text } };\n}\nif (Array.isArray(item.choices) && item.choices[0] && item.choices[0].message) {\n  return { json: { success: true, output: item.choices[0].message.content } };\n}\nreturn { json: { success: false, message: item.message || 'Unrecognized AI provider response shape' } };"
+      },
+      "id": "i9f99999-9999-4999-8999-999999999999",
+      "name": "Normalize AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, -80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "j0f00000-0000-4000-8000-000000000000",
+              "leftValue": "={{$json.success}}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "k1f11111-1111-4111-8111-111111111112",
+      "name": "Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_INTERNAL_URL}}/api/v1/internal/ai-cache/store",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Service-Token", "value": "={{$env.N8N_SERVICE_TOKEN}}" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ promptName: $('Webhook').item.json.body.payload.promptName, promptVersion: $('Webhook').item.json.body.payload.promptVersion, input: $('Webhook').item.json.body.payload.userMessage, value: $json.output }) }}",
+        "options": {}
+      },
+      "id": "l2f22222-2222-4222-8222-222222222223",
+      "name": "Store In Cache",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, -180],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, output: $json.output } }}",
+        "options": {}
+      },
+      "id": "m3f33333-3333-4333-8333-333333333334",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1540, -180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, message: $json.message } }}",
+        "options": { "responseCode": 502 }
+      },
+      "id": "n4f44444-4444-4444-8444-444444444445",
+      "name": "Respond Failure",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 40]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Valid Service Token?", "type": "main", "index": 0 }]] },
+    "Valid Service Token?": {
+      "main": [
+        [{ "node": "Is Anthropic Model?", "type": "main", "index": 0 }],
+        [{ "node": "Respond Unauthorized", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Anthropic Model?": {
+      "main": [
+        [{ "node": "Call Anthropic", "type": "main", "index": 0 }],
+        [{ "node": "Call OpenAI", "type": "main", "index": 0 }]
+      ]
+    },
+    "Call Anthropic": {
+      "main": [[{ "node": "Normalize AI Response", "type": "main", "index": 0 }]]
+    },
+    "Call OpenAI": { "main": [[{ "node": "Normalize AI Response", "type": "main", "index": 0 }]] },
+    "Normalize AI Response": { "main": [[{ "node": "Succeeded?", "type": "main", "index": 0 }]] },
+    "Succeeded?": {
+      "main": [
+        [{ "node": "Store In Cache", "type": "main", "index": 0 }],
+        [{ "node": "Respond Failure", "type": "main", "index": 0 }]
+      ]
+    },
+    "Store In Cache": { "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "id": "phase7-prompt-test"
+}

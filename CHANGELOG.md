@@ -98,6 +98,21 @@ Each version entry uses the following change categories:
 
 - None — no bugs found in previously-shipped code this phase; three genuine limitations were found and logged as TD-023 instead (no AI provider credentials anywhere in this environment, blocking the test harness's/regression runner's actual AI-call leg and any real cost estimate)
 
+### Added (Phase 8 — Frontend Dashboard, partial)
+
+- `@fastify/cors` on `apps/api` (`Security_Architecture.md`'s already-specified CORS policy, never implemented before now) — required infrastructure for the browser to call the API cross-origin at all
+- `apps/web` frontend foundation: a typed API client (access token held in memory only, session persistence via the httpOnly refresh cookie, single 401-retry-with-refresh), design-system primitives hand-built on Radix UI + `cva` + `tailwind-merge` (shadcn's own copy-source model), TanStack Query with a query-key factory and per-resource cache-strategy tiers, and typed route constants
+- Auth pages: login, register, verify-email, reset-password (request + confirm), logout — email/password only; a client-side auth gate (the real boundary) plus a `proxy.ts` route guard (Next.js 16's renamed `middleware.ts`)
+- Responsive app shell (collapsible sidebar + mobile drawer + topbar) and a Home dashboard wired to analytics overview, watchlists, recommendations, and alert events, with an honest empty state when the signed-in user has no organisation
+- Full CRUD UI: Watchlists (optimistic delete), Alert Rules + read-only event history, API Keys (one-time plaintext reveal with copy), Profile (account info + session list/revoke), and a read-only Organisation page
+- AI Prompt Library admin UI (Phase 7 integration): version history + activate, version diff, and a test harness against the 10 fixture videos with live job-status polling
+
+### Fixed (Phase 8)
+
+- Fixed the password-reset page being at the wrong URL: `auth.service.ts` hardcodes the reset email's link as `/reset-password/confirm`, not the flat `/reset-password` first built — restructured to a request page (`/reset-password`) + confirm page (`/reset-password/confirm`)
+- Fixed `analytics/overview`'s `alertEvents.last30Days` being rendered as if it were a number — it's actually a per-status breakdown object (`{sent, failed, ...}`)
+- Fixed relative imports using a trailing `.js` extension, which `tsc`'s Bundler module resolution tolerates but Turbopack does not — a real build failure, not a type-check-only issue
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

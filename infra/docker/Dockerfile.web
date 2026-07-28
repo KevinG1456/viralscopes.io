@@ -18,6 +18,18 @@ RUN npm ci
 COPY packages/ packages/
 COPY apps/web/ apps/web/
 
+# Phase 8: apps/web's API client (lib/api/client.ts) reads
+# NEXT_PUBLIC_API_URL/NEXT_PUBLIC_APP_URL. Next.js inlines NEXT_PUBLIC_*
+# vars into the client bundle at build time, not read at container
+# runtime -- env_file in docker-compose.prod.yml has no effect on them,
+# which is why they're build ARGs here instead. Defaults match dev; a
+# real deploy overrides both via --build-arg (e.g. api.viralscopes.io /
+# app.viralscopes.io per Deployment_Guide.md's CORS table).
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+
 RUN npm run build --workspace=apps/web
 
 # ---- Stage 2: production runtime ----

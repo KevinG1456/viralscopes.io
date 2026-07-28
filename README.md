@@ -104,13 +104,13 @@ ViralScopes.io analyses **patterns**, not content. It will never:
 
 | Technology | Version | Purpose |
 |---|---|---|
-| [Next.js](https://nextjs.org/) | 14+ | React framework with App Router, SSR, ISR |
+| [Next.js](https://nextjs.org/) | 16.2 (App Router) | React framework — App Router, `proxy.ts` route guard (16's renamed `middleware.ts`) |
 | [TypeScript](https://www.typescriptlang.org/) | 5.x | Type-safe JavaScript across the entire stack |
 | [Tailwind CSS](https://tailwindcss.com/) | 3.x | Utility-first CSS with design system tokens |
-| [shadcn/ui](https://ui.shadcn.com/) | Latest | Accessible component library built on Radix UI |
+| [Radix UI](https://www.radix-ui.com/) + [class-variance-authority](https://cva.style/) | Latest | Component primitives — hand-built following shadcn/ui's own model (copied source, not an installed runtime package) |
 | [TanStack Query](https://tanstack.com/query) | 5.x | Server state management, caching, background refetch |
-| [next-intl](https://next-intl-docs.vercel.app/) | Latest | Internationalisation (i18n) |
-| [Recharts](https://recharts.org/) | Latest | Data visualisation (charts, heatmaps, histograms) |
+| [next-intl](https://next-intl-docs.vercel.app/) | — | Internationalisation — **not implemented** (Phase 8 didn't require it; see TD-024) |
+| [Recharts](https://recharts.org/) | — | Data visualisation — **not implemented**; the pages that would need it (Trending/Videos/Trends/etc.) are themselves deferred (TD-020, TD-024) |
 
 ### Backend
 
@@ -301,6 +301,21 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 
 **Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-023):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), and a real AI cost estimate (needs live AI provider credentials this environment doesn't have).
 
+### Frontend Pages Reference (Phase 8 — `apps/web`)
+
+| Route | Backend endpoint(s) consumed | Auth |
+|---|---|---|
+| `/login`, `/register`, `/verify-email`, `/reset-password`, `/reset-password/confirm` | `/auth/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password` | public |
+| `/home` | `/analytics/overview`, `/watchlists`, `/recommendations`, `/alerts/events` | authed + org |
+| `/watchlists` | `/watchlists` (full CRUD) | authed + org |
+| `/alerts` | `/alerts/rules` (full CRUD), `/alerts/events` (read) | authed + org |
+| `/settings/profile` | `/auth/sessions` (list/revoke/revoke-others) | authed |
+| `/settings/api-keys` | `/api-keys` (full CRUD) | authed + org |
+| `/settings/organisation` | none — read-only, derived from the JWT (`orgRole`/`planTier`); no org read/update endpoint exists yet (TD-011) | authed |
+| `/admin/prompts`, `/admin/prompts/:name` | `/admin/prompts/*` (Phase 7) | authed + `super_admin` |
+
+**Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Billing/Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types.
+
 ---
 
 ## 5. Installation
@@ -332,13 +347,16 @@ This installs dependencies for all workspaces in the monorepo via npm workspaces
 
 ### Set Up Environment Variables
 
+`.env.example` at the repo root is the single documented template covering every variable either app reads, but Node/Next.js each load env files from their own app directory, not the monorepo root — so each app gets its own copy:
+
 ```bash
-cp .env.example .env.local
+cp .env.example apps/api/.env
+cp .env.example apps/web/.env.local
 ```
 
-Open `.env.local` and fill in the required values. See [Environment Variables](#7-environment-variables) for the full required-now/future breakdown.
+`apps/web` only ever reads its `NEXT_PUBLIC_*`-prefixed variables (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`) — everything else in its copy of `.env.example` is simply unused, not a problem to leave in place. Open each file and fill in the required values. See [Environment Variables](#7-environment-variables) for the full required-now/future breakdown.
 
-At this phase, nothing is actually required to start the application shell — `apps/api` boots with its built-in defaults (`APP_ENV=development`, `PORT=3001`) even with an empty `.env.local`. `DATABASE_URL`, `JWT_SECRET`, and the rest do nothing yet; they become load-bearing once the phase that reads them (3, 4, ...) lands.
+At this phase, nothing is actually required to start the application shell — `apps/api` boots with its built-in defaults (`APP_ENV=development`, `PORT=3001`) even with an empty `apps/api/.env`. `DATABASE_URL`, `JWT_SECRET`, and the rest do nothing yet; they become load-bearing once the phase that reads them (3, 4, ...) lands. As of Phase 8, `apps/web` does need its `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_APP_URL` to actually reach the API and satisfy CORS — the defaults baked into the client code (`http://localhost:3001`/`3000`) match `.env.example` exactly, so an empty `apps/web/.env.local` still works for local dev.
 
 External service keys (YouTube API, OpenAI, Anthropic, Stripe, SendGrid) are required for full functionality but not for running the application shell locally.
 
@@ -363,7 +381,7 @@ This starts:
 - **Grafana** on port `3002`
 - **Loki** on port `3100`
 
-> **This entire file is optional for basic frontend/API development.** `apps/web` and `apps/api` run natively (see below) and don't require any of these containers to start up, build, or serve their placeholder content. You only need this stack running if you're working on something that actually talks to Postgres, Redis, n8n, or the monitoring tools — it is not a prerequisite for `npm run dev`.
+> **This file is only needed for real functionality, not for the dev servers to boot.** `apps/web` and `apps/api` run natively (see below) and both start without any of these containers running. As of Phase 8, `apps/web` is a real authenticated application, not placeholder content — logging in, the dashboard, and every CRUD page all need `apps/api` reachable, which in turn needs Postgres and Redis (see §6's `db:migrate`/`db:seed` below) to do anything beyond reject every request with a connection error. n8n and the monitoring tools remain optional beyond that.
 
 > **Postgres is a plain `postgres:17-alpine` container, not the Supabase CLI.** This project authenticates with its own JWT/OAuth system (see §7 and `Security_Architecture.md` §5), not Supabase Auth, so the app only ever needs Postgres itself — which is also all that Supabase provides in production. Running the Supabase CLI locally would start GoTrue/Storage/Realtime containers the app never talks to.
 
@@ -931,12 +949,15 @@ All migrations are designed for **zero-downtime** — no table locks, no breakin
 ```
 viralscopes/
 ├── apps/
-│   ├── web/                  # Next.js 14 frontend (App Router)
-│   │   ├── app/              # Pages, layouts, API routes
-│   │   ├── components/       # UI components (feature + shared)
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── lib/              # API client, routes, utilities
-│   │   └── i18n/             # Internationalisation
+│   ├── web/                  # Next.js 16 frontend (App Router), under src/ (not app/ at the package root)
+│   │   ├── src/app/          # Pages, layouts, route groups ((auth), (dashboard))
+│   │   ├── src/components/   # ui/ (Radix+cva primitives), layout/ (shell), common/ (shared)
+│   │   ├── src/hooks/        # TanStack Query hooks, one per resource
+│   │   ├── src/lib/          # API client (lib/api/), routes.ts, query-keys.ts, utils/
+│   │   ├── src/providers/    # AuthProvider, QueryProvider, ToastProvider
+│   │   ├── src/types/        # Frontend-only API response types (packages/shared has none yet)
+│   │   ├── src/proxy.ts      # Route guard (Next.js 16's renamed middleware.ts)
+│   │   └── (i18n not implemented — see PROJECT_STATUS.md TD-024)
 │   │
 │   └── api/                  # Fastify REST API
 │       └── src/

@@ -929,6 +929,22 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-020 — Phase 7 seeds 6 prompts, not the 8 named in `ROADMAP.md`'s checklist
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | `prompt_library` is seeded with exactly the 6 prompts that correspond to a real AI model call: `video_analysis`, `thumbnail_analysis`, `title_formula_detection`, `hook_classification`, `trend_clustering`, `ethical_recommendation` |
+| **Decided by** | Engineering Lead (found while implementing Phase 7's "store all prompts in DB" task) |
+
+**Context:** `ROADMAP.md`'s Phase 7 checklist names 8 items, including "transcript analysis" and "opportunity detection." Cross-checking against `n8n_Workflow_Diagrams.md` (the more detailed, authoritative workflow design) shows neither is an AI prompt: WF-03 Transcript Pipeline only fetches YouTube captions via the Data API — transcript *summarisation* is produced as part of the `video_analysis` prompt's output, not a separate call — and WF-11 Opportunity Engine is explicitly documented as "No AI calls — purely computational ranking" (`opportunity_score = velocity×0.40 + viral_score×0.30 + (100-competition)×0.20 + growth×0.10`). `AI_Strategy.md` §5.1's own "Active prompts (MVP)" table independently lists exactly these same 6 — the two documents agree with each other and disagree with `ROADMAP.md`'s checklist wording.
+
+**Decision:** Seed the 6 prompts that correspond to a real model call (migration `0009_seed_prompt_library.sql`), each transcribed from `AI_Strategy.md` §2 / `n8n_Workflow_Diagrams.md`'s per-workflow specs (system prompt, user template, and a JSON-Schema `output_schema` matching each analysis table's actual columns/enums — `hook_type`'s 9 values and `title_analyses.formula_type`'s 15 values, including `'other'`, both transcribed verbatim from `n8n_Workflow_Diagrams.md` WF-07/WF-06 rather than invented). Do not seed placeholder prompts for `transcript_analysis` or `opportunity_detection`, since no such AI call exists to version.
+
+**Consequence:** `ROADMAP.md`'s Phase 7 task wording is corrected to name the 6 real prompts instead of 8, cross-referencing this decision, so the checklist matches what was actually (and correctly) built rather than silently underreporting 6/8 forever.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.

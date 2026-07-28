@@ -16,6 +16,7 @@ import { apiKeyRoutes } from './routes/api-key.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { channelRoutes } from './routes/channel.routes.js';
 import { internalRoutes } from './routes/internal.routes.js';
+import { promptLibraryRoutes } from './routes/prompt-library.routes.js';
 import { recommendationRoutes } from './routes/recommendation.routes.js';
 import { trendRoutes } from './routes/trend.routes.js';
 import { usageRoutes } from './routes/usage.routes.js';
@@ -84,6 +85,7 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
   await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });
+  await app.register(promptLibraryRoutes, { prefix: '/api/v1/admin/prompts' });
 
   // Phase 6 closed the last of the three dependencies GET /ready checks
   // (database, redis, queue) -- no more "unimplemented dependencies" boot

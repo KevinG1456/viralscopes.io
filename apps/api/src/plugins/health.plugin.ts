@@ -2,9 +2,11 @@ import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 import type { AppConfig } from '../config.js';
+import type { WorkflowQueue } from '../lib/queue.js';
 
 interface HealthPluginOptions extends FastifyPluginOptions {
   config: AppConfig;
+  workflowQueues: Map<string, WorkflowQueue>;
 }
 
 interface DependencyCheck {
@@ -33,11 +35,24 @@ async function checkRedis(fastify: FastifyInstance): Promise<DependencyCheck> {
   }
 }
 
-function checkQueue(): DependencyCheck {
-  return {
-    status: 'not_implemented',
-    detail: 'No job queue client exists in the API yet (see Phase 6: n8n Workflow Engine).',
-  };
+// Phase 6: genuinely exercises each registered BullMQ queue's own Redis
+// path (getJobCounts), not just a generic Redis ping -- proves the queue
+// system itself is reachable, not merely that *a* Redis client works.
+async function checkQueue(workflowQueues: Map<string, WorkflowQueue>): Promise<DependencyCheck> {
+  if (workflowQueues.size === 0) {
+    return { status: 'not_implemented', detail: 'No workflow queues are registered.' };
+  }
+  try {
+    const counts = await Promise.all(
+      [...workflowQueues.entries()].map(async ([name, wq]) => {
+        const c = await wq.queue.getJobCounts();
+        return `${name}: ${JSON.stringify(c)}`;
+      }),
+    );
+    return { status: 'ok', detail: counts.join('; ') };
+  } catch (err) {
+    return { status: 'error', detail: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 export async function healthPlugin(
@@ -62,7 +77,7 @@ export async function healthPlugin(
     const checks: Record<string, DependencyCheck> = {
       database: await checkDatabase(fastify),
       redis: await checkRedis(fastify),
-      queue: checkQueue(),
+      queue: await checkQueue(opts.workflowQueues),
     };
 
     const allOk = Object.values(checks).every((check) => check.status === 'ok');

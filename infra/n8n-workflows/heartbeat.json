@@ -1,0 +1,55 @@
+{
+  "name": "Heartbeat (scheduled liveness check)",
+  "meta": {
+    "description": "Phase 6 scheduled-job example. Fires every 5 minutes via n8n's own Schedule Trigger (no BullMQ involved -- this demonstrates n8n's cron capability directly, distinct from the queue-mediated foundation-demo workflow). Calls apps/api's POST /api/v1/internal/heartbeat with the shared service token, proving n8n's scheduler is alive and can authenticate to the backend. Each call is logged to job_logs (trigger_type: 'cron') -- a missing heartbeat over time is itself an observability signal an operator can alert on."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+        }
+      },
+      "id": "a1a11111-1111-4111-8111-111111111111",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_INTERNAL_URL}}/api/v1/internal/heartbeat",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Service-Token", "value": "={{$env.N8N_SERVICE_TOKEN}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { source: \"n8n-scheduler\" } }}",
+        "options": {
+          "timeout": 10000,
+          "response": { "response": { "fullResponse": false } }
+        }
+      },
+      "id": "b2b22222-2222-4222-8222-222222222222",
+      "name": "Call Backend Heartbeat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [[{ "node": "Call Backend Heartbeat", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "id": "phase6-heartbeat"
+}

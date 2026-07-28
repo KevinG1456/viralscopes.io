@@ -2,6 +2,7 @@ import type { Database } from '@viralscopes/db';
 
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
+import { enqueueWorkflowJob, type WorkflowQueue } from '../lib/queue.js';
 import {
   findDeadLetterJobById,
   getPlatformMetrics,
@@ -57,13 +58,16 @@ export class AdminService {
 
   /**
    * Increments the retry counter and clears the last-attempt timestamp on
-   * a dead-letter row. Does NOT actually re-run the failed workflow --
-   * there is no job runner to dispatch to yet (n8n is Phase 6, not built).
-   * This is honest bookkeeping for an admin who has manually fixed the
-   * underlying issue and wants the record to reflect a retry was attempted,
-   * not a working "replay" mechanism. See TD-014.
+   * a dead-letter row. As of Phase 6, if `workflowName` matches a
+   * currently-registered queue, the original payload is genuinely
+   * re-enqueued (a real replay, run through the same retry/dead-letter
+   * path as any other job); otherwise this is honest bookkeeping only --
+   * there is no queue to dispatch that workflow name onto.
    */
-  async retryDeadLetterJob(id: string): Promise<DeadLetterJobRow> {
+  async retryDeadLetterJob(
+    id: string,
+    workflowQueues: Map<string, WorkflowQueue>,
+  ): Promise<{ job: DeadLetterJobRow; requeued: boolean }> {
     const existing = await findDeadLetterJobById(this.db, id);
     if (!existing) {
       throw new AppError('DEAD_LETTER_JOB_NOT_FOUND', 'Dead-letter job not found.', 404);
@@ -72,7 +76,17 @@ export class AdminService {
     if (!updated) {
       throw new AppError('DEAD_LETTER_JOB_NOT_FOUND', 'Dead-letter job not found.', 404);
     }
-    return updated;
+
+    const workflowQueue = workflowQueues.get(updated.workflowName);
+    if (!workflowQueue) {
+      return { job: updated, requeued: false };
+    }
+
+    await enqueueWorkflowJob(workflowQueue, {
+      workflowName: updated.workflowName,
+      payload: updated.originalPayload as Record<string, unknown>,
+    });
+    return { job: updated, requeued: true };
   }
 
   async metrics(): Promise<PlatformMetrics> {

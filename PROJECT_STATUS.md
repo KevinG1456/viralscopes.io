@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-27 (Phase 5 Core Backend API — 36/57 tasks live-verified; DEC-017, TD-014–019 added; BLK-004 Docker boot crash found and resolved same day)
-> **Status:** Phase 5 — Core Backend API (in progress, 36/57 tasks — see §2)
+> **Last Updated:** 2026-07-27 (Phase 6 n8n Workflow Engine — 9/28 tasks live-verified; DEC-018/019, TD-020–022 added)
+> **Status:** Phase 6 — n8n Workflow Engine (in progress, 9/28 tasks — see §2)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 5 — Core Backend API (36/57 ROADMAP tasks — read/CRUD business endpoints, RBAC enforcement, and plan-tier rate limiting live; YouTube Quota Manager, Search, Export, Webhooks, OpenAPI spec deferred — see §5/§12) |
-| **Overall MVP completion** | ~27% |
+| **Current phase** | Phase 6 — n8n Workflow Engine (9/28 ROADMAP tasks — queue infrastructure, base workflow template, scheduled + manually-triggered jobs, retry/dead-letter pipeline all live-verified; all 14 real business workflows deferred — see §5/§12) |
+| **Overall MVP completion** | ~31% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | RISK-01 (YouTube API quota strategy) remains unresolved — blocks TD-014 (video analysis triggering + quota manager), not the rest of Phase 5 |
-| **Active blockers** | None (BLK-004 — production Docker image crash — resolved 2026-07-27, see §8) |
-| **Open risks** | 2 (YouTube API quota strategy — still unresolved past its Week 6 target, AI cost model) |
+| **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their "before Phase 6 begins" target — blocks TD-020 (the 14 real business workflows), not the rest of Phase 6 |
+| **Active blockers** | None |
+| **Open risks** | 2 (YouTube API quota strategy — unresolved past its Week 6 target; AI cost model — unresolved past its Week 9 target) |
 | **Last status update** | 2026-07-27 |
-| **Next milestone** | M5 — API v1 Complete (Week 9) |
+| **Next milestone** | M6 — Workflows Live (Week 12) |
 
 ---
 
@@ -164,9 +164,29 @@ All 8 core project documents have been authored and are ready for engineering ha
 - [ ] `GET /analytics/viral-scores` and `/analytics/engagement` — would require a defined join between org-scoped data and global video/channel content that isn't specified anywhere in `Database_Schema.md`
 - [ ] Per-day API rate limit and 80%-quota warning email (needs TD-010's real email service); Redis-cached feature flags
 
-### Next Phase: Phase 6 (n8n Workflow Engine) / Phase 8 (Frontend Dashboard)
+### In Progress: Phase 6 — n8n Workflow Engine (9/28 ROADMAP tasks)
 
-**Start condition:** Both run parallel to Phase 5 per `ROADMAP.md`'s dependency graph (§6) and can begin now. Phase 6 is what will actually populate the `videos`/`channels`/`trends` tables this phase's read endpoints query, and unblocks TD-014 (quota manager, analyze/refresh) once RISK-01 is resolved.
+**Scope note:** `ROADMAP.md`'s Phase 6 checklist spans Setup (6 items), 14 real business Workflows, Scheduler (5 items), and Version Control (3 items) — 28 checkbox items total (corrects this document's earlier placeholder count of 52). This pass built the infrastructure and orchestration foundation — queue plumbing, a base workflow template, one scheduled job, one manually-triggered job, retry/dead-letter handling, and version-controlled workflow export/import — while deferring every one of the 14 real content-pipeline workflows, which need external AI/YouTube API access this environment doesn't have and depend on RISK-01/RISK-02, neither of which was resolved by their "before Phase 6 begins" target despite this document flagging both.
+
+**Key deliverables (merged):**
+- ✅ n8n deployed via Docker with persistent storage (`docker-compose.dev.yml`, already existed from Phase 2) — added a real healthcheck, confirmed HTTP Basic Auth genuinely gates n8n's data API (`/rest/*` correctly 401s unauthenticated; the login-page shell itself is reachable by design)
+- ✅ `apps/api`'s own BullMQ producer + in-process worker + event-driven bookkeeping (`lib/queue.ts`) satisfies ROADMAP's "Configure Redis queue (BullMQ) integration" — genuinely independent of n8n's own `EXECUTIONS_MODE` setting (see DEC-019)
+- ✅ Base workflow template (`infra/n8n-workflows/foundation-demo.json`): webhook-triggered, validates a shared service token, branches on success/simulated-failure, always responds with an explicit `{success, message}` body — the shape every future real workflow should copy
+- ✅ Retry strategy implemented exactly per `INFRASTRUCTURE_GROWTH_PLAN.md` §10.5 (immediate / 30s / 5min, then dead-letter) via a custom BullMQ backoff strategy — live-verified end to end, including the full ~5.5-minute real-time cycle to a `dead_letter_jobs` row
+- ✅ `requireServiceToken` middleware (timing-safe comparison) authenticates n8n <-> backend calls in both directions; `POST /api/v1/internal/heartbeat` (n8n calling in, confirmed firing autonomously every 5 minutes) and the queue worker's webhook dispatch (backend calling out) both live-verified
+- ✅ `POST /api/v1/admin/jobs/:workflow/trigger` (ROADMAP's manual-trigger endpoint, nested under `/admin`) and a genuinely-re-enqueuing `POST /api/v1/admin/dead-letter/:id/retry` (previously bookkeeping-only in Phase 5, now a real replay when the workflow has a registered queue)
+- ✅ Workflows exported to `infra/n8n-workflows/` with an embedded `meta.description` field each, diagrams published to `docs/workflows/`, and genuinely-working `npm run workflows:import`/`workflows:export` scripts (previously aspirational placeholders in this README)
+- ✅ Three real bugs found and fixed during live verification: `EXECUTIONS_MODE=queue` without a separate `n8n worker` process hangs every execution forever (reverted, DEC-019); n8n blocks `$env` access in node expressions by default (`N8N_BLOCK_ENV_ACCESS_IN_NODE=false` needed); BullMQ rejects colons in queue names, breaking `INFRASTRUCTURE_GROWTH_PLAN.md`'s literal `viralscopes:<priority>:<workflow>` convention (adapted to dashes)
+
+**Not done — deferred, see TD-020 through TD-022:**
+- [ ] All 14 real business workflows (Video Discovery, Metadata/Transcript/Thumbnail pipelines, AI Analysis, Title Formula Detection, Hook Classification, Engagement Analytics, Viral Score Engine, Trend Detection, Opportunity Engine, Ethical Recommendation Engine, Channel Intelligence, Alert Dispatch) — TD-020, blocked on RISK-01/RISK-02
+- [ ] Scheduled jobs for the real pipeline (6h/daily/weekly/monthly cadences) — same blocker; only the foundation demo's manual trigger and the heartbeat's 5-minute cron are real
+- [ ] Credentials store populated for external services — nothing to store yet (no YouTube/Anthropic/OpenAI keys provisioned)
+- [ ] n8n's own `EXECUTIONS_MODE=queue` + a dedicated `n8n worker` process + Postgres-backed n8n storage — TD-021 (confirmed live: queue mode without a worker hangs forever; n8n itself warns queue mode isn't officially supported against its default SQLite backing)
+
+### Next Phase: Phase 7 (AI Prompt Library) / Phase 8 (Frontend Dashboard)
+
+**Start condition:** Both run parallel to Phase 6 per `ROADMAP.md`'s dependency graph (§6). Phase 7's prompt library and Phase 8's frontend don't depend on Phase 6's deferred real workflows to begin — Phase 8 can build against the endpoints already documented in README.md §4, and Phase 7 can define/version prompts in the database independently of whether a workflow calls them yet.
 
 ---
 
@@ -181,7 +201,7 @@ Phase 2          ████████████████████  1
 Phase 3          ███████████████░░░░░   76%  ✅ Schema/migrations/seeds complete (see TD-008/TD-009 for deferred automation)
 Phase 4          █████░░░░░░░░░░░░░░░   29%  🚧 Authentication + Session Management complete (see TD-010–013 for deferred remainder)
 Phase 5          █████████████░░░░░░░   63%  🚧 Read/CRUD business endpoints + RBAC live (see TD-014–019 for deferred remainder)
-Phase 6          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 6          ██████░░░░░░░░░░░░░░   32%  🚧 Queue infra, base template, retry/dead-letter live (see TD-020–022 for deferred remainder)
 Phase 7          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 8          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 9          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -191,7 +211,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      █████░░░░░░░░░░░░░░░   27%  🚧 In progress
+Overall MVP      ██████░░░░░░░░░░░░░░   31%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -204,7 +224,7 @@ Overall MVP      █████░░░░░░░░░░░░░░░   
 | Phase 3 — Database | 42 | 32 | 0 | 10 |
 | Phase 4 — Auth | 31 | 9 | 0 | 22 |
 | Phase 5 — Backend API | 57 | 36 | 0 | 21 |
-| Phase 6 — n8n Workflows | 52 | 0 | 0 | 52 |
+| Phase 6 — n8n Workflows | 28 | 9 | 0 | 19 |
 | Phase 7 — Prompt Library | 12 | 0 | 0 | 12 |
 | Phase 8 — Frontend | 48 | 0 | 0 | 48 |
 | Phase 9 — Billing | 22 | 0 | 0 | 22 |
@@ -213,7 +233,7 @@ Overall MVP      █████░░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **448** | **122** | **0** | **326** |
+| **Total** | **424** | **131** | **0** | **293** |
 
 ---
 
@@ -227,8 +247,8 @@ Overall MVP      █████░░░░░░░░░░░░░░░   
 | Phase 3 | Database & Core Schema | ✅ Complete (schema layer) | 32/42 tasks | Week 3–4 | Retention/partition automation + dead-letter admin endpoint deferred (TD-008, TD-009) — business logic/API, out of this phase's scope |
 | Phase 4 | Authentication & Authorisation | 🚧 In progress | 9/31 tasks (29%) | Week 4–6 | Authentication + Session Management merged (PR #16); Email Service, RBAC route-enforcement, Org/Workspace Management remain (TD-010–013) — does not block Phase 5 |
 | Phase 5 | Core Backend API | 🚧 In progress | 36/57 tasks (63%) | Week 6–9 | Read/CRUD business endpoints, RBAC, plan-tier rate limiting live; YouTube Quota Manager/Search/Export/Webhooks/OpenAPI deferred (TD-014–019) |
-| Phase 6 | n8n Workflow Engine | ⏳ Not started | 0% | Week 9–12 | Parallel with Phase 5 — will populate the content tables Phase 5's read endpoints query |
-| Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 |
+| Phase 6 | n8n Workflow Engine | 🚧 In progress | 9/28 tasks (32%) | Week 9–12 | Queue infra, base workflow template, retry/dead-letter live; all 14 real workflows deferred (TD-020, blocked on RISK-01/02) |
+| Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 — not blocked by its deferred workflows |
 | Phase 8 | Frontend Dashboard | ⏳ Not started | 0% | Week 6–13 | Parallel with Phase 5 |
 | Phase 9 | Subscription & Billing | ⏳ Not started | 0% | Week 13–15 | Depends on Phase 5 |
 | Phase 10 | Security & Compliance | ⏳ Not started | 0% | Week 15–16 | Parallel with Phase 9 |
@@ -337,11 +357,30 @@ Overall MVP      █████░░░░░░░░░░░░░░░   
 - [ ] `GET /analytics/viral-scores`, `GET /analytics/engagement` — TD-019 (undefined org↔global-content join)
 - [ ] Per-day API rate limit, 80%-quota warning email, Redis-cached feature flags
 
+### Phase 6 — n8n Workflow Engine (9/28) 🚧
+
+- [x] n8n deployed via Docker with persistent named volume (existed since Phase 2; added a real healthcheck this phase)
+- [x] Redis queue integration — `apps/api`'s own BullMQ producer + in-process worker (`lib/queue.ts`), independent of n8n's internal `EXECUTIONS_MODE` (DEC-019)
+- [x] Base workflow template (`infra/n8n-workflows/foundation-demo.json`): token validation, error capture, explicit success/failure response — the shape every future real workflow copies
+- [x] Retry strategy: immediate / 30s / 5min per `INFRASTRUCTURE_GROWTH_PLAN.md` §10.5, via a custom BullMQ backoff strategy — live-verified through a full real-time cycle
+- [x] Dead-letter handling: on exhausted retries, writes to `dead_letter_jobs` + a structured admin-notification log line (real notification channel needs TD-010's email service)
+- [x] `requireServiceToken` middleware (timing-safe) authenticating n8n <-> backend calls both directions
+- [x] `POST /api/v1/internal/heartbeat` — n8n's Heartbeat workflow calls this every 5 minutes (Schedule Trigger, no queue involved); confirmed firing autonomously, not just manually
+- [x] `POST /api/v1/admin/jobs/:workflow/trigger` — ROADMAP's manual-trigger endpoint; `POST /api/v1/admin/dead-letter/:id/retry` upgraded from Phase 5's bookkeeping-only stub to a genuine re-enqueue when the workflow has a registered queue
+- [x] Workflows version-controlled in `infra/n8n-workflows/` with an embedded `meta.description` field each; diagrams in `docs/workflows/`; genuinely-working `npm run workflows:import`/`workflows:export` (previously aspirational README placeholders)
+- [x] Three real bugs found and fixed during live verification: `EXECUTIONS_MODE=queue` without a worker process hangs every execution forever (reverted); n8n blocks `$env` access in expressions by default (`N8N_BLOCK_ENV_ACCESS_IN_NODE=false` needed); BullMQ rejects colons in queue names (adapted `INFRASTRUCTURE_GROWTH_PLAN.md`'s naming convention to dashes)
+
+**Not done — deferred, see TD-020 through TD-022:**
+- [ ] All 14 real business workflows (Video Discovery, Metadata/Transcript/Thumbnail pipelines, AI Analysis, Title Formula Detection, Hook Classification, Engagement Analytics, Viral Score Engine, Trend Detection, Opportunity Engine, Ethical Recommendation Engine, Channel Intelligence, Alert Dispatch) — TD-020, blocked on RISK-01/RISK-02
+- [ ] Real scheduled cadences (every 6h/daily/weekly/monthly) for the above — same blocker
+- [ ] Credentials store populated for external services — TD-022, nothing to store yet (no YouTube/Anthropic/OpenAI keys)
+- [ ] n8n's own `EXECUTIONS_MODE=queue` + dedicated `n8n worker` + Postgres-backed n8n storage — TD-021
+
 ---
 
 ## 6. In-Progress Tasks
 
-*No tasks are actively in progress right now. Phase 5's read/CRUD business endpoints, RBAC enforcement, and plan-tier rate limiting are merged; its remaining task groups (YouTube Quota Manager — TD-014, Search — TD-015, Export — TD-016, Webhooks — TD-017, OpenAPI spec — TD-018, Analytics breakdowns — TD-019) are blocked or not started and not currently assigned. Phase 4's remainder (Transactional Email Service — TD-010, Organisation & Workspace Management — TD-011, auth audit logging — TD-013) is also still outstanding. Phase 6 (n8n Workflow Engine) and Phase 8 (Frontend Dashboard) are ready to begin in parallel — see §2 and §14.*
+*No tasks are actively in progress right now. Phase 6's queue infrastructure, base workflow template, and retry/dead-letter pipeline are merged; its remaining task groups (the 14 real business workflows — TD-020, n8n's own queue-mode scaling — TD-021, external credentials store — TD-022) are blocked or not started and not currently assigned. Phase 5's remainder (TD-014 through TD-019) and Phase 4's remainder (TD-010, TD-011, TD-013) are also still outstanding. Phase 7 (AI Prompt Library) and Phase 8 (Frontend Dashboard) are ready to begin in parallel — see §2 and §14.*
 
 ---
 
@@ -478,7 +517,7 @@ When a blocker is identified, log it in this format:
 | **Severity** | Critical |
 | **Probability** | High |
 | **Phases affected** | Phase 5, Phase 6 |
-| **Status** | Open — decision required before Phase 5 begins |
+| **Status** | Open — overdue. Target was "before Phase 5 begins" (Week 6); still unresolved as of Phase 6's start. Phase 5 and Phase 6 both proceeded by scoping out everything that depends on it (TD-014, TD-020) rather than guessing |
 
 **Description:**
 
@@ -507,7 +546,7 @@ The YouTube Data API v3 free tier provides 10,000 quota units per day. A search 
 | **Severity** | High |
 | **Probability** | High |
 | **Phases affected** | Phase 6, Phase 7 |
-| **Status** | Open — cost model must be validated before Phase 6 begins |
+| **Status** | Open — overdue. Target was "before Phase 6 begins" (Week 9); still unresolved as Phase 6's foundation work landed. Scoped out (TD-020) rather than guessing a cost model |
 
 **Description:**
 
@@ -858,6 +897,38 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-018 — n8n calls out to `apps/api`'s BullMQ worker, not the other way around
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | `apps/api` runs a real BullMQ producer + in-process `Worker`; the worker's processor function calls n8n's webhook synchronously and treats n8n's response as the job outcome. n8n never polls or pulls from the queue itself |
+| **Decided by** | Engineering Lead (found while implementing Phase 6's "Configure Redis queue (BullMQ) integration", not assumed to be needed upfront) |
+
+**Context:** `INFRASTRUCTURE_GROWTH_PLAN.md` §10.1 describes "API enqueues jobs; n8n polls and executes them." n8n has no first-party BullMQ consumer node — building genuine n8n-side polling would mean either a custom n8n node or an HTTP dequeue/complete/fail bridge that's arguably a *larger* custom protocol surface than the alternative, for no functional benefit at this scale.
+
+**Decision:** `apps/api`'s own `Worker` (standard BullMQ usage: an in-process consumer with a processor callback) picks up each job and makes ONE synchronous HTTP call to n8n's webhook for that workflow, attaching the shared service token. n8n's `{success, message}` response is the job's pass/fail signal — a thrown error inside the processor triggers BullMQ's normal retry/backoff. All persistence (job_logs, dead_letter_jobs), retry counting, and backoff scheduling stay in `apps/api`; n8n only ever receives a webhook call and returns a response — the architecture constraint requiring business rules/persistence to live in the backend, not n8n, is satisfied by construction, not by convention.
+
+**Consequence:** This differs from `INFRASTRUCTURE_GROWTH_PLAN.md`'s literal "n8n polls" phrasing — noted here rather than silently deviating from documented architecture. Functionally equivalent (queue-mediated handoff between API and n8n) with a much smaller integration surface; live-verified end to end including the full retry-to-dead-letter cycle.
+
+---
+
+### DEC-019 — n8n's own `EXECUTIONS_MODE=queue` reverted to default "regular" mode
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | n8n runs in its default single-instance "regular" execution mode. `EXECUTIONS_MODE=queue` (BullMQ-backed, n8n's own internal scaling feature) was tried, found broken, and reverted |
+| **Decided by** | Engineering Lead (found live while verifying Phase 6's Docker Compose changes) |
+
+**Context:** `EXECUTIONS_MODE=queue` makes n8n's main process only *enqueue* executions onto its own internal queue — a separate `n8n worker` process (a distinct container/command) is required to actually consume and run them. Configured queue mode without also adding a worker service; confirmed live that every execution (a webhook call, a scheduled trigger) enqueued and then hung forever, since nothing existed to dequeue it. n8n also logs "Scaling mode is not officially supported with sqlite" on every boot in this mode — a genuine second problem, since a shared-storage worker setup would need n8n's own execution database moved to Postgres too.
+
+**Decision:** Reverted to n8n's default regular mode, which executes in-process and needs no separate worker — confirmed live this is what n8n itself treats as fully supported against the default SQLite backing. `apps/api`'s own BullMQ queue (DEC-018) is entirely unaffected either way — it's a separate set of BullMQ Queue/Worker instances that happen to share the same Redis server, not connected to n8n's internal execution mode at all.
+
+**Consequence:** A dedicated `n8n worker` service + Postgres-backed n8n storage is real, legitimate scaling work for when it's actually needed (matches `INFRASTRUCTURE_GROWTH_PLAN.md`'s own "Stage 2 — Multiple n8n Workers" framing) — deferred as TD-021, not configured now.
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -1191,6 +1262,57 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-020 — 14 real business workflows not built (Video Discovery, AI Analysis Pipeline, etc.)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Medium |
+| **Phases affected** | Phase 6 |
+| **Status** | Accepted (blocked, not guessable) |
+
+**Description:** `ROADMAP.md`'s Phase 6 checklist lists 14 real business workflows: Video Discovery, Metadata Pipeline, Transcript Pipeline, Thumbnail Analysis, AI Analysis Pipeline, Title Formula Detection, Hook Classification, Engagement Analytics, Viral Score Engine, Trend Detection, Opportunity Engine, Ethical Recommendation Engine, Channel Intelligence, and Alert Dispatch. None are built. Only the queue/orchestration foundation and two infrastructure-proving workflows (`foundation-demo`, `heartbeat`) were delivered — see `docs/workflows/README.md`.
+
+**Why accepted:** Every one of these needs live YouTube Data API and/or Anthropic/OpenAI API access this environment doesn't have credentials for, and each depends on a quota or cost strategy that's still unresolved: RISK-01 (YouTube API quota strategy, overdue since "before Phase 5 begins") and RISK-02 (AI cost model, overdue since "before Phase 6 begins" — see updated Status fields on both). Building any of the 14 now would mean guessing quota/cost/retry parameters rather than implementing a decided strategy, which is exactly the guessing this document's process is meant to avoid (see TD-014's identical reasoning for the Phase 5 YouTube Quota Manager). `foundation-demo.json` establishes the exact webhook-in/respond-with-`{success,message}` shape every one of these 14 will follow once unblocked, so the foundation isn't wasted work.
+
+**Resolution plan:** Resolve RISK-01 and RISK-02, provision the needed API keys, then implement each workflow against `foundation-demo.json`'s template — validate `X-Service-Token` first, do the real work, always end in an explicit `{success, message}` JSON response (the BullMQ Worker's retry logic in `apps/api/src/lib/queue.ts` depends on that response shape).
+
+---
+
+### TD-021 — n8n runs single-instance ("regular" mode); no dedicated worker or Postgres-backed n8n storage
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 6 |
+| **Status** | Accepted (deferred scaling work) |
+
+**Description:** n8n runs in its default regular execution mode against its bundled SQLite storage (see DEC-019). `EXECUTIONS_MODE=queue` plus a separate `n8n worker` process plus Postgres-backed n8n storage — the setup `INFRASTRUCTURE_GROWTH_PLAN.md` describes as n8n's own scaling path — is not configured.
+
+**Why accepted:** Live-tested queue mode without a worker and confirmed every execution hangs forever with nothing to consume it; n8n itself logs scaling mode as unsupported against SQLite. At current load (two infrastructure-proving workflows, no real traffic) regular mode is what n8n treats as fully supported, and standing up a second n8n process plus a storage migration is real infrastructure work with no current driver.
+
+**Resolution plan:** When workflow volume or concurrency actually requires it (per `INFRASTRUCTURE_GROWTH_PLAN.md`'s own stage triggers), add a dedicated `n8n worker` service to both compose files, move n8n's own storage to Postgres, and re-enable `EXECUTIONS_MODE=queue`.
+
+---
+
+### TD-022 — n8n credentials store not populated (no external service keys configured)
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Low |
+| **Phases affected** | Phase 6 |
+| **Status** | Accepted (blocked on same dependency as TD-020) |
+
+**Description:** n8n's built-in credentials store (for YouTube, Anthropic, OpenAI, etc.) has nothing configured in it. The two delivered workflows don't need external credentials — `foundation-demo` only checks a shared service token, and `heartbeat` only calls back into `apps/api`.
+
+**Why accepted:** There's nothing to configure yet without the API keys TD-020 is also blocked on; populating placeholder credentials now would be untested, dead configuration.
+
+**Resolution plan:** Populate n8n's credentials store as part of implementing each of TD-020's 14 workflows, using whichever secret each one actually needs.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -1222,25 +1344,26 @@ When a known issue is identified, log it in this format:
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Overdue — target was "before Phase 5 begins" (Week 6); Phase 5 proceeded without it by scoping out everything that depends on it (TD-014) rather than guessing |
-| 🟠 P2 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Decision needed before Phase 6 |
+| 🔴 P1 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Overdue — target was "before Phase 5 begins" (Week 6); both Phase 5 and Phase 6 proceeded without it by scoping out everything that depends on it (TD-014, TD-020) rather than guessing |
+| 🔴 P1 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Overdue — target was "before Phase 6 begins" (Week 9); blocks all 14 of TD-020's real workflows |
 
-### Next Up — Phase 5 remainder + Phase 6/8 kickoff
+### Next Up — Phase 6 remainder + Phase 7/8 kickoff
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Resolve RISK-01 (YouTube quota strategy) | Engineering Lead | Blocks TD-014 specifically — quota manager, `/videos/analyze`, `/videos/refresh`, `/admin/quota/reset` |
-| 🔴 P1 | Begin Phase 6 (n8n Workflow Engine) | Engineer | Populates the `videos`/`channels`/`trends` tables Phase 5's read endpoints currently query against empty data |
-| 🟠 P2 | Begin Phase 8 (Frontend Dashboard) | Engineer | Parallel with Phase 5/6 per `ROADMAP.md` §6; can consume the endpoints documented in README.md §4 |
+| 🔴 P1 | Resolve RISK-01 (YouTube quota strategy) and RISK-02 (AI cost model) | Engineering Lead | Both now block TD-020's 14 real business workflows, not just Phase 5's quota manager |
+| 🔴 P1 | Begin Phase 7 or Phase 8 (per `ROADMAP.md`'s dependency graph) | Engineer | Phase 6's queue/orchestration foundation is in place; the 14 real workflows (TD-020) are blocked on RISK-01/02 regardless of which phase runs next |
 | 🟠 P2 | Transactional email service: provision SendGrid/Resend, build 7 templates, SPF/DKIM/DMARC | Engineer / Repo owner | TD-010 — needed before any staging deployment with real user signups |
 | 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing) |
 | 🟡 P3 | OpenAPI/Swagger spec generation | Engineer | TD-018 |
 | 🟡 P3 | Add `audit_logs` writes to all auth code paths | Engineer | TD-013 |
 | 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category |
+| 🟡 P3 | Dedicated `n8n worker` + Postgres-backed n8n storage | Engineer | TD-021 — only needed once real workflow volume justifies it |
 
 ### Backlog (Next 4 Weeks)
 
-- Begin Phase 6 (n8n Workflow Engine) and Phase 8 (Frontend Dashboard) in parallel with Phase 5's remainder, per `ROADMAP.md`'s parallel-development notes
+- Resolve RISK-01/RISK-02, then implement TD-020's 14 real business workflows against `foundation-demo.json`'s template
+- Begin Phase 7 and/or Phase 8 (Frontend Dashboard) per `ROADMAP.md`'s parallel-development notes
 - Phase 5 remainder once unblocked: YouTube Quota Manager + analyze/refresh (needs RISK-01), Search, Export (needs R2 provisioning), Webhooks (needs Phase 9), OpenAPI spec, Analytics viral-scores/engagement
 - Phase 4 remainder: Transactional Email Service, Organisation & Workspace Management, auth audit logging
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
@@ -1262,6 +1385,8 @@ When a known issue is identified, log it in this format:
 | 2026-07-27 | Engineering (AI-assisted) | Phase 5 — Core Backend API: 36 of 57 `ROADMAP.md` tasks implemented and live-verified against real Postgres/Redis (corrects this document's earlier placeholder count of 58). Delivered: paginated Videos/Channels/Trends/Opportunities reads (global content), org-scoped Recommendations reads, full Watchlist and Alert Rule CRUD with plan-tier quota enforcement (`Pricing_Strategy.md` §2.6/§3) and creator-or-org-manager write authorisation, Alert Events reads, API Keys CRUD (sha256-hashed, plaintext shown once, plan-gated), Usage and Analytics-overview endpoints, and Admin endpoints (users/organizations/jobs/dead-letter/metrics) behind a new `requireSuperAdmin` middleware that reads `users.role` live from the DB rather than the JWT (DEC-017) — this is what actually puts Phase 4's RBAC pattern into practice for the first time (TD-012, now partially resolved). `withTenant()`, built in Phase 3 and never called until now, is wired into every org-scoped query. Added plan-tier-aware Redis rate limiting reusing the `planTier` JWT claim. Found and fixed two real bugs during live verification, not just type-checking: a `z.coerce.boolean()` query-param bug that silently coerced the literal string `"false"` to `true` (affecting the dead-letter and trends filters), and a rate-limit fallback bug that gave Free/Starter tiers the generous Enterprise ceiling instead of the intended conservative one — both confirmed via before/after live HTTP requests against dedicated test fixtures (cleaned up afterward). Deliberately did not build: the YouTube Quota Manager or `/videos/analyze`/`/refresh` (blocked on RISK-01, which this document flagged as "decision required before Phase 5 begins" on 2026-07-20 and which was never resolved — logged as TD-014 rather than guessing a quota strategy), unified Search (TD-015), Export (TD-016, needs R2 provisioning), Webhooks (TD-017, needs Phase 9), the OpenAPI/Swagger spec (TD-018, documented as a markdown table in README.md §4 instead), and Analytics viral-scores/engagement (TD-019, undefined org↔global-content join). README.md's API reference and stale Phase-4-era environment-variable descriptions (`DATABASE_APP_URL`/`REDIS_URL` were described as "not yet consumed" — inaccurate since Phase 4) were corrected. Docker-verified `apps/api`'s production image per Phase 5's verification requirements — found and logged BLK-004: the runner stage never copies `packages/db`, so the `@viralscopes/db` workspace symlink dangles and the container crashes on boot on the first database-touching request. Pre-existing since Phase 4 (the first phase to add a runtime dependency on `@viralscopes/db`), not introduced by Phase 5, and not fixed here — reported rather than silently expanding scope into deployment-infrastructure changes. Does not affect local/dev-mode operation, which is how Phase 4 and Phase 5 were both live-verified. |
 | 2026-07-27 | Engineering (AI-assisted) | BLK-004 resolved: gave `packages/db` a real build path (`tsconfig.build.json`, `npm run build` emitting `dist/` with declarations) without disturbing its existing zero-build tsx dev workflow's underlying mechanism — only its package.json `main`/`types` now point at compiled output instead of source, which is a disclosed workflow change (packages/db must be rebuilt after source edits, in dev or Docker). `Dockerfile.api`'s builder stage now runs `turbo run build --filter=@viralscopes/api`, which turbo's own dependency graph expands to build `@viralscopes/db` first automatically; the runner stage now also copies `packages/db/dist` and its `package.json`, giving the workspace symlink a real target. Live-verified twice: rebuilt and booted the Docker image against real dev Postgres/Redis, ran a login + a Phase 5 endpoint + an admin endpoint entirely through the container (previously an instant `ERR_MODULE_NOT_FOUND` crash); separately re-ran `tsc --noEmit`/`eslint`/a full `tsx`-mode boot + login + endpoint call to confirm zero regression to local dev from the `package.json` change. |
 | 2026-07-27 | Engineering (AI-assisted) | PR #17 (`feat/VS-phase5-core-backend-api`) opened for the Phase 5 feature commit (already-merged BLK-004 Docker fix stayed on `main` directly, per prior approval). CI's initial run failed: `turbo.json`'s `type-check` task lacked `dependsOn: ["^build"]`, so a fresh checkout ran `apps/api`'s type-check before `packages/db`'s new `dist/` existed (see BLK-004's resolution note in §8). Root-caused and fixed rather than bypassed — added the missing dependency, verified against a true fresh-build simulation, re-ran the full CI-equivalent sequence clean, pushed the fix as a second commit on the same PR. All required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green; CodeQL explicitly reported no new alerts introduced by the PR's diff. |
+| 2026-07-27 | Engineering (AI-assisted) | PR #17 squash-merged to `main` (commit `2341e50`) after confirming zero merge conflicts, no unresolved review comments, no new security findings, and that this document plus `CHANGELOG.md` accurately reflected the implementation. Verified `main` builds clean post-merge; `develop` fast-forwarded to match (`2341e50`, confirmed identical tip via `git ls-remote`); `feat/VS-phase5-core-backend-api` deleted from the remote, leaving only `main`/`develop`. Phase 5 retrospective: 36/57 tasks delivered and live-verified; the two real bugs found during Phase 5 verification (boolean query-param coercion, rate-limit tier fallback) and the CI build-order fix are the only defects the phase surfaced; TD-014 through TD-019 capture everything intentionally deferred, all blocked on RISK-01 or explicit product/infra decisions rather than left ambiguous. |
+| 2026-07-27 | Engineering (AI-assisted) | Phase 6 — n8n Workflow Engine: 9 of 28 `ROADMAP.md` tasks implemented and live-verified against a real Docker Compose stack (Postgres, Redis, n8n, `apps/api`) — not merged yet, work is currently uncommitted directly on `main` pending a dedicated feature branch and PR, per the established Phase 5 workflow. Delivered: a real BullMQ producer/worker in `apps/api` (`lib/queue.ts`) that dispatches jobs to n8n webhooks and treats the HTTP response as the outcome, with custom retry backoff (0s/30s/5min, 4 attempts) and dead-letter transition on exhaustion — n8n never touches the queue directly, keeping all persistence/retry/business logic in the backend (DEC-018); `job_logs`/`dead_letter_jobs` writes wired to real job lifecycle events; a `requireServiceToken` middleware (timing-safe comparison) gating a new `/api/v1/internal/heartbeat` endpoint; an admin manual-trigger endpoint (`POST /api/v1/admin/jobs/:workflow/trigger`) and a genuinely-functional dead-letter retry (previously a stub); `/health`'s queue check now calls real `getJobCounts()` instead of returning a static placeholder; two n8n workflows (`foundation-demo.json` as the template every future workflow will follow, `heartbeat.json` as a scheduled liveness check) built, imported, and live-tested end to end including the full retry-to-dead-letter cycle. Found and fixed three real bugs during live verification: BullMQ rejects colon-delimited queue names despite `INFRASTRUCTURE_GROWTH_PLAN.md` documenting that convention literally; n8n's `EXECUTIONS_MODE=queue` hangs every execution forever without a separate `n8n worker` process, reverted to n8n's default regular mode (DEC-019, TD-021); n8n blocks `$env` access in node expressions by default, breaking both workflows' service-token checks, fixed via `N8N_BLOCK_ENV_ACCESS_IN_NODE`. Deliberately did not build the 14 real business workflows the roadmap lists (Video Discovery, AI Analysis Pipeline, etc.) — all blocked on RISK-01/RISK-02, neither of which has been resolved despite both being overdue — logged as TD-020 rather than guessed at; a dedicated `n8n worker`/Postgres-backed n8n storage (TD-021) and populating n8n's credentials store (TD-022) are deferred for the same reason or lack of current need. |
 
 ---
 

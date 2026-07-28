@@ -260,7 +260,7 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/api/v1/recommendations/:videoId` | Recommendations for one video |
 | GET / POST / PUT / DELETE | `/api/v1/watchlists`, `/api/v1/watchlists/:id` | Watchlist CRUD (plan-limited, creator/owner/admin can modify) |
 | GET / POST / PUT / DELETE | `/api/v1/alerts/rules`, `/api/v1/alerts/rules/:id` | Alert rule CRUD (plan-limited) |
-| GET | `/api/v1/alerts/events` | Alert dispatch history (read-only — written by Phase 6, not built yet) |
+| GET | `/api/v1/alerts/events` | Alert dispatch history (read-only — written by the real Alert Dispatch workflow, not built yet, see TD-020) |
 | GET / POST / DELETE | `/api/v1/api-keys`, `/api-keys/:id` | API key CRUD (plan-gated; plaintext key returned once on create) |
 | GET | `/api/v1/usage` | Current-period usage vs plan quota |
 | GET | `/api/v1/analytics/overview` | Org KPIs: watchlists, alert rules, alert events (30d), API keys, usage |
@@ -273,10 +273,17 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/organizations` | List all organisations |
 | GET | `/jobs` | n8n job execution log (filters: status, workflowName) |
 | GET | `/dead-letter` | Dead-letter job queue (filter: resolved) |
-| POST | `/dead-letter/:id/retry` | Increment retry counter — does **not** re-execute (no job runner exists yet, n8n is Phase 6) |
+| POST | `/dead-letter/:id/retry` | Increment retry counter; **genuinely re-enqueues** the job if its `workflowName` matches a registered queue (Phase 6), otherwise bookkeeping only |
+| POST | `/jobs/:workflow/trigger` | Manually enqueue a job for a registered workflow (ROADMAP.md's `POST /api/v1/jobs/:workflow/trigger`, nested under `/admin` for consistency with the rest of this file). Only `foundation-demo` is registered so far |
 | GET | `/metrics` | Basic platform counts (users, orgs, job status last 24h, unresolved dead-letter) |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-019):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, and the OpenAPI/Swagger spec itself.
+**Internal — service-token authenticated, not for browser/customer use (Phase 6 — `/api/v1/internal`)**
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/heartbeat` | Called by n8n's scheduled Heartbeat workflow every 5 minutes; proves n8n's scheduler is alive and can authenticate to the backend. Logged to `job_logs` |
+
+**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-020):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, and all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from).
 
 ---
 
@@ -393,7 +400,7 @@ curl http://localhost:3000/api/health
 curl http://localhost:3001/ready
 ```
 
-`/ready` currently reports `not_ready` with a `checks` object explaining which dependencies (database, Redis, queue) aren't wired into the API yet — that's expected until later phases add real clients for them. It's not a bug; it's the API being honest about its own state.
+As of Phase 6, `/ready` reports `ready` with all three dependencies (`database`, `redis`, `queue`) `ok` once `.env` is fully configured — the `queue` check genuinely calls BullMQ's `getJobCounts()` for every registered workflow queue, not just a generic Redis ping. If any dependency isn't reachable (or `.env` is incomplete), `checks` explains exactly which one and why — it's the API being honest about its own state, not a bug.
 
 ### Logging
 
@@ -435,6 +442,65 @@ A full reset-and-rebuild cycle:
 ```bash
 npm run db:reset && npm run db:migrate && npm run db:setup-roles && npm run db:seed
 ```
+
+### n8n Workflow Engine Setup
+
+n8n (`docker-compose.dev.yml`'s `n8n` service) orchestrates workflows but holds no business logic itself — job retry counting, dead-letter transition, and all persistence live in `apps/api/src/lib/queue.ts`. See `docs/workflows/README.md` for the full architecture diagram.
+
+**1. Start n8n** (with Postgres and Redis, which it depends on):
+
+```bash
+docker compose -f docker-compose.dev.yml up -d postgres redis n8n
+```
+
+Wait for it to report healthy (`docker ps` shows `(healthy)`, usually ~15–20s), then confirm:
+
+```bash
+curl http://localhost:5678/healthz   # {"status":"ok"}
+```
+
+The editor itself is at http://localhost:5678, protected by HTTP Basic Auth (`N8N_BASIC_AUTH_USER`/`_PASSWORD`, defaults `admin`/`admin` in dev — see `.env.example`). Note that the login page shell itself is always reachable unauthenticated (by design, so the browser can render the login form); n8n's actual data API (`/rest/*`) correctly returns `401` without valid credentials — confirmed live.
+
+**2. Set `N8N_SERVICE_TOKEN`** identically in both `apps/api/.env` and the `n8n` container (docker-compose.dev.yml defaults both to the same dev-only value, so this is automatic locally — only matters if you override one).
+
+**3. Import the workflows:**
+
+```bash
+npm run workflows:import
+```
+
+This uses the n8n CLI directly (`docker exec ... n8n import:workflow`), not n8n's REST API — a fresh n8n instance requires an interactively-created owner account before its REST API accepts any calls at all, which the CLI path avoids entirely (confirmed live during Phase 6 verification). Newly-imported workflows are inactive; publish and restart:
+
+```bash
+docker exec viralscopesio-n8n-1 n8n publish:workflow --id=phase6-foundation-demo
+docker exec viralscopesio-n8n-1 n8n publish:workflow --id=phase6-heartbeat
+docker restart viralscopesio-n8n-1
+```
+
+After making changes in the n8n UI, export them back before committing:
+
+```bash
+npm run workflows:export
+```
+
+**4. Verify end-to-end**, with `apps/api` running (`npm run dev --workspace=apps/api`):
+
+```bash
+# Webhook auth (should fail without the token, succeed with it)
+curl -X POST http://localhost:5678/webhook/foundation-demo -H 'Content-Type: application/json' -d '{"payload":{}}'
+curl -X POST http://localhost:5678/webhook/foundation-demo -H 'Content-Type: application/json' -H 'X-Service-Token: dev-only-service-token-change-me' -d '{"payload":{}}'
+
+# Backend -> n8n, admin-triggered (requires a super_admin JWT)
+curl -X POST http://localhost:3001/api/v1/admin/jobs/foundation-demo/trigger -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# n8n -> backend (heartbeat fires automatically every 5 minutes once active;
+# this calls it immediately instead of waiting)
+curl -X POST http://localhost:3001/api/v1/internal/heartbeat -H 'X-Service-Token: dev-only-service-token-change-me' -d '{}'
+```
+
+Every attempt is recorded in `job_logs`; a job that fails all 4 attempts (immediate, 30s, 5min delays — `INFRASTRUCTURE_GROWTH_PLAN.md` §10.5) lands in `dead_letter_jobs`, retrievable via `GET /api/v1/admin/dead-letter` and re-triggerable via `POST /api/v1/admin/dead-letter/:id/retry`. Trigger the simulated-failure path with `{"payload":{"forceFail":true}}` on the admin trigger endpoint above.
+
+**Known limitation:** n8n's own `EXECUTIONS_MODE=queue` (a separate concept from `apps/api`'s BullMQ queue above) needs a dedicated `n8n worker` process to actually run anything — confirmed live that without one, executions enqueue and hang forever. Not configured here; deferred as TD-021. n8n's default single-instance "regular" mode (what's configured) needs no separate worker and is the only mode n8n itself calls officially supported against the default SQLite backing.
 
 ### Building the Production Docker Images
 
@@ -568,7 +634,9 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 
 | Variable | Description |
 |---|---|
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | AI analysis pipeline |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | AI analysis pipeline — not yet consumed; the 14 real business workflows that would need it are deferred (TD-020) |
+| `N8N_SERVICE_TOKEN` | Shared secret authenticating n8n <-> `apps/api` calls both directions — read by `apps/api` (`requireServiceToken`, the admin trigger route) and by n8n's workflows via `{{$env.N8N_SERVICE_TOKEN}}` |
+| `N8N_INTERNAL_URL` | Where `apps/api` sends outgoing calls to n8n (webhook dispatch, admin trigger) — n8n's own container-internal address, not the browser-facing `N8N_WEBHOOK_URL` above |
 
 ### Required Starting Phase 9 — Subscription & Billing
 
@@ -1005,21 +1073,25 @@ Every AI call is cached in Redis keyed by `(prompt_version, sha256(normalised_in
 npm run workflows:import
 ```
 
-This imports all JSON files from `/infra/n8n-workflows/` into the running n8n instance.
+This imports all JSON files from `/infra/n8n-workflows/` into the running n8n instance, via the n8n CLI (`docker exec`), not its REST API. Imported workflows are inactive until published and n8n is restarted — see §6 "n8n Workflow Engine Setup" for the exact commands.
 
 **Q: How do I retry a failed job from the dead-letter queue?**
 
-Via the Super Admin Panel at `/admin/dead-letter`, or via the API:
+Via the Super Admin Panel (not built yet — Phase 8) or the API directly:
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/admin/dead-letter/{jobId}/retry   -H "Authorization: Bearer $ADMIN_TOKEN"
+curl -X POST http://localhost:3001/api/v1/admin/dead-letter/{jobId}/retry -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-**Q: How do I manually trigger the video discovery workflow?**
+This genuinely re-enqueues the job (Phase 6) if its workflow is currently registered; otherwise it's bookkeeping only (the response's `requeued` field tells you which happened).
+
+**Q: How do I manually trigger a workflow?**
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/jobs/video-discovery/trigger   -H "Authorization: Bearer $ADMIN_TOKEN"
+curl -X POST http://localhost:3001/api/v1/admin/jobs/foundation-demo/trigger -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
+
+Nested under `/admin` (not the bare `/api/v1/jobs/...` path ROADMAP.md's shorthand suggests) for consistency with every other platform-wide operation in this file. Only `foundation-demo` (the Phase 6 template workflow) is registered — the real business workflows (`video-discovery`, etc.) aren't built yet, see TD-020.
 
 **Q: How do I reset the YouTube API quota counter?**
 

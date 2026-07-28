@@ -36,6 +36,9 @@ export const jobLogs = pgTable(
     primaryKey({ columns: [table.id, table.createdAt] }),
     index('idx_job_logs_workflow_name').on(table.workflowName, table.createdAt.desc()),
     index('idx_job_logs_status').on(table.status, table.createdAt.desc()),
+    // Migration 0008: looked up by execution_id (the BullMQ job id) as a
+    // job progresses through started -> retrying -> completed/failed.
+    index('idx_job_logs_execution_id').on(table.executionId),
     check(
       'job_logs_status_check',
       sql`${table.status} IN ('started', 'completed', 'failed', 'retrying')`,

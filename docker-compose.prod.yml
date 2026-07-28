@@ -103,10 +103,32 @@ services:
     image: n8nio/n8n:latest
     restart: unless-stopped
     env_file: .env.production
+    environment:
+      # n8n's own EXECUTIONS_MODE=queue needs a separate `n8n worker`
+      # process + Postgres-backed storage to actually work (confirmed live
+      # in dev: without a worker, executions enqueue and hang forever) --
+      # deferred as TD-021, not configured here. apps/api's own BullMQ
+      # producer/worker (lib/queue.ts) already satisfies ROADMAP.md's
+      # "Configure Redis queue (BullMQ) integration" independently of this
+      # setting. N8N_SERVICE_TOKEN comes from .env.production (env_file
+      # above), never hard-coded here.
+      API_INTERNAL_URL: http://api:3001
+      # See docker-compose.dev.yml's n8n block -- required for workflow
+      # expressions to read N8N_SERVICE_TOKEN/API_INTERNAL_URL at all.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'
     networks:
       - viralscopes
     volumes:
       - n8n-data:/home/node/.n8n
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:5678/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.n8n.rule=Host(`${N8N_DOMAIN:-n8n.viralscopes.io}`)'

@@ -42,6 +42,14 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
+
+  // Phase 6: shared secret authenticating n8n <-> apps/api calls in both
+  // directions (requireServiceToken checks incoming calls from n8n;
+  // the admin manual-trigger route attaches it calling out to n8n).
+  N8N_SERVICE_TOKEN: z
+    .string()
+    .min(32, 'N8N_SERVICE_TOKEN must be at least 32 characters (shared secret with n8n)'),
+  N8N_INTERNAL_URL: z.string().url().default('http://localhost:5678'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>['APP_ENV'];
@@ -70,6 +78,10 @@ export interface AppConfig {
   oauth: {
     google: OAuthProviderConfig | null;
     github: OAuthProviderConfig | null;
+  };
+  n8n: {
+    serviceToken: string;
+    internalUrl: string;
   };
 }
 
@@ -112,5 +124,9 @@ export function loadConfig(): AppConfig {
       refreshExpiry: data.JWT_REFRESH_EXPIRY,
     },
     oauth: { google, github },
+    n8n: {
+      serviceToken: data.N8N_SERVICE_TOKEN,
+      internalUrl: data.N8N_INTERNAL_URL,
+    },
   };
 }

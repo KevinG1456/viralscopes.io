@@ -22,7 +22,9 @@
     "db:setup-roles": "npm run db:setup-roles --workspace=packages/db",
     "db:seed": "npm run db:seed --workspace=packages/db",
     "db:reset": "npm run db:reset --workspace=packages/db",
-    "db:studio": "npm run db:studio --workspace=packages/db"
+    "db:studio": "npm run db:studio --workspace=packages/db",
+    "workflows:import": "node infra/n8n-workflows/sync.mjs import",
+    "workflows:export": "node infra/n8n-workflows/sync.mjs export"
   },
   "devDependencies": {
     "@eslint/js": "^9",

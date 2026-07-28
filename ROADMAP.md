@@ -554,66 +554,68 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 
 #### Tasks
 
+**Scope note (2026-07-28):** Delivered against explicit, reduced requirements from the repo owner (Application Shell, Authentication, Dashboard, CRUD for Watchlists/Alerts/API Keys/Profile/Organisation, Phase 7 AI integration, state management) rather than this full 45-item aspirational list — 17/45 ROADMAP items are checked below; the rest are deferred for documented reasons (empty content tables — TD-020; no org-management endpoint — TD-011; Phase 9 billing; no OAuth provider credentials to verify against; i18n/Changelog/full Admin panel/onboarding not requested). See DEC-023 through DEC-025 and TD-024 in `PROJECT_STATUS.md`.
+
 **Foundation**
-- [ ] Next.js 14+ App Router + TypeScript
-- [ ] Tailwind CSS + design tokens from Phase 1
-- [ ] shadcn/ui component library
-- [ ] TanStack Query for all server state
-- [ ] Typed API client layer in `apps/web/lib/api/`
-- [ ] Route paths as constants in `apps/web/lib/routes.ts`
-- [ ] `next-intl` i18n integration from day one
-- [ ] Global error boundary and loading state components
-- [ ] Responsive layout shell: collapsible sidebar + topbar
+- [x] Next.js 14+ App Router + TypeScript (16.2, scaffolded Phase 1, now actually wired with real pages)
+- [x] Tailwind CSS + design tokens from Phase 1 (existed since Phase 1, now actually used)
+- [x] shadcn/ui component library — hand-built on Radix primitives + `cva` + `tailwind-merge`, matching shadcn's own actual model (copied source, not an installed runtime package)
+- [x] TanStack Query for all server state
+- [x] Typed API client layer in `apps/web/src/lib/api/`
+- [x] Route paths as constants in `apps/web/src/lib/routes.ts`
+- [ ] `next-intl` i18n integration from day one — not requested, not built
+- [x] Global error boundary and loading state components
+- [x] Responsive layout shell: collapsible sidebar (mobile drawer) + topbar
 
 **Authentication Pages**
-- [ ] Login: email/password + Google + GitHub OAuth buttons
-- [ ] Registration with email verification gate
-- [ ] Password reset request and confirmation pages
-- [ ] Email verification landing page
-- [ ] OAuth callback handler
+- [ ] Login: email/password + Google + GitHub OAuth buttons — email/password built and live-verified; OAuth buttons not added (backend OAuth is code-complete but was never exercised against real provider credentials as of Phase 4's own status, and remains so — can't be live-verified)
+- [x] Registration with email verification gate
+- [x] Password reset request and confirmation pages
+- [x] Email verification landing page
+- [ ] OAuth callback handler — not built, same reason as the OAuth buttons above
 
 **Onboarding Flow**
-- [ ] Step 1: Create or join organisation (invite code support)
-- [ ] Step 2: Choose plan or confirm free tier
-- [ ] Step 3: Set first watchlist
-- [ ] Step 4: Product tour (tooltip-guided, dismissible, resettable)
-- [ ] Track completion per user; never show tour again after dismissal
+- [ ] Step 1: Create or join organisation (invite code support) — no self-service org-creation endpoint exists (TD-011); this step cannot function
+- [ ] Step 2: Choose plan or confirm free tier — depends on Step 1
+- [ ] Step 3: Set first watchlist — depends on Step 1
+- [ ] Step 4: Product tour — depends on Step 1
+- [ ] Track completion per user — depends on Step 1
 
 **Dashboard Pages**
-- [ ] **Home** — KPI cards + recent activity feed
-- [ ] **Trending** — trending videos and topics, all filters
-- [ ] **Videos** — searchable filterable table with viral score badges
-- [ ] **Video Detail** — transcript summary, hook badge, thumbnail analysis, viral score gauge, recommendations
-- [ ] **Channels** — profiles, growth charts, upload frequency heatmap
-- [ ] **Trends** — velocity chart, topic cluster visualisation
-- [ ] **Opportunities** — ranked cards with demand/competition/growth indicators
-- [ ] **Recommendations** — original AI content ideas, filterable by video
-- [ ] **Watchlists** — create and manage; latest activity per watchlist
-- [ ] **Alerts** — rule builder, history, channel configuration
-- [ ] **Search** — unified search, all filters, grouped results
-- [ ] **Export** — trigger and download; export history with status
-- [ ] **Settings** — profile, org, billing portal, team, API keys, retention preferences
-- [ ] **Admin** — job logs, dead-letter queue, quota, system health, prompt editor
+- [x] **Home** — KPI stat cards (watchlists/alert rules/alerts-30d/API keys/usage-quota) + recent-activity lists (watchlists, recommendations, alerts), per the repo owner's explicit Dashboard requirements rather than this bullet's exact framing
+- [ ] **Trending** — not built; `videos`/`trends` tables are empty (TD-020)
+- [ ] **Videos** — not built (TD-020)
+- [ ] **Video Detail** — not built (TD-020)
+- [ ] **Channels** — not built (TD-020)
+- [ ] **Trends** — not built (TD-020)
+- [ ] **Opportunities** — not built (TD-020)
+- [ ] **Recommendations** — shown as a recent-activity list on Home, not a dedicated filterable page
+- [x] **Watchlists** — create/list/delete (optimistic); no per-watchlist "latest activity" feed
+- [x] **Alerts** — rule builder (create/toggle/delete) + read-only history tab; no separate "channel configuration" beyond the watchlist a rule targets
+- [ ] **Search** — not built; no unified search endpoint exists yet (TD-015)
+- [ ] **Export** — not built; needs Cloudflare R2 (TD-016) and a backend endpoint that doesn't exist yet
+- [ ] **Settings** — profile and API keys built; organisation is read-only (TD-011); billing/team/notifications need Phase 9 and TD-011
+- [ ] **Admin** — only the AI Prompt Library (Phase 7 integration) was requested and built; job logs/dead-letter/quota/system-health pages not built (their backend endpoints exist from Phase 5/6 but have no frontend yet)
 
 **API Key Management UI**
-- [ ] List keys: name, creation date, last used, scopes (never key value after creation)
-- [ ] Create key: name → generated key shown once with copy + warning
-- [ ] Revoke key with confirmation dialog
+- [x] List keys: name, creation date, last used, scopes (never key value after creation)
+- [x] Create key: name → generated key shown once with copy + warning
+- [x] Revoke key with confirmation dialog
 
 **Changelog Page**
-- [ ] Accessible from sidebar footer and Settings
+- [ ] Accessible from sidebar footer and Settings — not requested, not built
 - [ ] Reverse-chronological releases with date and summary
 - [ ] "New release" sidebar badge until visited
 - [ ] Content from Markdown file — no deploy needed to update
 
 **Charts**
-- [ ] Growth line chart (views, likes, viral score over time)
+- [ ] Growth line chart (views, likes, viral score over time) — not built; needs real video/trend data (TD-020)
 - [ ] Viral Score distribution histogram
 - [ ] Trend velocity area chart
 - [ ] Channel upload frequency heatmap
 - [ ] Engagement ratio bar chart
 
-**Milestone:** All pages live and responsive. Onboarding tested. i18n in place. API key UI working.
+**Milestone:** The repo owner's explicit Phase 8 requirements (shell, auth, dashboard, Watchlists/Alerts/API Keys/Profile/Organisation CRUD, Phase 7 AI integration, state management) are live, responsive, and live-verified end to end against the real backend. i18n, onboarding, full ROADMAP page coverage, and charts are deferred, not silently dropped -- see the scope note above.
 
 ---
 

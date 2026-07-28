@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { AppConfig } from './config.js';
 import { createWorkflowQueue, queueName, type WorkflowQueue } from './lib/queue.js';
 import { cookiePlugin } from './plugins/cookie.plugin.js';
+import { corsPlugin } from './plugins/cors.plugin.js';
 import { dbPlugin } from './plugins/db.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
 import { healthPlugin } from './plugins/health.plugin.js';
@@ -48,6 +49,7 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   app.decorate('appConfig', config);
 
   await app.register(errorHandlerPlugin);
+  await app.register(corsPlugin, { config });
   await app.register(dbPlugin, { config });
   await app.register(redisPlugin, { config });
   await app.register(cookiePlugin);

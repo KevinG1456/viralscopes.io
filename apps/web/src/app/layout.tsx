@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import './globals.css';
+import { Providers } from '../providers/index';
 
 export const metadata: Metadata = {
   title: 'ViralScopes.io',
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>): React.ReactElement {
   return (
     <html lang="en" data-theme="dark">
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

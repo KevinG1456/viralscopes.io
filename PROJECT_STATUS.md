@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-28 (Phase 7 AI Prompt Library — 7/7 own-checklist tasks live-verified as far as possible without AI credentials; DEC-020, TD-023 added)
-> **Status:** Phase 7 — AI Prompt Library & Versioning (complete per its own checklist, blocked from full AI-call verification by TD-023 — see §2)
+> **Last Updated:** 2026-07-28 (Phase 8 Frontend — 17/45 ROADMAP tasks complete, but 100% of the repo owner's explicit reduced Phase 8 requirements delivered and live-verified; DEC-023–025, TD-024 added)
+> **Status:** Phase 8 — Frontend Dashboard (complete per the repo owner's explicit requirements; see §2 for what ROADMAP.md's fuller aspirational list still defers)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 7 — AI Prompt Library & Versioning (7/7 own-ROADMAP-checklist tasks complete — prompt storage/versioning, Redis caching, test harness, and regression runner all live-verified as far as possible without AI credentials — see §5/§12) |
-| **Overall MVP completion** | ~33% |
+| **Current phase** | Phase 8 — Frontend Dashboard (100% of the repo owner's explicit reduced requirements delivered and live-verified; 17/45 of ROADMAP.md's fuller aspirational list — see §2) |
+| **Overall MVP completion** | ~37% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their targets, and no AI provider credentials exist anywhere in this environment (TD-023) — blocks TD-020 (14 real Phase 6 workflows) and full AI-call verification of Phase 7's test harness/regression runner |
+| **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their targets, and no AI provider credentials exist anywhere in this environment (TD-023) — blocks TD-020 (14 real Phase 6 workflows), full AI-call verification of Phase 7's test harness, and TD-011 (org management) blocks Phase 8's onboarding flow |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy — unresolved past its Week 6 target; AI cost model — unresolved past its Week 9 target) |
-| **Last status update** | 2026-07-27 |
-| **Next milestone** | M6 — Workflows Live (Week 12) |
+| **Last status update** | 2026-07-28 |
+| **Next milestone** | M9 — Billing Live (Week 15), or M14 — Admin Panel Live if Phase 11 is prioritised first |
 
 ---
 
@@ -201,11 +201,31 @@ All 8 core project documents have been authored and are ready for engineering ha
 - [ ] The actual content of a real AI-provider response (Anthropic/OpenAI) — no API keys exist anywhere in this environment
 - [ ] The regression suite as a CI-blocking gate (`PROJECT_RULES.md` §9.5's letter) — would either fail every PR or spend real, unapproved money once keys exist; built as a standalone script instead
 - [ ] A real AI cost estimate (`ai_cost_estimate_gbp_today`) in admin metrics — needs actual call volume/token counts this environment has none of
-- [ ] "Cache hit rate displayed in admin dashboard" — the dashboard *UI* is Phase 8 (Frontend Dashboard) scope, not started; the backend data it would render (`aiCache` in `/admin/metrics`) is live
+- [ ] "Cache hit rate displayed in admin dashboard" — Phase 8's AI Prompt Library admin UI (built) does not surface `aiCache` from `/admin/metrics` anywhere; the repo owner's Phase 8 requirements didn't list it explicitly, so it wasn't added without confirming — the backend data itself is live, this is purely a missing display, tracked under TD-024
 
-### Next Phase: Phase 8 (Frontend Dashboard) / Phase 9 (Billing) / Phase 10 (Security)
+### Complete: Phase 8 — Frontend Dashboard (repo owner's explicit requirements; 17/45 ROADMAP tasks)
 
-**Start condition:** Phase 8 depends on Phase 5 (both already substantially built) and can proceed against the endpoints documented in README.md §4 without waiting on Phase 6's deferred real workflows or Phase 7's TD-023 credentials gap. Phase 9 and Phase 10 both depend on Phase 5 and are independent of each other per `ROADMAP.md` §7.
+**Scope note:** The repo owner gave a reduced, explicit Phase 8 requirement set (Application Shell, Authentication, Dashboard, CRUD for Watchlists/Alerts/API Keys/Profile/Organisation, Phase 7 AI integration, state management) rather than `ROADMAP.md`'s full 45-task aspirational list. All of the explicit requirements are built and live-verified; 17/45 ROADMAP tasks are checked as a byproduct, with the rest deferred for documented reasons — see TD-024.
+
+**Key deliverables:**
+- ✅ Backend CORS (`@fastify/cors`, Security_Architecture.md's already-specified policy, never implemented before Phase 8 needed it) — necessary infrastructure, not new business logic
+- ✅ Typed API client with in-memory access token + httpOnly-refresh-cookie session persistence, hand-built design-system primitives on Radix + `cva` (shadcn's own actual model), TanStack Query with a proper query-key factory and cache-strategy tiers, route constants, a client-side auth gate (the real security boundary is still the API — Frontend_Architecture.md section 8) plus a `proxy.ts` UX heuristic (Next.js 16's renamed `middleware.ts`)
+- ✅ Login, register, verify-email, reset-password (request + confirm), logout — email/password only (see DEC-024 for why OAuth buttons/callback are deferred)
+- ✅ Responsive app shell (Sidebar + mobile drawer + Topbar) and a Home dashboard wired to analytics overview, watchlists, recommendations, and alert events, with an explicit honest empty state for the no-organisation case (TD-011)
+- ✅ Full CRUD: Watchlists (optimistic delete), Alert Rules (+ read-only event history), API Keys (one-time plaintext reveal), Profile (session list/revoke), and a deliberately read-only Organisation page (TD-011)
+- ✅ AI Prompt Library admin UI (Phase 7 integration): version history/activate, version diff, and a test harness that runs against Phase 7's 10 fixtures and polls job status honestly through TD-023's expected failure path
+- ✅ Three real bugs/mismatches found and fixed via live testing, not assumed: Turbopack doesn't resolve `.js`-extension relative imports the way `tsc`'s Bundler mode tolerates; the password-reset email hardcodes `/reset-password/confirm`, not the flat path first built; `analytics/overview`'s `alertEvents.last30Days` is a per-status breakdown object, not a flat number
+
+**Not built — deferred, see TD-024:**
+- [ ] Onboarding flow — no self-service org-creation endpoint exists (TD-011); every one of its 4 steps depends on step 1
+- [ ] Trending/Videos/Video Detail/Channels/Trends/Opportunities pages, Search, Export, charts — backing tables are empty (TD-020) or the endpoint doesn't exist (TD-015/016)
+- [ ] Billing/Team/Notifications settings — need Phase 9 (Stripe) and TD-011
+- [ ] Full Admin panel (job logs, dead-letter queue, quota, system health) — only the explicitly-requested Prompt Library page was built
+- [ ] OAuth login buttons/callback handler, `next-intl` i18n, Changelog page — not requested; OAuth additionally can't be live-verified (no provider credentials, same gap as Phase 4)
+
+### Next Phase: Phase 9 (Billing) / Phase 10 (Security) / Phase 11 (Admin Panel)
+
+**Start condition:** Phase 9 and Phase 10 both depend on Phase 5 (built) and are independent of each other per `ROADMAP.md` §7. Phase 11 (Super Admin Panel) depends on Phases 5, 6, and 9. None are blocked by TD-020/TD-023/TD-011, though TD-011 (Organisation & Workspace Management) is worth prioritising soon -- it's now the blocker for Phase 8's onboarding flow in addition to Phase 9's billing-per-organisation model.
 
 ---
 
@@ -222,7 +242,7 @@ Phase 4          █████░░░░░░░░░░░░░░░   
 Phase 5          █████████████░░░░░░░   63%  🚧 Read/CRUD business endpoints + RBAC live (see TD-014–019 for deferred remainder)
 Phase 6          ██████░░░░░░░░░░░░░░   32%  🚧 Queue infra, base template, retry/dead-letter live (see TD-020–022 for deferred remainder)
 Phase 7          ████████████████████  100%  ✅ Complete per its own checklist (built as far as possible without AI credentials — TD-023)
-Phase 8          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 8          ███████░░░░░░░░░░░░░   38%  🚧 Repo owner's explicit requirements complete; ROADMAP's fuller aspirational list deferred (see TD-024)
 Phase 9          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 10         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 11         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -230,7 +250,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      ██████░░░░░░░░░░░░░░   33%  🚧 In progress
+Overall MVP      ███████░░░░░░░░░░░░░   37%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -245,14 +265,14 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 | Phase 5 — Backend API | 57 | 36 | 0 | 21 |
 | Phase 6 — n8n Workflows | 28 | 9 | 0 | 19 |
 | Phase 7 — Prompt Library | 7 | 7 | 0 | 0 |
-| Phase 8 — Frontend | 48 | 0 | 0 | 48 |
+| Phase 8 — Frontend | 45 | 17 | 0 | 28 |
 | Phase 9 — Billing | 22 | 0 | 0 | 22 |
 | Phase 10 — Security | 18 | 0 | 0 | 18 |
 | Phase 11 — Admin Panel | 16 | 0 | 0 | 16 |
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **419** | **138** | **0** | **281** |
+| **Total** | **416** | **155** | **0** | **261** |
 
 ---
 
@@ -268,7 +288,7 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 | Phase 5 | Core Backend API | 🚧 In progress | 36/57 tasks (63%) | Week 6–9 | Read/CRUD business endpoints, RBAC, plan-tier rate limiting live; YouTube Quota Manager/Search/Export/Webhooks/OpenAPI deferred (TD-014–019) |
 | Phase 6 | n8n Workflow Engine | 🚧 In progress | 9/28 tasks (32%) | Week 9–12 | Queue infra, base workflow template, retry/dead-letter live; all 14 real workflows deferred (TD-020, blocked on RISK-01/02) |
 | Phase 7 | AI Prompt Library | ✅ Complete (own checklist) | 7/7 tasks (100%) | Week 10–12 | Prompt storage/versioning/caching/test-harness/regression-runner all live; only the actual AI-provider response is unverified (TD-023, no credentials in this environment) |
-| Phase 8 | Frontend Dashboard | ⏳ Not started | 0% | Week 6–13 | Parallel with Phase 5 |
+| Phase 8 | Frontend Dashboard | ✅ Complete (repo owner's requirements) | 17/45 ROADMAP tasks (38%) | Week 6–13 | Shell, auth, dashboard, Watchlists/Alerts/API Keys/Profile/Organisation CRUD, Phase 7 AI integration all live and live-verified; onboarding/i18n/Changelog/full page coverage/charts deferred (TD-024) |
 | Phase 9 | Subscription & Billing | ⏳ Not started | 0% | Week 13–15 | Depends on Phase 5 |
 | Phase 10 | Security & Compliance | ⏳ Not started | 0% | Week 15–16 | Parallel with Phase 9 |
 | Phase 11 | Super Admin Panel | ⏳ Not started | 0% | Week 20–22 | 30 days post-launch |
@@ -406,13 +426,28 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 - [x] Diff view (`GET /admin/prompts/:name/diff`) and regression runner (`npm run ai:regression`, not CI-gated — TD-023)
 - [x] Live-verified the full pipeline up to the AI-provider call boundary: auth, template rendering, cache check, provider routing, error handling, retry→dead-letter all confirmed working by observing the (expected, credential-less) failure and a real cache-hit round trip
 
-**Not fully verifiable — see TD-023:** the actual AI-provider response content (no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` in this environment), the regression suite as a CI-blocking gate, a real AI cost estimate, and the admin-dashboard UI for cache hit-rate (Phase 8 scope).
+**Not fully verifiable — see TD-023:** the actual AI-provider response content (no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` in this environment), the regression suite as a CI-blocking gate, a real AI cost estimate, and the admin-dashboard UI for cache hit-rate (Phase 8 scope; still not built, see TD-024).
+
+---
+
+### Phase 8 — Frontend Dashboard (17/45 ROADMAP tasks, 100% of repo owner's explicit requirements) ✅
+
+- [x] Backend `@fastify/cors` (`Security_Architecture.md`'s already-specified policy) — necessary infrastructure so the browser can call the API at all
+- [x] Typed API client: in-memory access token, httpOnly-refresh-cookie session persistence (DEC-023), single 401-retry; hand-built design-system primitives on Radix + `cva` (shadcn's actual copy-source model); TanStack Query with a query-key factory and per-resource cache-strategy tiers; route constants
+- [x] Client-side auth gate in the `(dashboard)` layout (the real boundary) plus `proxy.ts`'s `csrf_token`-presence UX heuristic (DEC-024) — Next.js 16's renamed `middleware.ts`
+- [x] Login, register, verify-email, reset-password (request + confirm), logout — email/password only (OAuth deferred, DEC-025)
+- [x] Responsive app shell (Sidebar + mobile drawer + Topbar) and Home dashboard (analytics overview, watchlists, recommendations, alert events), with an honest empty state for the no-organisation case (TD-011)
+- [x] Full CRUD: Watchlists (optimistic delete), Alert Rules + read-only event history, API Keys (one-time plaintext reveal), Profile (session list/revoke), Organisation (deliberately read-only, TD-011)
+- [x] AI Prompt Library admin UI (Phase 7 integration): version history/activate, version diff, test harness with honest job-status polling through TD-023's expected failure path
+- [x] Three real bugs/mismatches found and fixed via live testing: Turbopack rejects `.js`-extension relative imports (`tsc`'s Bundler mode tolerates them, the actual bundler doesn't); the password-reset email hardcodes `/reset-password/confirm`, not the flat path first built; `analytics/overview`'s `alertEvents.last30Days` is a per-status breakdown object, not a flat number
+
+**Not built — deferred, see TD-024:** Onboarding flow (TD-011), Trending/Videos/Video Detail/Channels/Trends/Opportunities/Search/Export/charts (TD-020/TD-015/TD-016), Billing/Team/Notifications settings (Phase 9/TD-011), the rest of the Admin panel beyond Prompt Library, OAuth UI (DEC-025), i18n, Changelog page, and a cache-hit-rate display anywhere in the UI.
 
 ---
 
 ## 6. In-Progress Tasks
 
-*No tasks are actively in progress right now. Phase 6's queue infrastructure, base workflow template, and retry/dead-letter pipeline are merged; its remaining task groups (the 14 real business workflows — TD-020, n8n's own queue-mode scaling — TD-021, external credentials store — TD-022) are blocked or not started and not currently assigned. Phase 7 is complete per its own checklist (TD-023 covers what AI credentials would additionally unblock). Phase 5's remainder (TD-014 through TD-019) and Phase 4's remainder (TD-010, TD-011, TD-013) are also still outstanding. Phase 8 (Frontend Dashboard), Phase 9 (Billing), and Phase 10 (Security) are ready to begin — see §2 and §14.*
+*No tasks are actively in progress right now. Phase 6's queue infrastructure, base workflow template, and retry/dead-letter pipeline are merged; its remaining task groups (the 14 real business workflows — TD-020, n8n's own queue-mode scaling — TD-021, external credentials store — TD-022) are blocked or not started and not currently assigned. Phase 7 is complete per its own checklist (TD-023 covers what AI credentials would additionally unblock). Phase 8 is complete per the repo owner's explicit requirements (TD-024 covers ROADMAP.md's fuller aspirational list). Phase 5's remainder (TD-014 through TD-019) and Phase 4's remainder (TD-010, TD-011, TD-013) are also still outstanding — TD-011 (Organisation & Workspace Management) is now the shared blocker for Phase 8's onboarding flow, Phase 9's billing-per-organisation model, and full Organisation settings. Phase 9 (Billing), Phase 10 (Security), and Phase 11 (Admin Panel) are ready to begin — see §2 and §14.*
 
 ---
 
@@ -610,14 +645,14 @@ Full AI analysis of one video (transcript analysis + thumbnail vision + full con
 
 | ID | Milestone | Target | Phase | Status | Deliverable |
 |---|---|---|---|---|---|
-| M1 | Project Ready | Week 1 | Phase 1 | ⏳ Pending | Repo initialised, tooling configured, design system done |
-| M2 | Infrastructure Live | Week 3 | Phase 2 | ⏳ Pending | Docker running, CI/CD deployed to staging, monitoring live |
-| M3 | Schema Complete | Week 4 | Phase 3 | ⏳ Pending | All migrations applied, RLS active, ERD published |
-| M4 | Auth Complete | Week 6 | Phase 4 | ⏳ Pending | Full auth system + all email templates live in staging |
-| M5 | API v1 Complete | Week 9 | Phase 5 | ⏳ Pending | All endpoints live, OpenAPI spec published |
-| M6 | Workflows Live | Week 12 | Phase 6 | ⏳ Pending | All 14 n8n workflows running, dead-letter queue active |
+| M1 | Project Ready | Week 1 | Phase 1 | ✅ Done | Repo initialised, tooling configured, design system done |
+| M2 | Infrastructure Live | Week 3 | Phase 2 | ✅ Done | Docker running, CI/CD live (not yet deployed to a real staging host — TD-006) |
+| M3 | Schema Complete | Week 4 | Phase 3 | ✅ Done | All migrations applied, RLS active (ERD in Mermaid, not yet exported to PNG) |
+| M4 | Auth Complete | Week 6 | Phase 4 | 🚧 Partial | Auth system live (not yet in a real staging deploy); email templates are a dev-only logging stub (TD-010) |
+| M5 | API v1 Complete | Week 9 | Phase 5 | 🚧 Partial | 36/57 endpoints live (TD-014–019); OpenAPI spec not generated (TD-018) |
+| M6 | Workflows Live | Week 12 | Phase 6 | 🚧 Partial | Queue/orchestration foundation live; the 14 real content workflows deferred (TD-020) |
 | M7 | Prompts Live | Week 12 | Phase 7 | ✅ Done | All 6 real prompts (DEC-020) versioned, cached, test harness and regression runner working as far as possible without AI credentials (TD-023) |
-| M8 | Dashboard Complete | Week 13 | Phase 8 | ⏳ Pending | All MVP pages live in staging, onboarding tested |
+| M8 | Dashboard Complete | Week 13 | Phase 8 | 🚧 Partial | Repo owner's explicit Phase 8 requirements live and responsive (not a staging deploy); onboarding untested -- no self-service org creation exists (TD-011) |
 | M9 | Billing Live | Week 15 | Phase 9 | ⏳ Pending | Stripe billing live in staging, usage tracking active |
 | M10 | Security Complete | Week 16 | Phase 10 | ⏳ Pending | Security checklist done, GDPR endpoints live |
 | M11 | Tests Green | Week 18 | Phase 12 | ⏳ Pending | All test suites passing, coverage targets met |
@@ -974,6 +1009,54 @@ Significant decisions are logged here with context, options considered, and rati
 **Decision:** Seed the 6 prompts that correspond to a real model call (migration `0009_seed_prompt_library.sql`), each transcribed from `AI_Strategy.md` §2 / `n8n_Workflow_Diagrams.md`'s per-workflow specs (system prompt, user template, and a JSON-Schema `output_schema` matching each analysis table's actual columns/enums — `hook_type`'s 9 values and `title_analyses.formula_type`'s 15 values, including `'other'`, both transcribed verbatim from `n8n_Workflow_Diagrams.md` WF-07/WF-06 rather than invented). Do not seed placeholder prompts for `transcript_analysis` or `opportunity_detection`, since no such AI call exists to version.
 
 **Consequence:** `ROADMAP.md`'s Phase 7 task wording is corrected to name the 6 real prompts instead of 8, cross-referencing this decision, so the checklist matches what was actually (and correctly) built rather than silently underreporting 6/8 forever.
+
+---
+
+### DEC-023 — Access token held in memory only; session persistence via the httpOnly refresh cookie, not a client-side-readable cookie
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-28 |
+| **Decision** | `apps/web` never stores the JWT access token in a cookie, localStorage, or sessionStorage. It lives in a module-level variable, re-hydrated by calling `POST /auth/refresh` (the httpOnly, `SameSite=Strict` refresh-token cookie) on every app mount and silently on any `401` |
+| **Decided by** | Engineering Lead (Phase 8 M1, following `Frontend_Architecture.md` section 8 / `Security_Architecture.md` section 4's own documented guidance) |
+
+**Context:** `Frontend_Architecture.md`'s own documented `middleware.ts` example assumes the access token is readable from an `access_token` cookie at the edge — but the backend (Phase 4) only ever returns it in the login/refresh response body, never as a cookie, specifically so it's never exposed to a mechanism an XSS payload could read as easily as JS-visible cookies. Storing it in localStorage would have been the easy path but reintroduces exactly that XSS-exfiltration risk the backend's design already avoids.
+
+**Decision:** Keep the access token in memory only (lost on a full page reload, as designed); rely on the refresh-token cookie (httpOnly, so JS -- and XSS -- cannot read it at all) to silently obtain a new one on mount. The `user` object returned alongside login/register (name/email/verification status only, no token) is cached in `localStorage` purely for instant display, and is never treated as an authorisation source.
+
+**Consequence:** `Frontend_Architecture.md`'s documented middleware example doesn't apply as written -- corrected by DEC-024 below, which explains the actual working route-guard mechanism.
+
+---
+
+### DEC-024 — Route guard checks for `csrf_token`'s presence, not `refresh_token`'s
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-28 |
+| **Decision** | `apps/web/src/proxy.ts` (Next.js 16's renamed `middleware.ts`) redirects to `/login` when the `csrf_token` cookie is absent, not `refresh_token` |
+| **Decided by** | Engineering Lead (found live while testing Phase 8 M1's route guard against real login cookies) |
+
+**Context:** The backend scopes `refresh_token` to `path=/api/v1/auth` (`cookies.ts`) -- deliberately narrow, so the credential is never sent to paths that don't need it. That means the browser never attaches it to a request for e.g. `/home` in the first place; a middleware check for its presence would always see it absent regardless of login state, unconditionally redirecting every authenticated user to `/login`. Confirmed live: inspecting real `Set-Cookie` headers from an actual login call showed `refresh_token`'s `Path=/api/v1/auth` and `csrf_token`'s `Path=/` side by side.
+
+**Decision:** `csrf_token` is set and cleared in the exact same `setAuthCookies()`/`clearAuthCookies()` calls as `refresh_token`, but scoped `path=/` -- it doubles as a working "has an active session" presence check without weakening anything, since it was already a non-httpOnly, JS-readable value by design (the CSRF double-submit pattern requires that). This is a UX heuristic only, avoiding a flash of the dashboard shell for a browser with no session at all; `Frontend_Architecture.md` section 8's principle that client-side authorisation is UX, not security, still applies -- the real gate is the `(dashboard)` layout's client-side check against `AuthProvider`'s actual refresh result, and the API enforces authorisation regardless of either.
+
+**Consequence:** None -- this is strictly an internal implementation correction to make the documented "route guard" deliverable actually work against this project's real cookie scoping, not a security-relevant tradeoff.
+
+---
+
+### DEC-025 — OAuth login buttons and callback handler deferred, matching Phase 4's own unverified status
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-28 |
+| **Decision** | Phase 8's Login page implements email/password only; Google/GitHub OAuth buttons and the OAuth callback handler are not built |
+| **Decided by** | Engineering Lead (Phase 8, following the repo owner's explicit requirement list, which named Login/Registration/Password reset/Email verification/Session persistence/Logout but not OAuth) |
+
+**Context:** Phase 4's own status has always noted its OAuth routes are "code-complete against `@fastify/oauth2`; not yet exercised against real provider credentials -- no OAuth app has been provisioned." That remains true. Building OAuth UI now would add code that can't be live-verified against a real Google/GitHub app, the same category of gap as RISK-01/RISK-02/TD-023 elsewhere in this document, and the repo owner's Phase 8 requirement list didn't ask for it.
+
+**Decision:** Defer OAuth buttons and the callback handler until real OAuth app credentials are provisioned (same blocker as Phase 4's), rather than shipping unverifiable UI.
+
+**Consequence:** `ROADMAP.md`'s Phase 8 "Login: email/password + Google + GitHub OAuth buttons" and "OAuth callback handler" tasks are marked not done rather than silently checked off — see TD-024.
 
 ---
 
@@ -1378,6 +1461,23 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-024 — Phase 8's ROADMAP.md coverage is 17/45; the rest is deferred for documented reasons
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-28 |
+| **Severity** | Low |
+| **Phases affected** | Phase 8 |
+| **Status** | Accepted (scoped explicitly by the repo owner, not silently dropped) |
+
+**Description:** `ROADMAP.md`'s Phase 8 checklist has 45 tasks across Foundation, Authentication Pages, Onboarding Flow, Dashboard Pages, API Key Management UI, Changelog Page, and Charts. 17 are checked as a byproduct of building the repo owner's explicit, reduced Phase 8 requirement set (Application Shell, Authentication, Dashboard, CRUD for Watchlists/Alerts/API Keys/Profile/Organisation, Phase 7 AI integration, state management). Not built: the Onboarding flow (all 4 steps depend on org creation, which doesn't exist — TD-011); Trending/Videos/Video Detail/Channels/Trends/Opportunities pages, Search, Export, and all 5 chart types (backing tables are empty — TD-020 — or the endpoint doesn't exist — TD-015/TD-016); Billing/Team/Notifications settings (need Phase 9 and TD-011); the full Admin panel beyond the requested Prompt Library page (job logs/dead-letter/quota/system-health have no frontend); OAuth login buttons/callback (DEC-025); `next-intl` i18n; the Changelog page; and a cache-hit-rate display in any admin UI (the backend data is live, nothing renders it).
+
+**Why accepted:** Every deferred item traces to either an explicit repo-owner scoping decision, a genuine backend gap logged elsewhere (TD-011/TD-015/TD-016/TD-020), or a credentials gap that can't be live-verified (OAuth, matching Phase 4's own unverified status). None were silently dropped — each is named in `ROADMAP.md`'s Phase 8 section with the specific reason.
+
+**Resolution plan:** Revisit once the specific blocker for each item clears: TD-011 unblocks Onboarding and full Organisation settings; TD-020/RISK-01/RISK-02 unblock the content-dependent pages and charts; Phase 9 unblocks Billing settings; real OAuth app credentials unblock the OAuth UI. i18n, the Changelog page, and the rest of the Admin panel are product-priority decisions, not technical blockers, and can be scheduled independently whenever they're actually wanted.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -1413,27 +1513,29 @@ When a known issue is identified, log it in this format:
 | 🔴 P1 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Overdue — target was "before Phase 6 begins" (Week 9); blocks TD-020's 14 real workflows and TD-023's Phase 7 AI-call verification |
 | 🔴 P1 | Provision `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` | Repo owner | TD-023 — neither exists anywhere in this environment; blocks the Phase 7 test harness/regression runner's AI-call leg regardless of RISK-02's outcome |
 
-### Next Up — Phase 8/9/10 kickoff
+### Next Up — Phase 9/10/11 kickoff
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
+| 🔴 P1 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — now blocks Phase 8's onboarding flow, full Organisation settings, and Phase 9's billing-per-organisation model simultaneously; the highest-leverage single item outstanding |
 | 🔴 P1 | Resolve RISK-01 (YouTube quota strategy), RISK-02 (AI cost model), and provision AI provider keys (TD-023) | Engineering Lead | Unblocks TD-020's 14 real workflows and Phase 7's remaining AI-call verification together |
-| 🔴 P1 | Begin Phase 8 (Frontend Dashboard) | Engineer | Depends on Phase 5 (substantially built); can consume the endpoints documented in README.md §4 without waiting on TD-020/TD-023 |
-| 🟠 P2 | Begin Phase 9 (Billing) and/or Phase 10 (Security) | Engineer | Both depend on Phase 5 only, independent of each other, per `ROADMAP.md` §7 |
+| 🟠 P2 | Begin Phase 9 (Billing), Phase 10 (Security), and/or Phase 11 (Admin Panel) | Engineer | Phase 9/10 depend on Phase 5 only, independent of each other; Phase 11 depends on Phases 5/6/9, per `ROADMAP.md` §7 |
 | 🟠 P2 | Transactional email service: provision SendGrid/Resend, build 7 templates, SPF/DKIM/DMARC | Engineer / Repo owner | TD-010 — needed before any staging deployment with real user signups |
-| 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing) |
 | 🟡 P3 | OpenAPI/Swagger spec generation | Engineer | TD-018 |
 | 🟡 P3 | Add `audit_logs` writes to all auth code paths | Engineer | TD-013 |
 | 🟡 P3 | Provision a real Coolify server + domain, hosted Supabase project | Repo owner | Unblocks TD-006 and the hosted-Supabase item in TD-009's category |
 | 🟡 P3 | Dedicated `n8n worker` + Postgres-backed n8n storage | Engineer | TD-021 — only needed once real workflow volume justifies it |
+| 🟡 P3 | Provision a real Google/GitHub OAuth app | Repo owner | Unblocks DEC-025's deferred OAuth login UI, same gap Phase 4 has had since it was built |
 
 ### Backlog (Next 4 Weeks)
 
+- Resolve TD-011 (Organisation & Workspace Management) — unblocks the most other outstanding work of any single item
 - Resolve RISK-01/RISK-02/TD-023, then implement TD-020's 14 real business workflows against `foundation-demo.json`'s template and enable Phase 7's AI-call verification + CI regression gate
-- Begin Phase 8 (Frontend Dashboard), Phase 9 (Billing), and/or Phase 10 (Security) per `ROADMAP.md`'s parallel-development notes
+- Begin Phase 9 (Billing), Phase 10 (Security), and/or Phase 11 (Admin Panel) per `ROADMAP.md`'s parallel-development notes
+- Phase 8 remainder once unblocked: Onboarding flow (TD-011), Trending/Videos/Channels/Trends/Opportunities/Search/Export/charts (TD-020/015/016), Billing/Team settings (Phase 9/TD-011), full Admin panel, OAuth UI
 - Phase 5 remainder once unblocked: YouTube Quota Manager + analyze/refresh (needs RISK-01), Search, Export (needs R2 provisioning), Webhooks (needs Phase 9), OpenAPI spec, Analytics viral-scores/engagement
 - Phase 4 remainder: Transactional Email Service, Organisation & Workspace Management, auth audit logging
-- First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
+- First stakeholder demo: staging environment with auth + a working dashboard (target: Week 6, now genuinely achievable for the seeded/admin org)
 
 ---
 
@@ -1457,6 +1559,7 @@ When a known issue is identified, log it in this format:
 | 2026-07-27 | Engineering (AI-assisted) | PR #18 (`feat/VS-phase6-n8n-workflow-engine`) opened, all required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green, squash-merged to `main` (commit `48b5247`). Verified `main` builds clean post-merge; `develop` fast-forwarded to match; the feature branch pruned from both remote and local, leaving only `main`/`develop`. |
 | 2026-07-28 | Engineering (AI-assisted) | Phase 7 — AI Prompt Library & Versioning: all 7 of `ROADMAP.md`'s own checklist items complete (corrects an earlier placeholder count of 12) and live-verified as far as this environment allows. Delivered on `feat/VS-phase7-ai-prompt-library`, in three milestones (M1 prompt_library CRUD + seed, M2 Redis caching + admin metrics, M3 test harness + regression runner + docs), each type-checked/linted/built and live-verified against real Postgres/Redis/n8n before committing. Found and corrected a real doc inaccuracy before building anything: `ROADMAP.md`'s "8 prompts" included "transcript analysis" and "opportunity detection," neither of which is an AI prompt per `n8n_Workflow_Diagrams.md`'s own design (WF-03 is caption ingestion only; WF-11 is "no AI calls — purely computational ranking") — seeded the 6 real prompts instead, matching `AI_Strategy.md` §5.1 exactly (DEC-020). Built a prompt test harness and 10-fixture regression runner (`npm run ai:regression`) dispatched through the same queue→n8n pattern as Phase 6's workflows (`infra/n8n-workflows/prompt-test.json`) rather than a synchronous in-request AI call, per `PROJECT_RULES.md` §3.5. Found the same fundamental blocker Phase 6 hit for its 14 real workflows applies here too, more severely: no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` exist anywhere in this environment (TD-023) — live-verified the entire pipeline up to that exact boundary by running a real test and watching it fail predictably (`n8n webhook responded 502`, then a genuine dead-letter row after the standard retry cycle) and, separately, verified the cache-hit path returns a pre-stored result immediately. Did not wire the regression suite into CI as `PROJECT_RULES.md` §9.5 literally specifies, since that would either fail every PR or spend real, unapproved money once keys exist — built as a standalone script instead, logged as part of TD-023 rather than silently deviating from the documented rule. |
 | 2026-07-28 | Engineering (AI-assisted) | PR #19 (`feat/VS-phase7-ai-prompt-library`) opened, all required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green with zero new alerts, squash-merged to `main` (commit `578d9f2`). Verified `main` builds clean post-merge; `develop` fast-forwarded to match; the feature branch pruned from both remote and local, leaving only `main`/`develop`. Phase 7 retrospective: 7/7 of its own `ROADMAP.md` checklist items delivered and live-verified as completely as this environment allows; the only genuine gap (TD-023, no AI provider credentials) is an external dependency, not an unbuilt task — every other phase's remaining debt (RISK-01/02, TD-010 through TD-022) is unaffected by this merge. |
+| 2026-07-28 | Engineering (AI-assisted) | Phase 8 — Frontend Dashboard: delivered against the repo owner's explicit, reduced requirement set (Application Shell, Authentication, Dashboard, CRUD for Watchlists/Alerts/API Keys/Profile/Organisation, Phase 7 AI integration, state management) rather than `ROADMAP.md`'s full 45-task aspirational list — 17/45 checked as a byproduct (DEC-023–025, TD-024). Built in five milestones on `feat/VS-phase8-frontend`, each type-checked/linted/built and live-verified against the real running backend before committing. Delivered: backend CORS (`Security_Architecture.md`'s already-specified policy, never implemented before now); a typed API client with the access token held in memory only and session persistence via the httpOnly refresh cookie (DEC-023), never localStorage; hand-built design-system primitives on Radix + `cva` (shadcn's actual copy-source model, not a runtime dependency); login/register/verify-email/reset-password/logout (email/password only — OAuth deferred per DEC-025, matching Phase 4's own unverified-OAuth status); a responsive app shell and Home dashboard with an honest empty state for the no-organisation case (TD-011); full CRUD for Watchlists (optimistic delete), Alert Rules (+ read-only history), API Keys (one-time reveal), Profile (session management), and a deliberately read-only Organisation page; and an AI Prompt Library admin UI consuming every Phase 7 endpoint, including a test harness that honestly surfaces TD-023's expected queue→retry→dead-letter path rather than hiding it. Found and fixed three real bugs via live testing, not assumed: Turbopack rejects `.js`-extension relative imports that `tsc`'s Bundler mode tolerates; the backend hardcodes `/reset-password/confirm` for the password-reset link, not the flat path first built; `analytics/overview`'s `alertEvents.last30Days` is a per-status breakdown object, not a flat number. Test data (watchlists, alert rules, API keys, a second prompt version, ~30 accumulated sessions) cleaned up after each milestone's verification. |
 
 ---
 

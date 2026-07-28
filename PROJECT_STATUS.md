@@ -1329,6 +1329,23 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-023 — No AI provider credentials anywhere; prompt test harness, regression suite, and cost visibility blocked
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Medium |
+| **Phases affected** | Phase 7 |
+| **Status** | Accepted (blocked, more fundamental than RISK-02) |
+
+**Description:** Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is set anywhere in this environment (`.env.example` has both blank; the local `.env` has neither). This blocks three Phase 7 deliverables: the prompt test harness's actual AI-provider call ("select prompt + version → run against test video → view formatted output"), the 10-fixture regression suite `PROJECT_RULES.md` section 9.5 requires to run and block merge on every PR touching the AI pipeline, and any real AI cost estimate (`ai_cost_estimate_gbp_today` per `AI_Strategy.md` section 5.2) — cost can only be estimated from actual call volume and token counts, neither of which exist without live traffic.
+
+**Why accepted:** This is a harder blocker than RISK-02 (AI cost model undecided) — even a decided cost model can't be exercised without credentials to call. Wiring the regression suite into CI now, per `PROJECT_RULES.md` section 9.5's letter, would either fail every PR (no keys) or, once keys exist as GitHub Secrets, spend real, uncontrolled money on every single push with no budget approval gate — directly contradicting `AI_Strategy.md`'s own "AI cost is a first-class constraint" principle. Cache hit-rate visibility (a real, measurable Redis-backed metric, live regardless of whether any AI call has ever happened) is delivered now; cost visibility is not fabricated as a placeholder number.
+
+**Resolution plan:** Once API keys are provisioned and a budget/spend-alert threshold is approved (`AI_Strategy.md` section 3.3 Strategy 5's £30/day alert is the documented target), wire the regression runner into CI per `PROJECT_RULES.md` section 9.5, enable the prompt test harness's live AI-call leg, and add a real cost-estimate field to `GET /api/v1/admin/metrics`.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*

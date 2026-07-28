@@ -39,7 +39,7 @@ export async function adminRoutes(
   fastify: FastifyInstance,
   opts: AdminRoutesOptions,
 ): Promise<void> {
-  const adminService = new AdminService(fastify.db);
+  const adminService = new AdminService(fastify.db, fastify.redis);
   const preHandler = [authenticate, requireSuperAdmin, businessRateLimit];
 
   fastify.get('/users', { preHandler }, async (request, reply) => {

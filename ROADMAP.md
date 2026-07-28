@@ -525,20 +525,20 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 **Complexity:** Small | **Duration:** 3–5 days | **Parallel with:** Phase 6
 
 #### Deliverables
-- All 8 production prompts stored, versioned, and active in the database
+- All 6 production prompts stored, versioned, and active in the database
 - AI response caching live with hit rate monitoring
 - Prompt test harness functional in admin panel
 
 #### Tasks
-- [ ] `prompt_library` table with full versioning schema
-- [ ] All prompts stored in DB (not in code): transcript analysis, thumbnail analysis, title formula, hook classification, full video analysis, trend clustering, opportunity detection, ethical recommendation generation
-- [ ] AI response caching: Redis key = `(prompt_version, sha256(input))`, 24h TTL
-- [ ] Cache hit rate tracked and displayed in admin dashboard
-- [ ] Prompt test harness: select prompt + version → run against test video → view formatted output + schema validation
-- [ ] Diff view between two prompt versions on the same test video
-- [ ] Regression runner: all active prompts against 10 fixed test fixture videos
+- [x] `prompt_library` table with full versioning schema
+- [x] All prompts stored in DB (not in code): thumbnail analysis, title formula, hook classification, full video analysis, trend clustering, ethical recommendation generation — corrected from an earlier 8-item list that also named "transcript analysis" and "opportunity detection". Neither is an AI prompt: `n8n_Workflow_Diagrams.md` WF-03 (Transcript Pipeline) only fetches YouTube captions with no AI call (transcript summarisation is produced by the `video_analysis` prompt above), and WF-11 (Opportunity Engine) is explicitly "no AI calls — purely computational ranking". See DEC-020 in `PROJECT_STATUS.md`.
+- [x] AI response caching: Redis key = `(prompt_version, sha256(input))`, 24h TTL
+- [x] Cache hit rate tracked (`GET /api/v1/admin/metrics`'s `aiCache` field) — "displayed in admin dashboard" is Phase 8 (Frontend Dashboard) scope, not started; the backend data it would render is live now
+- [ ] Prompt test harness: select prompt + version → run against test video → view formatted output + schema validation — the actual AI-provider call cannot be live-verified in this environment (no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` provisioned anywhere, a more fundamental gap than RISK-02's unresolved cost model)
+- [x] Diff view between two prompt versions — `GET /admin/prompts/:name/diff` (field-by-field, not scoped to a specific test video run, since no test-video-run harness exists yet)
+- [ ] Regression runner: all active prompts against 10 fixed test fixture videos — will be built as a standalone script, deliberately **not** wired into CI as a merge-blocking gate per `PROJECT_RULES.md` section 9.5, since that would run real, uncontrolled AI spend on every PR with no credentials or budget approval in place yet (TD-023)
 
-**Milestone:** All prompts live, cached, and testable. Cost visibility in admin dashboard.
+**Milestone:** Prompt storage, versioning, and caching are live and testable. The test harness and regression runner require AI provider credentials this environment doesn't have (TD-023) — built as far as possible without them. Cost visibility backend is live; the admin dashboard UI to display it is Phase 8.
 
 ---
 

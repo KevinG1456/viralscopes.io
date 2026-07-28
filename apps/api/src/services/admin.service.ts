@@ -1,5 +1,7 @@
 import type { Database } from '@viralscopes/db';
+import type { Redis } from 'ioredis';
 
+import { getAiCacheStats, type AiCacheStats } from '../lib/ai-cache.js';
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
 import { enqueueWorkflowJob, type WorkflowQueue } from '../lib/queue.js';
@@ -20,7 +22,10 @@ import {
 } from '../repositories/admin.repository.js';
 
 export class AdminService {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly redis: Redis,
+  ) {}
 
   async listUsers(
     pagination: PaginationQuery,
@@ -89,7 +94,20 @@ export class AdminService {
     return { job: updated, requeued: true };
   }
 
-  async metrics(): Promise<PlatformMetrics> {
-    return getPlatformMetrics(this.db);
+  /**
+   * `aiCache` is a real, measurable metric (Redis hit/miss counters) even
+   * with zero AI traffic so far. A GBP cost estimate (`ai_cost_estimate_gbp_today`
+   * in AI_Strategy.md section 5.2) is deliberately not included -- it would
+   * require actual AI call volume and token counts to derive from, neither
+   * of which exist without live provider credentials (see TD-023 in
+   * PROJECT_STATUS.md). Fabricating a placeholder number here would be
+   * worse than omitting the field.
+   */
+  async metrics(): Promise<PlatformMetrics & { aiCache: AiCacheStats }> {
+    const [dbMetrics, aiCache] = await Promise.all([
+      getPlatformMetrics(this.db),
+      getAiCacheStats(this.redis),
+    ]);
+    return { ...dbMetrics, aiCache };
   }
 }

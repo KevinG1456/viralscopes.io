@@ -1,0 +1,19 @@
+{
+  "id": "fixture-05",
+  "title": "I Tried Waking Up at 5am for 30 Days — Here's What Happened",
+  "description": "Thirty days, one alarm clock, zero snoozing. A full honest account of what changed and what didn't.",
+  "transcript": "Three years ago I was working a nine-to-five I hated, sleeping in until the last possible minute every single day. Then I decided to try something different for thirty days straight, and it genuinely changed how I think about mornings.",
+  "hook_text": "Three years ago I was working a nine-to-five I hated, sleeping in until the last possible minute every single day.",
+  "duration_secs": 655,
+  "view_count": 223000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture05/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "story",
+    "story_structure": "Narrative arc from dissatisfaction to a defined 30-day experiment",
+    "virality_drivers": ["personal narrative", "specific duration", "relatable starting point"],
+    "formula_type": "i_tried_x_for_y_days",
+    "formula_template": "I Tried [Action] for [Timeframe] — Here's What Happened",
+    "thumbnail_emotion": "anticipation",
+    "thumbnail_composition_type": "rule_of_thirds"
+  }
+}

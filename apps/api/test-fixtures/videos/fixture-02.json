@@ -1,0 +1,19 @@
+{
+  "id": "fixture-02",
+  "title": "How I Saved £10,000 in 6 Months on an Average Salary",
+  "description": "A full breakdown of the exact budgeting system, expense cuts, and side income that let me save ten thousand pounds in half a year.",
+  "transcript": "I deleted every single food delivery app on my phone. That one decision alone saved me more than I expected. Three years ago I was living paycheck to paycheck, and today I want to walk you through the exact system that changed that.",
+  "hook_text": "I deleted every single food delivery app on my phone. That one decision alone saved me more than I expected.",
+  "duration_secs": 731,
+  "view_count": 412000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture02/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "shock",
+    "story_structure": "Before/after financial transformation with a step-by-step system reveal",
+    "virality_drivers": ["specific numbers", "relatable financial pain", "actionable system"],
+    "formula_type": "how_i_did_x_in_y",
+    "formula_template": "How I [Action] in [Timeframe]",
+    "thumbnail_emotion": "joy",
+    "thumbnail_composition_type": "rule_of_thirds"
+  }
+}

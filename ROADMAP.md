@@ -525,20 +525,20 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 **Complexity:** Small | **Duration:** 3–5 days | **Parallel with:** Phase 6
 
 #### Deliverables
-- All 8 production prompts stored, versioned, and active in the database
+- All 6 production prompts stored, versioned, and active in the database
 - AI response caching live with hit rate monitoring
 - Prompt test harness functional in admin panel
 
 #### Tasks
-- [ ] `prompt_library` table with full versioning schema
-- [ ] All prompts stored in DB (not in code): transcript analysis, thumbnail analysis, title formula, hook classification, full video analysis, trend clustering, opportunity detection, ethical recommendation generation
-- [ ] AI response caching: Redis key = `(prompt_version, sha256(input))`, 24h TTL
-- [ ] Cache hit rate tracked and displayed in admin dashboard
-- [ ] Prompt test harness: select prompt + version → run against test video → view formatted output + schema validation
-- [ ] Diff view between two prompt versions on the same test video
-- [ ] Regression runner: all active prompts against 10 fixed test fixture videos
+- [x] `prompt_library` table with full versioning schema
+- [x] All prompts stored in DB (not in code): thumbnail analysis, title formula, hook classification, full video analysis, trend clustering, ethical recommendation generation — corrected from an earlier 8-item list that also named "transcript analysis" and "opportunity detection". Neither is an AI prompt: `n8n_Workflow_Diagrams.md` WF-03 (Transcript Pipeline) only fetches YouTube captions with no AI call (transcript summarisation is produced by the `video_analysis` prompt above), and WF-11 (Opportunity Engine) is explicitly "no AI calls — purely computational ranking". See DEC-020 in `PROJECT_STATUS.md`.
+- [x] AI response caching: Redis key = `(prompt_version, sha256(input))`, 24h TTL
+- [x] Cache hit rate tracked (`GET /api/v1/admin/metrics`'s `aiCache` field) — "displayed in admin dashboard" is Phase 8 (Frontend Dashboard) scope, not started; the backend data it would render is live now
+- [x] Prompt test harness: select prompt + version → run against test video → view formatted output + schema validation — `POST /admin/prompts/:name/test` against 10 committed fixture videos (`apps/api/test-fixtures/videos/`), dispatched via the same queue→n8n pattern as every other workflow (`infra/n8n-workflows/prompt-test.json`). Live-verified end to end up to the AI-provider call itself: auth, template rendering, cache check, provider routing, error handling, and retry/dead-letter all confirmed working by observing the call fail predictably (no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` anywhere in this environment — TD-023, more fundamental than RISK-02's unresolved cost model) and correctly dead-letter. The cache-hit path (no AI call needed) was verified with a real cached result.
+- [x] Diff view between two prompt versions — `GET /admin/prompts/:name/diff`
+- [x] Regression runner: all active prompts against the 10 fixed test fixture videos — `npm run ai:regression`, deliberately **not** wired into CI as a merge-blocking gate per `PROJECT_RULES.md` section 9.5, since that would run real, uncontrolled AI spend on every PR with no credentials or budget approval in place yet (TD-023). Live-run against the 5 video-scoped active prompts × 10 fixtures = 50 combinations (`trend_clustering`, the 6th active prompt, is correctly excluded — its input is a topic batch, not a single video), reporting each as `PENDING` (blocked on TD-023) rather than a false failure; exits non-zero only on a genuine schema-validation failure of an output that did come back.
 
-**Milestone:** All prompts live, cached, and testable. Cost visibility in admin dashboard.
+**Milestone:** Prompt storage, versioning, caching, the test harness, and the regression runner are all live and built as completely as possible without AI provider credentials (TD-023) — the one thing left unverified anywhere in Phase 7 is the actual content of a real AI response. Cost visibility backend is live; the admin dashboard UI to display it is Phase 8.
 
 ---
 

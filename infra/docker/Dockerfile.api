@@ -56,6 +56,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/package.json
 
+# Phase 7: the prompt test harness (routes/prompt-library.routes.ts) and
+# regression runner read these 10 committed fixture videos at runtime --
+# not compiled by tsc (plain JSON, not TS), so they need an explicit COPY
+# rather than riding along with apps/api/dist.
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/test-fixtures ./apps/api/test-fixtures
+
 # BLK-004: node_modules/@viralscopes/db is a workspace symlink into
 # packages/db -- without the actual directory present here, it dangles and
 # the first `import` from it crashes the process (ERR_MODULE_NOT_FOUND).

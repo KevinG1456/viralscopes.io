@@ -1,0 +1,19 @@
+{
+  "id": "fixture-01",
+  "title": "Is Cold Showers Actually Worth It in 2026?",
+  "description": "I tried cold showers every single day for a month and tracked energy, mood, and sleep quality. Here is what actually changed.",
+  "transcript": "Have you ever wondered if all those cold shower influencers are actually onto something, or if it's just hype? I decided to find out the hard way. For thirty days straight, no exceptions, freezing cold water first thing in the morning. By day seven I wanted to quit. By day thirty something had genuinely shifted.",
+  "hook_text": "Have you ever wondered if all those cold shower influencers are actually onto something, or if it's just hype?",
+  "duration_secs": 542,
+  "view_count": 168000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture01/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "question",
+    "story_structure": "Personal 30-day experiment with a clear before/after arc",
+    "virality_drivers": ["curiosity gap", "personal transformation", "specific timeframe"],
+    "formula_type": "is_x_worth_it",
+    "formula_template": "Is [Thing] Actually Worth It in [Year]?",
+    "thumbnail_emotion": "surprise",
+    "thumbnail_composition_type": "central"
+  }
+}

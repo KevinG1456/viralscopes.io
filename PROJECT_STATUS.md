@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-27 (Phase 6 n8n Workflow Engine — 9/28 tasks live-verified; DEC-018/019, TD-020–022 added)
-> **Status:** Phase 6 — n8n Workflow Engine (in progress, 9/28 tasks — see §2)
+> **Last Updated:** 2026-07-28 (Phase 7 AI Prompt Library — 7/7 own-checklist tasks live-verified as far as possible without AI credentials; DEC-020, TD-023 added)
+> **Status:** Phase 7 — AI Prompt Library & Versioning (complete per its own checklist, blocked from full AI-call verification by TD-023 — see §2)
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,12 +39,12 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 6 — n8n Workflow Engine (9/28 ROADMAP tasks — queue infrastructure, base workflow template, scheduled + manually-triggered jobs, retry/dead-letter pipeline all live-verified; all 14 real business workflows deferred — see §5/§12) |
-| **Overall MVP completion** | ~31% |
+| **Current phase** | Phase 7 — AI Prompt Library & Versioning (7/7 own-ROADMAP-checklist tasks complete — prompt storage/versioning, Redis caching, test harness, and regression runner all live-verified as far as possible without AI credentials — see §5/§12) |
+| **Overall MVP completion** | ~33% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
-| **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their "before Phase 6 begins" target — blocks TD-020 (the 14 real business workflows), not the rest of Phase 6 |
+| **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their targets, and no AI provider credentials exist anywhere in this environment (TD-023) — blocks TD-020 (14 real Phase 6 workflows) and full AI-call verification of Phase 7's test harness/regression runner |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy — unresolved past its Week 6 target; AI cost model — unresolved past its Week 9 target) |
 | **Last status update** | 2026-07-27 |
@@ -184,9 +184,28 @@ All 8 core project documents have been authored and are ready for engineering ha
 - [ ] Credentials store populated for external services — nothing to store yet (no YouTube/Anthropic/OpenAI keys provisioned)
 - [ ] n8n's own `EXECUTIONS_MODE=queue` + a dedicated `n8n worker` process + Postgres-backed n8n storage — TD-021 (confirmed live: queue mode without a worker hangs forever; n8n itself warns queue mode isn't officially supported against its default SQLite backing)
 
-### Next Phase: Phase 7 (AI Prompt Library) / Phase 8 (Frontend Dashboard)
+### Complete: Phase 7 — AI Prompt Library & Versioning (7/7 ROADMAP tasks)
 
-**Start condition:** Both run parallel to Phase 6 per `ROADMAP.md`'s dependency graph (§6). Phase 7's prompt library and Phase 8's frontend don't depend on Phase 6's deferred real workflows to begin — Phase 8 can build against the endpoints already documented in README.md §4, and Phase 7 can define/version prompts in the database independently of whether a workflow calls them yet.
+**Scope note:** `ROADMAP.md`'s Phase 7 checklist has 7 items (corrected from an earlier placeholder count of 12 — see DEC-020). Every one is built and live-verified as completely as this environment allows; the sole residual gap is that the actual content of a real AI-provider response cannot be observed anywhere in this environment (TD-023, no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`) — that is a credentials gap, not an unbuilt task.
+
+**Key deliverables:**
+- ✅ Admin-only CRUD over `prompt_library` (built in Phase 3, unused until now): list prompts, list/get a version, create a new version, activate a version (transactionally enforcing one active version per name), diff two versions field-by-field
+- ✅ Seeded the 6 prompts that correspond to an actual AI model call (`video_analysis`, `thumbnail_analysis`, `title_formula_detection`, `hook_classification`, `trend_clustering`, `ethical_recommendation`), transcribed from `AI_Strategy.md`/`n8n_Workflow_Diagrams.md` — not the 8 `ROADMAP.md` originally named, two of which turned out not to be AI prompts at all (DEC-020)
+- ✅ Redis AI-response cache (`vs:ai:{promptName}:{promptVersion}:{sha256(normalizedInput)}`, 24h TTL, per `PROJECT_RULES.md` §3.5) with real hit/miss counters surfaced in `GET /api/v1/admin/metrics`'s new `aiCache` field — n8n has no native Redis credential in this stack, so two new `requireServiceToken`-gated endpoints (`/api/v1/internal/ai-cache/lookup`, `/store`) stand in for the in-workflow Redis step `n8n_Workflow_Diagrams.md` shows
+- ✅ Prompt test harness (`POST /admin/prompts/:name/test`) against 10 committed synthetic fixture videos (`apps/api/test-fixtures/videos/`), dispatched through the same queue→n8n pattern as every Phase 6 workflow (`infra/n8n-workflows/prompt-test.json`) — per `PROJECT_RULES.md` §3.5 ("never call AI APIs synchronously in request handlers"), not a direct HTTP call from Fastify
+- ✅ Regression runner (`npm run ai:regression`) against all 5 video-scoped active prompts × the 10 fixtures = 50 combinations, deliberately **not** wired into CI as a merge-blocking gate (TD-023) — `trend_clustering`'s batch-topic input correctly excluded rather than forced through a single-video harness it doesn't fit
+- ✅ Live-verified the entire pipeline up to the AI-provider call boundary by running it for real: service-token auth, fixture-driven template rendering, cache-key computation, provider routing by model string, `continueOnFail` error capture, response normalisation, and the retry→dead-letter path all confirmed working — the call itself fails predictably (`n8n webhook responded 502`, then a genuine `dead_letter_jobs` row after the standard retry cycle), which is exactly the expected outcome without credentials, not a bug. Separately verified the cache-hit path returns a pre-stored result immediately with zero jobs enqueued.
+- ✅ Corrected `ROADMAP.md`'s Phase 7 task wording from 8 prompts to 6 (DEC-020)
+
+**Not fully verifiable — see TD-023:**
+- [ ] The actual content of a real AI-provider response (Anthropic/OpenAI) — no API keys exist anywhere in this environment
+- [ ] The regression suite as a CI-blocking gate (`PROJECT_RULES.md` §9.5's letter) — would either fail every PR or spend real, unapproved money once keys exist; built as a standalone script instead
+- [ ] A real AI cost estimate (`ai_cost_estimate_gbp_today`) in admin metrics — needs actual call volume/token counts this environment has none of
+- [ ] "Cache hit rate displayed in admin dashboard" — the dashboard *UI* is Phase 8 (Frontend Dashboard) scope, not started; the backend data it would render (`aiCache` in `/admin/metrics`) is live
+
+### Next Phase: Phase 8 (Frontend Dashboard) / Phase 9 (Billing) / Phase 10 (Security)
+
+**Start condition:** Phase 8 depends on Phase 5 (both already substantially built) and can proceed against the endpoints documented in README.md §4 without waiting on Phase 6's deferred real workflows or Phase 7's TD-023 credentials gap. Phase 9 and Phase 10 both depend on Phase 5 and are independent of each other per `ROADMAP.md` §7.
 
 ---
 
@@ -202,7 +221,7 @@ Phase 3          ███████████████░░░░░   
 Phase 4          █████░░░░░░░░░░░░░░░   29%  🚧 Authentication + Session Management complete (see TD-010–013 for deferred remainder)
 Phase 5          █████████████░░░░░░░   63%  🚧 Read/CRUD business endpoints + RBAC live (see TD-014–019 for deferred remainder)
 Phase 6          ██████░░░░░░░░░░░░░░   32%  🚧 Queue infra, base template, retry/dead-letter live (see TD-020–022 for deferred remainder)
-Phase 7          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 7          ████████████████████  100%  ✅ Complete per its own checklist (built as far as possible without AI credentials — TD-023)
 Phase 8          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 9          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 10         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
@@ -211,7 +230,7 @@ Phase 12         ░░░░░░░░░░░░░░░░░░░░   
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      ██████░░░░░░░░░░░░░░   31%  🚧 In progress
+Overall MVP      ██████░░░░░░░░░░░░░░   33%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -225,7 +244,7 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 | Phase 4 — Auth | 31 | 9 | 0 | 22 |
 | Phase 5 — Backend API | 57 | 36 | 0 | 21 |
 | Phase 6 — n8n Workflows | 28 | 9 | 0 | 19 |
-| Phase 7 — Prompt Library | 12 | 0 | 0 | 12 |
+| Phase 7 — Prompt Library | 7 | 7 | 0 | 0 |
 | Phase 8 — Frontend | 48 | 0 | 0 | 48 |
 | Phase 9 — Billing | 22 | 0 | 0 | 22 |
 | Phase 10 — Security | 18 | 0 | 0 | 18 |
@@ -233,7 +252,7 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 | Phase 12 — Testing | 24 | 0 | 0 | 24 |
 | Phase 13 — Documentation | 12 | 0 | 0 | 12 |
 | Phase 14 — Deployment | 14 | 0 | 0 | 14 |
-| **Total** | **424** | **131** | **0** | **293** |
+| **Total** | **419** | **138** | **0** | **281** |
 
 ---
 
@@ -248,7 +267,7 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 | Phase 4 | Authentication & Authorisation | 🚧 In progress | 9/31 tasks (29%) | Week 4–6 | Authentication + Session Management merged (PR #16); Email Service, RBAC route-enforcement, Org/Workspace Management remain (TD-010–013) — does not block Phase 5 |
 | Phase 5 | Core Backend API | 🚧 In progress | 36/57 tasks (63%) | Week 6–9 | Read/CRUD business endpoints, RBAC, plan-tier rate limiting live; YouTube Quota Manager/Search/Export/Webhooks/OpenAPI deferred (TD-014–019) |
 | Phase 6 | n8n Workflow Engine | 🚧 In progress | 9/28 tasks (32%) | Week 9–12 | Queue infra, base workflow template, retry/dead-letter live; all 14 real workflows deferred (TD-020, blocked on RISK-01/02) |
-| Phase 7 | AI Prompt Library | ⏳ Not started | 0% | Week 10–12 | Parallel with Phase 6 — not blocked by its deferred workflows |
+| Phase 7 | AI Prompt Library | ✅ Complete (own checklist) | 7/7 tasks (100%) | Week 10–12 | Prompt storage/versioning/caching/test-harness/regression-runner all live; only the actual AI-provider response is unverified (TD-023, no credentials in this environment) |
 | Phase 8 | Frontend Dashboard | ⏳ Not started | 0% | Week 6–13 | Parallel with Phase 5 |
 | Phase 9 | Subscription & Billing | ⏳ Not started | 0% | Week 13–15 | Depends on Phase 5 |
 | Phase 10 | Security & Compliance | ⏳ Not started | 0% | Week 15–16 | Parallel with Phase 9 |
@@ -378,9 +397,22 @@ Overall MVP      ██████░░░░░░░░░░░░░░   
 
 ---
 
+### Phase 7 — AI Prompt Library & Versioning (7/7) ✅
+
+- [x] `prompt_library` CRUD (list prompts, list/get a version, create a version, activate a version, diff two versions), admin-only via `requireSuperAdmin`
+- [x] Seeded the 6 real prompts (`video_analysis`, `thumbnail_analysis`, `title_formula_detection`, `hook_classification`, `trend_clustering`, `ethical_recommendation`) — corrected from `ROADMAP.md`'s original 8-item list (DEC-020)
+- [x] Redis AI-response cache (`vs:ai:{promptName}:{promptVersion}:{sha256(input)}`, 24h TTL) with real hit/miss counters in `GET /admin/metrics`'s `aiCache` field; two `requireServiceToken`-gated endpoints (`/internal/ai-cache/lookup`, `/store`) since n8n has no native Redis credential in this stack
+- [x] Prompt test harness (`POST /admin/prompts/:name/test`) against 10 committed fixture videos, dispatched via the queue→n8n pattern (`infra/n8n-workflows/prompt-test.json`) rather than a direct synchronous AI call (`PROJECT_RULES.md` §3.5)
+- [x] Diff view (`GET /admin/prompts/:name/diff`) and regression runner (`npm run ai:regression`, not CI-gated — TD-023)
+- [x] Live-verified the full pipeline up to the AI-provider call boundary: auth, template rendering, cache check, provider routing, error handling, retry→dead-letter all confirmed working by observing the (expected, credential-less) failure and a real cache-hit round trip
+
+**Not fully verifiable — see TD-023:** the actual AI-provider response content (no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` in this environment), the regression suite as a CI-blocking gate, a real AI cost estimate, and the admin-dashboard UI for cache hit-rate (Phase 8 scope).
+
+---
+
 ## 6. In-Progress Tasks
 
-*No tasks are actively in progress right now. Phase 6's queue infrastructure, base workflow template, and retry/dead-letter pipeline are merged; its remaining task groups (the 14 real business workflows — TD-020, n8n's own queue-mode scaling — TD-021, external credentials store — TD-022) are blocked or not started and not currently assigned. Phase 5's remainder (TD-014 through TD-019) and Phase 4's remainder (TD-010, TD-011, TD-013) are also still outstanding. Phase 7 (AI Prompt Library) and Phase 8 (Frontend Dashboard) are ready to begin in parallel — see §2 and §14.*
+*No tasks are actively in progress right now. Phase 6's queue infrastructure, base workflow template, and retry/dead-letter pipeline are merged; its remaining task groups (the 14 real business workflows — TD-020, n8n's own queue-mode scaling — TD-021, external credentials store — TD-022) are blocked or not started and not currently assigned. Phase 7 is complete per its own checklist (TD-023 covers what AI credentials would additionally unblock). Phase 5's remainder (TD-014 through TD-019) and Phase 4's remainder (TD-010, TD-011, TD-013) are also still outstanding. Phase 8 (Frontend Dashboard), Phase 9 (Billing), and Phase 10 (Security) are ready to begin — see §2 and §14.*
 
 ---
 
@@ -584,7 +616,7 @@ Full AI analysis of one video (transcript analysis + thumbnail vision + full con
 | M4 | Auth Complete | Week 6 | Phase 4 | ⏳ Pending | Full auth system + all email templates live in staging |
 | M5 | API v1 Complete | Week 9 | Phase 5 | ⏳ Pending | All endpoints live, OpenAPI spec published |
 | M6 | Workflows Live | Week 12 | Phase 6 | ⏳ Pending | All 14 n8n workflows running, dead-letter queue active |
-| M7 | Prompts Live | Week 12 | Phase 7 | ⏳ Pending | All 8 prompts versioned, cached, test harness working |
+| M7 | Prompts Live | Week 12 | Phase 7 | ✅ Done | All 6 real prompts (DEC-020) versioned, cached, test harness and regression runner working as far as possible without AI credentials (TD-023) |
 | M8 | Dashboard Complete | Week 13 | Phase 8 | ⏳ Pending | All MVP pages live in staging, onboarding tested |
 | M9 | Billing Live | Week 15 | Phase 9 | ⏳ Pending | Stripe billing live in staging, usage tracking active |
 | M10 | Security Complete | Week 16 | Phase 10 | ⏳ Pending | Security checklist done, GDPR endpoints live |
@@ -926,6 +958,22 @@ Significant decisions are logged here with context, options considered, and rati
 **Decision:** Reverted to n8n's default regular mode, which executes in-process and needs no separate worker — confirmed live this is what n8n itself treats as fully supported against the default SQLite backing. `apps/api`'s own BullMQ queue (DEC-018) is entirely unaffected either way — it's a separate set of BullMQ Queue/Worker instances that happen to share the same Redis server, not connected to n8n's internal execution mode at all.
 
 **Consequence:** A dedicated `n8n worker` service + Postgres-backed n8n storage is real, legitimate scaling work for when it's actually needed (matches `INFRASTRUCTURE_GROWTH_PLAN.md`'s own "Stage 2 — Multiple n8n Workers" framing) — deferred as TD-021, not configured now.
+
+---
+
+### DEC-020 — Phase 7 seeds 6 prompts, not the 8 named in `ROADMAP.md`'s checklist
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-27 |
+| **Decision** | `prompt_library` is seeded with exactly the 6 prompts that correspond to a real AI model call: `video_analysis`, `thumbnail_analysis`, `title_formula_detection`, `hook_classification`, `trend_clustering`, `ethical_recommendation` |
+| **Decided by** | Engineering Lead (found while implementing Phase 7's "store all prompts in DB" task) |
+
+**Context:** `ROADMAP.md`'s Phase 7 checklist names 8 items, including "transcript analysis" and "opportunity detection." Cross-checking against `n8n_Workflow_Diagrams.md` (the more detailed, authoritative workflow design) shows neither is an AI prompt: WF-03 Transcript Pipeline only fetches YouTube captions via the Data API — transcript *summarisation* is produced as part of the `video_analysis` prompt's output, not a separate call — and WF-11 Opportunity Engine is explicitly documented as "No AI calls — purely computational ranking" (`opportunity_score = velocity×0.40 + viral_score×0.30 + (100-competition)×0.20 + growth×0.10`). `AI_Strategy.md` §5.1's own "Active prompts (MVP)" table independently lists exactly these same 6 — the two documents agree with each other and disagree with `ROADMAP.md`'s checklist wording.
+
+**Decision:** Seed the 6 prompts that correspond to a real model call (migration `0009_seed_prompt_library.sql`), each transcribed from `AI_Strategy.md` §2 / `n8n_Workflow_Diagrams.md`'s per-workflow specs (system prompt, user template, and a JSON-Schema `output_schema` matching each analysis table's actual columns/enums — `hook_type`'s 9 values and `title_analyses.formula_type`'s 15 values, including `'other'`, both transcribed verbatim from `n8n_Workflow_Diagrams.md` WF-07/WF-06 rather than invented). Do not seed placeholder prompts for `transcript_analysis` or `opportunity_detection`, since no such AI call exists to version.
+
+**Consequence:** `ROADMAP.md`'s Phase 7 task wording is corrected to name the 6 real prompts instead of 8, cross-referencing this decision, so the checklist matches what was actually (and correctly) built rather than silently underreporting 6/8 forever.
 
 ---
 
@@ -1313,6 +1361,23 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-023 — No AI provider credentials anywhere; prompt test harness, regression suite, and cost visibility blocked
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-27 |
+| **Severity** | Medium |
+| **Phases affected** | Phase 7 |
+| **Status** | Accepted (blocked, more fundamental than RISK-02) |
+
+**Description:** Neither `ANTHROPIC_API_KEY` nor `OPENAI_API_KEY` is set anywhere in this environment (`.env.example` has both blank; the local `.env` has neither). This blocks three Phase 7 deliverables: the prompt test harness's actual AI-provider call ("select prompt + version → run against test video → view formatted output"), the 10-fixture regression suite `PROJECT_RULES.md` section 9.5 requires to run and block merge on every PR touching the AI pipeline, and any real AI cost estimate (`ai_cost_estimate_gbp_today` per `AI_Strategy.md` section 5.2) — cost can only be estimated from actual call volume and token counts, neither of which exist without live traffic.
+
+**Why accepted:** This is a harder blocker than RISK-02 (AI cost model undecided) — even a decided cost model can't be exercised without credentials to call. Wiring the regression suite into CI now, per `PROJECT_RULES.md` section 9.5's letter, would either fail every PR (no keys) or, once keys exist as GitHub Secrets, spend real, uncontrolled money on every single push with no budget approval gate — directly contradicting `AI_Strategy.md`'s own "AI cost is a first-class constraint" principle. Cache hit-rate visibility (a real, measurable Redis-backed metric, live regardless of whether any AI call has ever happened) is delivered now; cost visibility is not fabricated as a placeholder number.
+
+**Resolution plan:** Once API keys are provisioned and a budget/spend-alert threshold is approved (`AI_Strategy.md` section 3.3 Strategy 5's £30/day alert is the documented target), wire the regression runner into CI per `PROJECT_RULES.md` section 9.5, enable the prompt test harness's live AI-call leg, and add a real cost-estimate field to `GET /api/v1/admin/metrics`.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -1344,15 +1409,17 @@ When a known issue is identified, log it in this format:
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Overdue — target was "before Phase 5 begins" (Week 6); both Phase 5 and Phase 6 proceeded without it by scoping out everything that depends on it (TD-014, TD-020) rather than guessing |
-| 🔴 P1 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Overdue — target was "before Phase 6 begins" (Week 9); blocks all 14 of TD-020's real workflows |
+| 🔴 P1 | Decide YouTube API quota strategy (RISK-01) | Engineering Lead | Overdue — target was "before Phase 5 begins" (Week 6); Phase 5/6/7 all proceeded without it by scoping out everything that depends on it (TD-014, TD-020) rather than guessing |
+| 🔴 P1 | Run AI cost model prototype — sample 100 videos, measure actual cost (RISK-02) | Engineering Lead | Overdue — target was "before Phase 6 begins" (Week 9); blocks TD-020's 14 real workflows and TD-023's Phase 7 AI-call verification |
+| 🔴 P1 | Provision `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` | Repo owner | TD-023 — neither exists anywhere in this environment; blocks the Phase 7 test harness/regression runner's AI-call leg regardless of RISK-02's outcome |
 
-### Next Up — Phase 6 remainder + Phase 7/8 kickoff
+### Next Up — Phase 8/9/10 kickoff
 
 | Priority | Task | Owner | Notes |
 |---|---|---|---|
-| 🔴 P1 | Resolve RISK-01 (YouTube quota strategy) and RISK-02 (AI cost model) | Engineering Lead | Both now block TD-020's 14 real business workflows, not just Phase 5's quota manager |
-| 🔴 P1 | Begin Phase 7 or Phase 8 (per `ROADMAP.md`'s dependency graph) | Engineer | Phase 6's queue/orchestration foundation is in place; the 14 real workflows (TD-020) are blocked on RISK-01/02 regardless of which phase runs next |
+| 🔴 P1 | Resolve RISK-01 (YouTube quota strategy), RISK-02 (AI cost model), and provision AI provider keys (TD-023) | Engineering Lead | Unblocks TD-020's 14 real workflows and Phase 7's remaining AI-call verification together |
+| 🔴 P1 | Begin Phase 8 (Frontend Dashboard) | Engineer | Depends on Phase 5 (substantially built); can consume the endpoints documented in README.md §4 without waiting on TD-020/TD-023 |
+| 🟠 P2 | Begin Phase 9 (Billing) and/or Phase 10 (Security) | Engineer | Both depend on Phase 5 only, independent of each other, per `ROADMAP.md` §7 |
 | 🟠 P2 | Transactional email service: provision SendGrid/Resend, build 7 templates, SPF/DKIM/DMARC | Engineer / Repo owner | TD-010 — needed before any staging deployment with real user signups |
 | 🟠 P2 | Organisation & Workspace Management: org CRUD, invite flow, member management | Engineer | TD-011 — needed before Phase 9 (Billing) |
 | 🟡 P3 | OpenAPI/Swagger spec generation | Engineer | TD-018 |
@@ -1362,8 +1429,8 @@ When a known issue is identified, log it in this format:
 
 ### Backlog (Next 4 Weeks)
 
-- Resolve RISK-01/RISK-02, then implement TD-020's 14 real business workflows against `foundation-demo.json`'s template
-- Begin Phase 7 and/or Phase 8 (Frontend Dashboard) per `ROADMAP.md`'s parallel-development notes
+- Resolve RISK-01/RISK-02/TD-023, then implement TD-020's 14 real business workflows against `foundation-demo.json`'s template and enable Phase 7's AI-call verification + CI regression gate
+- Begin Phase 8 (Frontend Dashboard), Phase 9 (Billing), and/or Phase 10 (Security) per `ROADMAP.md`'s parallel-development notes
 - Phase 5 remainder once unblocked: YouTube Quota Manager + analyze/refresh (needs RISK-01), Search, Export (needs R2 provisioning), Webhooks (needs Phase 9), OpenAPI spec, Analytics viral-scores/engagement
 - Phase 4 remainder: Transactional Email Service, Organisation & Workspace Management, auth audit logging
 - First stakeholder demo: staging environment with auth + empty dashboard shell (target: Week 6)
@@ -1387,6 +1454,8 @@ When a known issue is identified, log it in this format:
 | 2026-07-27 | Engineering (AI-assisted) | PR #17 (`feat/VS-phase5-core-backend-api`) opened for the Phase 5 feature commit (already-merged BLK-004 Docker fix stayed on `main` directly, per prior approval). CI's initial run failed: `turbo.json`'s `type-check` task lacked `dependsOn: ["^build"]`, so a fresh checkout ran `apps/api`'s type-check before `packages/db`'s new `dist/` existed (see BLK-004's resolution note in §8). Root-caused and fixed rather than bypassed — added the missing dependency, verified against a true fresh-build simulation, re-ran the full CI-equivalent sequence clean, pushed the fix as a second commit on the same PR. All required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green; CodeQL explicitly reported no new alerts introduced by the PR's diff. |
 | 2026-07-27 | Engineering (AI-assisted) | PR #17 squash-merged to `main` (commit `2341e50`) after confirming zero merge conflicts, no unresolved review comments, no new security findings, and that this document plus `CHANGELOG.md` accurately reflected the implementation. Verified `main` builds clean post-merge; `develop` fast-forwarded to match (`2341e50`, confirmed identical tip via `git ls-remote`); `feat/VS-phase5-core-backend-api` deleted from the remote, leaving only `main`/`develop`. Phase 5 retrospective: 36/57 tasks delivered and live-verified; the two real bugs found during Phase 5 verification (boolean query-param coercion, rate-limit tier fallback) and the CI build-order fix are the only defects the phase surfaced; TD-014 through TD-019 capture everything intentionally deferred, all blocked on RISK-01 or explicit product/infra decisions rather than left ambiguous. |
 | 2026-07-27 | Engineering (AI-assisted) | Phase 6 — n8n Workflow Engine: 9 of 28 `ROADMAP.md` tasks implemented and live-verified against a real Docker Compose stack (Postgres, Redis, n8n, `apps/api`) — not merged yet, work is currently uncommitted directly on `main` pending a dedicated feature branch and PR, per the established Phase 5 workflow. Delivered: a real BullMQ producer/worker in `apps/api` (`lib/queue.ts`) that dispatches jobs to n8n webhooks and treats the HTTP response as the outcome, with custom retry backoff (0s/30s/5min, 4 attempts) and dead-letter transition on exhaustion — n8n never touches the queue directly, keeping all persistence/retry/business logic in the backend (DEC-018); `job_logs`/`dead_letter_jobs` writes wired to real job lifecycle events; a `requireServiceToken` middleware (timing-safe comparison) gating a new `/api/v1/internal/heartbeat` endpoint; an admin manual-trigger endpoint (`POST /api/v1/admin/jobs/:workflow/trigger`) and a genuinely-functional dead-letter retry (previously a stub); `/health`'s queue check now calls real `getJobCounts()` instead of returning a static placeholder; two n8n workflows (`foundation-demo.json` as the template every future workflow will follow, `heartbeat.json` as a scheduled liveness check) built, imported, and live-tested end to end including the full retry-to-dead-letter cycle. Found and fixed three real bugs during live verification: BullMQ rejects colon-delimited queue names despite `INFRASTRUCTURE_GROWTH_PLAN.md` documenting that convention literally; n8n's `EXECUTIONS_MODE=queue` hangs every execution forever without a separate `n8n worker` process, reverted to n8n's default regular mode (DEC-019, TD-021); n8n blocks `$env` access in node expressions by default, breaking both workflows' service-token checks, fixed via `N8N_BLOCK_ENV_ACCESS_IN_NODE`. Deliberately did not build the 14 real business workflows the roadmap lists (Video Discovery, AI Analysis Pipeline, etc.) — all blocked on RISK-01/RISK-02, neither of which has been resolved despite both being overdue — logged as TD-020 rather than guessed at; a dedicated `n8n worker`/Postgres-backed n8n storage (TD-021) and populating n8n's credentials store (TD-022) are deferred for the same reason or lack of current need. |
+| 2026-07-27 | Engineering (AI-assisted) | PR #18 (`feat/VS-phase6-n8n-workflow-engine`) opened, all required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green, squash-merged to `main` (commit `48b5247`). Verified `main` builds clean post-merge; `develop` fast-forwarded to match; the feature branch pruned from both remote and local, leaving only `main`/`develop`. |
+| 2026-07-28 | Engineering (AI-assisted) | Phase 7 — AI Prompt Library & Versioning: all 7 of `ROADMAP.md`'s own checklist items complete (corrects an earlier placeholder count of 12) and live-verified as far as this environment allows. Delivered on `feat/VS-phase7-ai-prompt-library`, in three milestones (M1 prompt_library CRUD + seed, M2 Redis caching + admin metrics, M3 test harness + regression runner + docs), each type-checked/linted/built and live-verified against real Postgres/Redis/n8n before committing. Found and corrected a real doc inaccuracy before building anything: `ROADMAP.md`'s "8 prompts" included "transcript analysis" and "opportunity detection," neither of which is an AI prompt per `n8n_Workflow_Diagrams.md`'s own design (WF-03 is caption ingestion only; WF-11 is "no AI calls — purely computational ranking") — seeded the 6 real prompts instead, matching `AI_Strategy.md` §5.1 exactly (DEC-020). Built a prompt test harness and 10-fixture regression runner (`npm run ai:regression`) dispatched through the same queue→n8n pattern as Phase 6's workflows (`infra/n8n-workflows/prompt-test.json`) rather than a synchronous in-request AI call, per `PROJECT_RULES.md` §3.5. Found the same fundamental blocker Phase 6 hit for its 14 real workflows applies here too, more severely: no `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` exist anywhere in this environment (TD-023) — live-verified the entire pipeline up to that exact boundary by running a real test and watching it fail predictably (`n8n webhook responded 502`, then a genuine dead-letter row after the standard retry cycle) and, separately, verified the cache-hit path returns a pre-stored result immediately. Did not wire the regression suite into CI as `PROJECT_RULES.md` §9.5 literally specifies, since that would either fail every PR or spend real, unapproved money once keys exist — built as a standalone script instead, logged as part of TD-023 rather than silently deviating from the documented rule. |
 
 ---
 

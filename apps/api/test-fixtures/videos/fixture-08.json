@@ -1,0 +1,19 @@
+{
+  "id": "fixture-08",
+  "title": "Standing Desk vs Regular Desk — Which Is Actually Better?",
+  "description": "I used a standing desk for one month and a regular desk for another, tracking focus, back pain, and energy levels the whole time.",
+  "transcript": "I found something in my posture data that changed how I think about my entire home office setup. Two desks, two months, one very unexpected result.",
+  "hook_text": "I found something in my posture data that changed how I think about my entire home office setup.",
+  "duration_secs": 573,
+  "view_count": 88000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture08/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "curiosity",
+    "story_structure": "Head-to-head comparison structure with a data-driven twist",
+    "virality_drivers": ["comparison framing", "data-backed conclusion", "relatable setup"],
+    "formula_type": "x_vs_y",
+    "formula_template": "[Thing A] vs [Thing B] — Which Is Actually Better?",
+    "thumbnail_emotion": "anticipation",
+    "thumbnail_composition_type": "split"
+  }
+}

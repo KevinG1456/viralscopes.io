@@ -1,0 +1,19 @@
+{
+  "id": "fixture-04",
+  "title": "Why You Should Never Use That One Productivity App",
+  "description": "If you're still relying on this one popular productivity app, you are quietly losing hours every week without realising it.",
+  "transcript": "If you're still doing this, you're leaving hours on the table every single week without even noticing. I used to swear by this app until I actually tracked what it was costing me.",
+  "hook_text": "If you're still doing this, you're leaving hours on the table every single week without even noticing.",
+  "duration_secs": 389,
+  "view_count": 61000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture04/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "fear",
+    "story_structure": "Warning framing followed by a personal cautionary discovery",
+    "virality_drivers": ["FOMO framing", "contrarian take on a popular tool"],
+    "formula_type": "why_you_should_x",
+    "formula_template": "Why You Should Never [Action]",
+    "thumbnail_emotion": "fear",
+    "thumbnail_composition_type": "central"
+  }
+}

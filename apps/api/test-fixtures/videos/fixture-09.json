@@ -1,0 +1,19 @@
+{
+  "id": "fixture-09",
+  "title": "7 Things About Freelancing Nobody Warns You About",
+  "description": "I tried to make a thousand pounds in my first week freelancing. It did not go well, and these seven lessons are why.",
+  "transcript": "I tried to make a thousand pounds in a week doing freelance design. It did not go well. Here are seven things about freelancing that would have saved me a lot of pain if someone had just told me first.",
+  "hook_text": "I tried to make a thousand pounds in a week doing freelance design. It did not go well.",
+  "duration_secs": 447,
+  "view_count": 74000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture09/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "humour",
+    "story_structure": "Self-deprecating anecdote leading into a listicle of lessons",
+    "virality_drivers": ["self-deprecating humour", "listicle structure", "relatable failure"],
+    "formula_type": "x_things_about_y",
+    "formula_template": "[Number] Things About [Topic] Nobody Warns You About",
+    "thumbnail_emotion": "joy",
+    "thumbnail_composition_type": "other"
+  }
+}

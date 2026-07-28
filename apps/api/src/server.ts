@@ -16,6 +16,7 @@ import { apiKeyRoutes } from './routes/api-key.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { channelRoutes } from './routes/channel.routes.js';
 import { internalRoutes } from './routes/internal.routes.js';
+import { promptLibraryRoutes } from './routes/prompt-library.routes.js';
 import { recommendationRoutes } from './routes/recommendation.routes.js';
 import { trendRoutes } from './routes/trend.routes.js';
 import { usageRoutes } from './routes/usage.routes.js';
@@ -28,6 +29,10 @@ import { watchlistRoutes } from './routes/watchlist.routes.js';
 // (TD-020 in PROJECT_STATUS.md); this is the reusable plumbing they'll
 // each register onto following the same createWorkflowQueue() pattern.
 const FOUNDATION_DEMO_WORKFLOW = 'foundation-demo';
+
+// Phase 7: the prompt test harness's own workflow -- see
+// infra/n8n-workflows/prompt-test.json and services/prompt-test.service.ts.
+const PROMPT_TEST_WORKFLOW = 'prompt-test';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -61,6 +66,16 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
       FOUNDATION_DEMO_WORKFLOW,
     ),
   );
+  workflowQueues.set(
+    PROMPT_TEST_WORKFLOW,
+    createWorkflowQueue(
+      app.db,
+      config,
+      app.log,
+      queueName('standard', PROMPT_TEST_WORKFLOW),
+      PROMPT_TEST_WORKFLOW,
+    ),
+  );
   app.addHook('onClose', async () => {
     await Promise.all([...workflowQueues.values()].map((wq) => wq.close()));
   });
@@ -84,6 +99,10 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
   await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });
+  await app.register(promptLibraryRoutes, {
+    prefix: '/api/v1/admin/prompts',
+    promptTestQueue: workflowQueues.get(PROMPT_TEST_WORKFLOW)!,
+  });
 
   // Phase 6 closed the last of the three dependencies GET /ready checks
   // (database, redis, queue) -- no more "unimplemented dependencies" boot

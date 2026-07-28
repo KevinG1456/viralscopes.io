@@ -274,16 +274,32 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/jobs` | n8n job execution log (filters: status, workflowName) |
 | GET | `/dead-letter` | Dead-letter job queue (filter: resolved) |
 | POST | `/dead-letter/:id/retry` | Increment retry counter; **genuinely re-enqueues** the job if its `workflowName` matches a registered queue (Phase 6), otherwise bookkeeping only |
-| POST | `/jobs/:workflow/trigger` | Manually enqueue a job for a registered workflow (ROADMAP.md's `POST /api/v1/jobs/:workflow/trigger`, nested under `/admin` for consistency with the rest of this file). Only `foundation-demo` is registered so far |
-| GET | `/metrics` | Basic platform counts (users, orgs, job status last 24h, unresolved dead-letter) |
+| POST | `/jobs/:workflow/trigger` | Manually enqueue a job for a registered workflow (ROADMAP.md's `POST /api/v1/jobs/:workflow/trigger`, nested under `/admin` for consistency with the rest of this file). `foundation-demo` and `prompt-test` are registered so far |
+| GET | `/metrics` | Platform counts (users, orgs, job status last 24h, unresolved dead-letter) plus `aiCache` (Redis-backed hit/miss/hitRate — Phase 7). No cost-estimate field yet — see TD-023 |
 
-**Internal — service-token authenticated, not for browser/customer use (Phase 6 — `/api/v1/internal`)**
+**Admin — Prompt Library, `super_admin` only (Phase 7 — `/api/v1/admin/prompts`)**
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | List every prompt name with its version count and active version |
+| GET | `/test-fixtures` | List the 10 committed test-fixture video IDs (`apps/api/test-fixtures/videos/`) |
+| GET | `/:name` | Full version history for one prompt |
+| GET | `/:name/:version` | One specific version |
+| GET | `/:name/diff?from=&to=` | Field-by-field diff between two versions |
+| POST | `/:name` | Create a new version (`is_active: false` until activated) |
+| POST | `/:name/activate` | Activate a version, deactivating every other version of that name in the same transaction |
+| POST | `/:name/test` | Run a prompt+version against a fixture video. Returns a cached result immediately (`200`), or enqueues via the same queue→n8n pattern as every other workflow and returns `202 {jobId}` (see TD-023 — the AI-provider call itself cannot be live-verified in this environment) |
+| GET | `/:name/test/:jobId` | Poll a test run's `job_logs` row for its outcome |
+
+**Internal — service-token authenticated, not for browser/customer use (Phase 6/7 — `/api/v1/internal`)**
 
 | Method | Path | Description |
 |---|---|---|
 | POST | `/heartbeat` | Called by n8n's scheduled Heartbeat workflow every 5 minutes; proves n8n's scheduler is alive and can authenticate to the backend. Logged to `job_logs` |
+| POST | `/ai-cache/lookup` | Called by n8n workflows to check the Redis AI-response cache (n8n has no native Redis credential in this stack) |
+| POST | `/ai-cache/store` | Called by n8n workflows to store a successful AI response in the cache (24h TTL) |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-020):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, and all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from).
+**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-023):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), and a real AI cost estimate (needs live AI provider credentials this environment doesn't have).
 
 ---
 
@@ -474,6 +490,7 @@ This uses the n8n CLI directly (`docker exec ... n8n import:workflow`), not n8n'
 ```bash
 docker exec viralscopesio-n8n-1 n8n publish:workflow --id=phase6-foundation-demo
 docker exec viralscopesio-n8n-1 n8n publish:workflow --id=phase6-heartbeat
+docker exec viralscopesio-n8n-1 n8n publish:workflow --id=phase7-prompt-test
 docker restart viralscopesio-n8n-1
 ```
 
@@ -497,6 +514,23 @@ curl -X POST http://localhost:3001/api/v1/admin/jobs/foundation-demo/trigger -H 
 # this calls it immediately instead of waiting)
 curl -X POST http://localhost:3001/api/v1/internal/heartbeat -H 'X-Service-Token: dev-only-service-token-change-me' -d '{}'
 ```
+
+**5. Prompt test harness** (Phase 7 — see `docs/workflows/README.md`'s `prompt-test.json` section for the full flow):
+
+```bash
+# List the 6 seeded prompts, then run one against a fixture video
+curl http://localhost:3001/api/v1/admin/prompts -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X POST http://localhost:3001/api/v1/admin/prompts/hook_classification/test \
+  -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"version":1,"fixtureId":"fixture-02"}'
+# -> {"cacheHit":false,"jobId":"...","status":"queued"} (or an immediate cacheHit:true)
+
+# Poll the result (job_logs row); run the full 10-fixture suite for every active prompt
+curl http://localhost:3001/api/v1/admin/prompts/hook_classification/test/<jobId> -H "Authorization: Bearer $ACCESS_TOKEN"
+npm run ai:regression
+```
+
+Without `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` configured (this repo has neither — see TD-023 in `PROJECT_STATUS.md`), every run predictably ends up retrying and eventually dead-lettering with `n8n webhook responded 502` — confirmed live, and proof the pipeline correctly reaches and reports on the AI-provider call boundary, not a bug. `npm run ai:regression` reports these as `PENDING`, not failures; it only exits non-zero on a genuine schema-validation failure of an output that did come back (e.g. from a previously cached test run).
 
 Every attempt is recorded in `job_logs`; a job that fails all 4 attempts (immediate, 30s, 5min delays — `INFRASTRUCTURE_GROWTH_PLAN.md` §10.5) lands in `dead_letter_jobs`, retrievable via `GET /api/v1/admin/dead-letter` and re-triggerable via `POST /api/v1/admin/dead-letter/:id/retry`. Trigger the simulated-failure path with `{"payload":{"forceFail":true}}` on the admin trigger endpoint above.
 

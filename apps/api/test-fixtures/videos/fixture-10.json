@@ -1,0 +1,19 @@
+{
+  "id": "fixture-10",
+  "title": "Is a £2,000 Espresso Machine Actually Worth It in 2026?",
+  "description": "I spent two thousand pounds on a home espresso setup. A full breakdown of whether it was worth it compared to a cafe habit.",
+  "transcript": "How much would you guess I've spent at coffee shops this year? I spent two thousand pounds on a home espresso machine to find out if it would actually pay for itself.",
+  "hook_text": "How much would you guess I've spent at coffee shops this year?",
+  "duration_secs": 519,
+  "view_count": 131000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture10/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "question",
+    "story_structure": "Cost-justification narrative building to a spend/worth-it verdict",
+    "virality_drivers": ["specific spend amount", "relatable habit comparison"],
+    "formula_type": "i_spent_x_on_y",
+    "formula_template": "I Spent [Amount] on [Thing] — Was It Worth It?",
+    "thumbnail_emotion": "trust",
+    "thumbnail_composition_type": "central"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "fixture-06",
+  "title": "The Truth About Passive Income (That Nobody Tells You)",
+  "description": "Everyone sells the dream. Almost nobody talks about the actual timeline, the actual failure rate, or the actual first-year numbers.",
+  "transcript": "What happened next shocked even me. I'd spent two years believing the passive income dream everyone sells online, and the real numbers were nothing close to what the videos promised.",
+  "hook_text": "What happened next shocked even me.",
+  "duration_secs": 601,
+  "view_count": 340000,
+  "thumbnail_url": "https://i.ytimg.com/vi/fixture06/maxresdefault.jpg",
+  "precomputed_analysis": {
+    "hook_type": "mystery",
+    "story_structure": "Myth-busting reveal structure with a delayed payoff",
+    "virality_drivers": ["contrarian angle", "delayed reveal", "insider-knowledge framing"],
+    "formula_type": "the_truth_about_x",
+    "formula_template": "The Truth About [Topic] (That Nobody Tells You)",
+    "thumbnail_emotion": "surprise",
+    "thumbnail_composition_type": "frame_in_frame"
+  }
+}

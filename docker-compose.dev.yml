@@ -102,6 +102,14 @@ services:
       # multi-tenant n8n cloud deployment where this restriction matters
       # for isolating untrusted workflow authors from host secrets.
       N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'
+      # Phase 7's prompt-test workflow (infra/n8n-workflows/prompt-test.json)
+      # reads these to call the real AI provider. Not set anywhere in this
+      # environment yet (see TD-023 in PROJECT_STATUS.md) -- defaulting to
+      # empty rather than omitting the var so the workflow fails with a
+      # clear provider auth error instead of an undefined-variable error
+      # once keys are added here, no compose change is needed.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     extra_hosts:
       # host.docker.internal is built into Docker Desktop (Windows/Mac) but
       # needs this explicit mapping on native Linux Docker -- apps/api runs

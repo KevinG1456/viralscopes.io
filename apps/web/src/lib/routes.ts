@@ -19,7 +19,11 @@ export const ROUTES = {
     login: '/login',
     register: '/register',
     verifyEmail: '/verify-email',
-    forgotPassword: '/forgot-password',
-    resetPassword: '/reset-password',
+    // /reset-password/confirm (not a flat /forgot-password + /reset-password
+    // split) because auth.service.ts hardcodes
+    // `${appUrl}/reset-password/confirm?token=...` in the actual reset
+    // email -- confirmed live, this must match exactly.
+    resetPasswordRequest: '/reset-password',
+    resetPasswordConfirm: '/reset-password/confirm',
   },
 } as const;

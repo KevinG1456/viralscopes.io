@@ -1,0 +1,148 @@
+{
+  "name": "Foundation Demo (base template: log, error capture, dead-letter output)",
+  "meta": {
+    "description": "Phase 6 base workflow template. Webhook-triggered by apps/api's BullMQ worker (lib/queue.ts) for the 'foundation-demo' queue. Validates X-Service-Token, then branches: forceFail payload -> simulated error response (exercises the retry/dead-letter path end to end); otherwise -> trivial placeholder work -> success response. Real business workflows (Video Discovery, AI Analysis, etc. -- ROADMAP.md Phase 6) should copy this shape: token check, work, and an explicit success/failure JSON response, since the calling Worker treats any non-2xx or {success:false} body as a failure eligible for retry."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "foundation-demo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1e11111-1111-4111-8111-111111111111",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "foundation-demo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "b2e22222-2222-4222-8222-222222222222",
+              "leftValue": "={{$json.headers['x-service-token']}}",
+              "rightValue": "={{$env.N8N_SERVICE_TOKEN}}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3e33333-3333-4333-8333-333333333333",
+      "name": "Valid Service Token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, message: \"Invalid service token\" } }}",
+        "options": { "responseCode": 401 }
+      },
+      "id": "d4e44444-4444-4444-8444-444444444444",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [440, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "e5e55555-5555-4555-8555-555555555555",
+              "leftValue": "={{$json.body.payload.forceFail}}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f6e66666-6666-4666-8666-666666666666",
+      "name": "Simulate Failure? (demo/testing only)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, -120]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "g7e77777-7777-4777-8777-777777777777",
+              "name": "processedAt",
+              "type": "string",
+              "value": "={{$now.toISO()}}"
+            },
+            {
+              "id": "h8e88888-8888-4888-8888-888888888888",
+              "name": "workflowName",
+              "type": "string",
+              "value": "={{$json.body.workflowName}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "i9e99999-9999-4999-8999-999999999999",
+      "name": "Do the work (placeholder)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [660, -240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: \"processed\", processedAt: $json.processedAt } }}",
+        "options": {}
+      },
+      "id": "j0e00000-0000-4000-8000-000000000000",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, -240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, message: \"Simulated failure (payload.forceFail=true)\" } }}",
+        "options": { "responseCode": 500 }
+      },
+      "id": "k1e11111-1111-4111-8111-111111111112",
+      "name": "Respond Failure (error capture)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, -120]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Valid Service Token?", "type": "main", "index": 0 }]] },
+    "Valid Service Token?": {
+      "main": [
+        [{ "node": "Simulate Failure? (demo/testing only)", "type": "main", "index": 0 }],
+        [{ "node": "Respond Unauthorized", "type": "main", "index": 0 }]
+      ]
+    },
+    "Simulate Failure? (demo/testing only)": {
+      "main": [
+        [{ "node": "Respond Failure (error capture)", "type": "main", "index": 0 }],
+        [{ "node": "Do the work (placeholder)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Do the work (placeholder)": {
+      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "id": "phase6-foundation-demo"
+}

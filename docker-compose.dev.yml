@@ -74,12 +74,55 @@ services:
       N8N_HOST: localhost
       N8N_PORT: '5678'
       N8N_PROTOCOL: http
+      # ROADMAP.md's "Configure Redis queue (BullMQ) integration" is met by
+      # apps/api's OWN BullMQ producer/worker (lib/queue.ts), which is
+      # entirely independent of n8n's internal EXECUTIONS_MODE setting --
+      # that queue only distributes n8n's OWN executions across separate
+      # `n8n worker` processes, which don't exist here (single instance).
+      # Tried queue mode directly; without a worker process consuming it,
+      # every execution enqueues and hangs forever (confirmed live: a
+      # webhook call never returned). n8n's own default "regular" mode
+      # (this app's tier) executes in-process and needs no separate worker
+      # -- also the only mode n8n itself calls officially supported with
+      # its default SQLite backing (queue mode logs "Scaling mode is not
+      # officially supported with sqlite" on every boot). A dedicated
+      # `n8n worker` service + Postgres-backed n8n is real, deferred
+      # infrastructure work (TD-021), not a Phase 6 foundation requirement.
+      # Shared secret n8n workflows attach as a header (see infra/n8n-workflows/)
+      # when calling apps/api's /api/v1/internal/* routes -- validated by
+      # requireServiceToken (apps/api/src/middleware/require-service-token.ts).
+      # Never hard-coded: read from .env, same convention as every other
+      # secret in this file.
+      N8N_SERVICE_TOKEN: ${N8N_SERVICE_TOKEN:-dev-only-service-token-change-me}
+      API_INTERNAL_URL: http://host.docker.internal:3001
+      # n8n blocks $env access from node expressions by default (confirmed
+      # live: "access to env vars denied" for both the service-token check
+      # and the heartbeat workflow's header injection). Safe to relax here
+      # -- this is a single-tenant, self-hosted instance we control, not a
+      # multi-tenant n8n cloud deployment where this restriction matters
+      # for isolating untrusted workflow authors from host secrets.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'
+    extra_hosts:
+      # host.docker.internal is built into Docker Desktop (Windows/Mac) but
+      # needs this explicit mapping on native Linux Docker -- apps/api runs
+      # natively on the host (see this file's header comment), not as a
+      # container, so n8n reaches it via the host gateway either way.
+      - 'host.docker.internal:host-gateway'
     ports:
       - '5678:5678'
     volumes:
       - n8n-data:/home/node/.n8n
     networks:
       - viralscopes
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:5678/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   minio:
     image: minio/minio:latest

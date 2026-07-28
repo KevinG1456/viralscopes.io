@@ -69,6 +69,23 @@ Each version entry uses the following change categories:
 - Fixed `apps/api`'s production Docker image crashing on boot (`ERR_MODULE_NOT_FOUND` on `@viralscopes/db`) on any database-touching request — pre-existing since Phase 4 first added that runtime dependency, only caught now via an actual container boot test (BLK-004 in `PROJECT_STATUS.md`). `packages/db` gained a real build step (previously TS-source-only, tsx-consumption-only) and `Dockerfile.api`'s runner stage now includes its compiled output.
 - Fixed a fresh-checkout CI failure caused by the above: `turbo.json`'s `type-check` task didn't depend on upstream `build` tasks, so `apps/api`'s type-check ran before `packages/db`'s newly-required `dist/` existed. Added `dependsOn: ["^build"]` to `type-check`, matching `build`/`test`.
 
+### Added (Phase 6 — n8n Workflow Engine, partial)
+
+- Real BullMQ producer/worker (`apps/api/src/lib/queue.ts`): jobs are enqueued with custom backoff (0s/30s/5min, 4 attempts), dispatched to an n8n webhook over HTTP, and n8n's `{success, message}` response drives retry/completion/dead-letter — n8n never touches the queue directly, so all persistence and retry logic stays in the backend. See DEC-018 in `PROJECT_STATUS.md`.
+- `job_logs` and `dead_letter_jobs` are now written from real job lifecycle events (started/retrying/completed/failed), not left empty
+- `requireServiceToken` middleware (timing-safe comparison) and `POST /api/v1/internal/heartbeat`, called by n8n's new Schedule Trigger workflow every 5 minutes
+- `POST /api/v1/admin/jobs/:workflow/trigger` — manually enqueue a registered workflow; `POST /api/v1/admin/dead-letter/:id/retry` now genuinely re-enqueues the job instead of a stub response
+- `GET /health`'s queue check now reports real `getJobCounts()` per registered queue instead of a static `not_implemented`
+- Two n8n workflows added under `infra/n8n-workflows/`: `foundation-demo.json` (webhook trigger, service-token validation, simulated success/failure — the template every future real workflow follows) and `heartbeat.json` (scheduled liveness check)
+- `npm run workflows:import` / `workflows:export` — sync workflow JSON between this repo and the running n8n container
+- n8n added to both Docker Compose files with a healthcheck, Redis dependency, and service-to-service auth via `N8N_SERVICE_TOKEN`
+
+### Fixed (Phase 6)
+
+- Fixed n8n's `EXECUTIONS_MODE=queue` hanging every workflow execution forever: it requires a separate `n8n worker` process to consume n8n's own internal execution queue, which wasn't configured. Reverted both compose files to n8n's default regular execution mode. See DEC-019 and TD-021 in `PROJECT_STATUS.md`.
+- Fixed n8n blocking `$env` access inside node expressions by default, which silently evaluated the service-token check and the heartbeat's auth header to `undefined`. Added `N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'` (safe for this single-tenant self-hosted instance).
+- Fixed `BullMQ`'s queue-naming rejecting colons: `INFRASTRUCTURE_GROWTH_PLAN.md` documents a `viralscopes:<priority>:<workflow>` naming convention that BullMQ itself rejects at runtime; switched to dashes.
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

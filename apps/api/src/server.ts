@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config.js';
+import { createWorkflowQueue, queueName, type WorkflowQueue } from './lib/queue.js';
 import { cookiePlugin } from './plugins/cookie.plugin.js';
 import { dbPlugin } from './plugins/db.plugin.js';
 import { errorHandlerPlugin } from './plugins/error-handler.plugin.js';
@@ -14,11 +15,19 @@ import { analyticsRoutes } from './routes/analytics.routes.js';
 import { apiKeyRoutes } from './routes/api-key.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { channelRoutes } from './routes/channel.routes.js';
+import { internalRoutes } from './routes/internal.routes.js';
 import { recommendationRoutes } from './routes/recommendation.routes.js';
 import { trendRoutes } from './routes/trend.routes.js';
 import { usageRoutes } from './routes/usage.routes.js';
 import { videoRoutes } from './routes/video.routes.js';
 import { watchlistRoutes } from './routes/watchlist.routes.js';
+
+// Phase 6: the one foundation/demo workflow this instance can actually
+// enqueue jobs for -- see infra/n8n-workflows/foundation-demo.json. Real
+// business workflows (Video Discovery, AI Analysis, ...) are deferred
+// (TD-020 in PROJECT_STATUS.md); this is the reusable plumbing they'll
+// each register onto following the same createWorkflowQueue() pattern.
+const FOUNDATION_DEMO_WORKFLOW = 'foundation-demo';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -38,8 +47,27 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   await app.register(redisPlugin, { config });
   await app.register(cookiePlugin);
   await app.register(rateLimitPlugin);
-  await app.register(healthPlugin, { config });
+
+  // Phase 6: one BullMQ queue + in-process worker per registered workflow,
+  // each dispatching to n8n's webhook for that workflow (lib/queue.ts).
+  const workflowQueues = new Map<string, WorkflowQueue>();
+  workflowQueues.set(
+    FOUNDATION_DEMO_WORKFLOW,
+    createWorkflowQueue(
+      app.db,
+      config,
+      app.log,
+      queueName('standard', FOUNDATION_DEMO_WORKFLOW),
+      FOUNDATION_DEMO_WORKFLOW,
+    ),
+  );
+  app.addHook('onClose', async () => {
+    await Promise.all([...workflowQueues.values()].map((wq) => wq.close()));
+  });
+
+  await app.register(healthPlugin, { config, workflowQueues });
   await app.register(authRoutes, { config, prefix: '/api/v1/auth' });
+  await app.register(internalRoutes, { prefix: '/api/v1/internal' });
 
   // Phase 5 — Core Backend API. Read-only content (global, no RLS):
   await app.register(videoRoutes, { prefix: '/api/v1/videos' });
@@ -55,16 +83,11 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
-  await app.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });
 
-  // A real WARN, not per-request noise: logged once at boot so an operator
-  // reading logs immediately knows this instance is running with
-  // dependencies not yet wired up, rather than discovering it only via
-  // GET /ready.
-  app.log.warn(
-    { dependencies: ['queue'] },
-    'Starting with unimplemented dependencies — see GET /ready for detail',
-  );
+  // Phase 6 closed the last of the three dependencies GET /ready checks
+  // (database, redis, queue) -- no more "unimplemented dependencies" boot
+  // warning needed; /ready's own per-dependency detail is sufficient now.
 
   return app;
 }

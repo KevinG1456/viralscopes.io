@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Home, KeyRound, ListChecks, Sparkles, User } from 'lucide-react';
+import { Bell, Home, ListChecks, Settings, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -8,12 +8,21 @@ import { ROUTES } from '../../lib/routes';
 import { cn } from '../../lib/utils/cn';
 
 const NAV_ITEMS = [
-  { href: ROUTES.home, label: 'Home', icon: Home },
-  { href: ROUTES.watchlists, label: 'Watchlists', icon: ListChecks },
-  { href: ROUTES.alerts, label: 'Alerts', icon: Bell },
-  { href: ROUTES.settings.profile, label: 'Profile', icon: User },
-  { href: ROUTES.settings.apiKeys, label: 'API Keys', icon: KeyRound },
-  { href: ROUTES.admin.prompts, label: 'AI Prompts', icon: Sparkles },
+  { href: ROUTES.home, label: 'Home', icon: Home, matchPrefix: ROUTES.home },
+  {
+    href: ROUTES.watchlists,
+    label: 'Watchlists',
+    icon: ListChecks,
+    matchPrefix: ROUTES.watchlists,
+  },
+  { href: ROUTES.alerts, label: 'Alerts', icon: Bell, matchPrefix: ROUTES.alerts },
+  { href: ROUTES.settings.profile, label: 'Settings', icon: Settings, matchPrefix: '/settings' },
+  {
+    href: ROUTES.admin.prompts,
+    label: 'AI Prompts',
+    icon: Sparkles,
+    matchPrefix: ROUTES.admin.prompts,
+  },
 ] as const;
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): React.ReactElement {
@@ -21,8 +30,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }): React.R
 
   return (
     <nav className="flex flex-1 flex-col gap-1 p-3">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+      {NAV_ITEMS.map(({ href, label, icon: Icon, matchPrefix }) => {
+        const active = pathname === matchPrefix || pathname.startsWith(`${matchPrefix}/`);
         return (
           <Link
             key={href}

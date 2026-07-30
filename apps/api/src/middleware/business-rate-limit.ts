@@ -1,7 +1,7 @@
+import { requestsPerMinuteFor } from '@viralscopes/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../lib/errors.js';
-import { requestsPerMinuteFor } from '../lib/plan-limits.js';
 
 // Plan-tier-aware rate limiting for Phase 5's business endpoints (videos,
 // channels, trends, watchlists, alerts, api-keys, usage, analytics) --

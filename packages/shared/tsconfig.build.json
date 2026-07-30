@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Same reasoning as packages/db's tsconfig.build.json (BLK-004): the
+    // default tsconfig.json is noEmit:true because apps/web consumes this
+    // package's source directly through its own bundler (Next.js), which
+    // needs no compiled output. apps/api, once it depends on
+    // @viralscopes/shared (Phase 9's plan-limits promotion), runs its
+    // production Docker image as plain `node apps/api/dist/index.js` --
+    // `node` cannot import a .ts file, and package.json's "main" has to
+    // point somewhere plain Node can resolve. This build-only config emits
+    // real JS/d.ts to dist/, used only by `npm run build`.
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  }
+}

@@ -113,6 +113,22 @@ Each version entry uses the following change categories:
 - Fixed `analytics/overview`'s `alertEvents.last30Days` being rendered as if it were a number — it's actually a per-status breakdown object (`{sent, failed, ...}`)
 - Fixed relative imports using a trailing `.js` extension, which `tsc`'s Bundler module resolution tolerates but Turbopack does not — a real build failure, not a type-check-only issue
 
+### Added (Phase 9 — Subscription & Billing, Milestone 1 of 6: Billing Foundation)
+
+- `packages/shared/src/plans.ts` — `PlanTier`/`PlanLimits`/`PLAN_LIMITS`/`PLAN_HIERARCHY`/`PLANS`, promoted from `apps/api/src/lib/plan-limits.ts` (extended, not duplicated) so `apps/web` can share the same constants; `packages/shared` given a real build path (mirrors BLK-004's fix for `packages/db`)
+- Two new migrations: `subscriptions.billing_cycle`/`checkout_session_id` + a partial unique index enforcing one non-canceled subscription per org, and a new `billing_events` table (webhook idempotency ledger, no RLS by design — same identity-lookup-before-tenant-context justification as `sessions`/`oauth_accounts`)
+- `billing.repository.ts`, `billing.service.ts` (current-plan summary implemented; checkout/portal session creation defined but intentionally not implemented — Milestone 2 scope), and a `BillingProvider` interface + `StripeBillingProvider` implementation so business logic never imports the `stripe` SDK directly
+- `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`/6 Stripe Price ID environment variables (all optional — billing returns `503` rather than crashing at boot when unset, same as unconfigured OAuth)
+- No billing routes, no HTTP surface, no live Stripe account exercised yet — by design; see `PROJECT_STATUS.md`'s Phase 9 section
+
+### Fixed (Phase 9 Milestone 1)
+
+- Caught before it could reach a real migration run: the draft design used `CREATE UNIQUE INDEX CONCURRENTLY`, which Postgres refuses inside a transaction block — and this project's migration runner (`packages/db/src/migrate.ts`) wraps every migration in one. Switched to a plain `CREATE UNIQUE INDEX` (negligible lock cost at this table's current size).
+
+### Documentation (Phase 9)
+
+- 14 architecture documents (`docs/architecture/billing/`) and 8 independent review documents (`docs/reviews/billing/`) — the review cross-checked every architectural claim against the real codebase and found (then corrected) several mismatches: RLS written against Supabase's `auth.uid()` instead of this project's actual `current_setting()` pattern, a JWT `role` claim assumed for admin checks that doesn't exist, a proposed plan-limits file that duplicated rather than reused existing code, and a testing strategy assuming a test runner this repository has never had. Six architecture decisions were resolved and reflected across all 14 documents before implementation began. See `PROJECT_STATUS.md` DEC-026/DEC-027, TD-025.
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

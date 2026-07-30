@@ -692,9 +692,16 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 
 ### Required Starting Phase 9 — Subscription & Billing
 
+All optional in this environment — `apps/api` boots fine without them; billing routes return `503` ("billing is not configured") rather than crashing at startup, the same pattern already used for unset OAuth credentials. No Stripe account has been provisioned in this environment yet.
+
 | Variable | Description |
 |---|---|
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe billing |
+| `STRIPE_SECRET_KEY` | Stripe Restricted API Key (`sk_test_*`/`sk_live_*`) — Stripe Dashboard → Developers → API Keys |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret — Stripe Dashboard → Developers → Webhooks, or the Stripe CLI's `stripe listen` output for local development |
+| `STRIPE_PRICE_ID_STARTER_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_BUSINESS_MONTHLY` / `_ANNUAL` | Stripe Price IDs for the three self-serve paid plans × two billing cycles (Free has no Stripe price; Enterprise is quote-only) — Stripe Dashboard → Products |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (safe for the browser) — read by `apps/web`, not `apps/api` |
+
+**Local development:** install the [Stripe CLI](https://docs.stripe.com/stripe-cli), then `stripe listen --forward-to localhost:3001/api/v1/webhooks/stripe` to forward webhook events and print a signing secret for `STRIPE_WEBHOOK_SECRET`.
 
 ---
 

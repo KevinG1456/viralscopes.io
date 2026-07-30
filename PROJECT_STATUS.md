@@ -2,8 +2,8 @@
 # ViralScopes.io — Project Status
 
 > **Version:** 1.0
-> **Last Updated:** 2026-07-28 (Phase 8 Frontend — 17/45 ROADMAP tasks complete, but 100% of the repo owner's explicit reduced Phase 8 requirements delivered and live-verified; DEC-023–025, TD-024 added)
-> **Status:** Phase 8 — Frontend Dashboard (complete per the repo owner's explicit requirements; see §2 for what ROADMAP.md's fuller aspirational list still defers)
+> **Last Updated:** 2026-07-29 (Phase 9 Billing — Milestone 1 of 6 complete: foundation layer live-verified, no payment processing yet; DEC-026/027, TD-025 added)
+> **Status:** Phase 9 — Subscription & Billing, Milestone 1/6 (Billing Foundation) complete; see §2
 > **Maintained by:** Engineering Lead
 > **Update cadence:** Weekly (every Monday) + on every phase completion
 > **Cross-references:** [ROADMAP.md](./ROADMAP.md) · [PRD.md](./PRD.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -39,16 +39,16 @@
 
 | Property | Value |
 |---|---|
-| **Current phase** | Phase 8 — Frontend Dashboard (100% of the repo owner's explicit reduced requirements delivered and live-verified; 17/45 of ROADMAP.md's fuller aspirational list — see §2) |
-| **Overall MVP completion** | ~37% |
+| **Current phase** | Phase 9 — Subscription & Billing (Milestone 1/6 "Billing Foundation" complete and live-verified; no payment processing yet — see §2) |
+| **Overall MVP completion** | ~38% |
 | **Infrastructure stage** | Stage 0 (not yet provisioned) |
 | **Active engineers** | TBD |
 | **Target MVP launch** | Week 19–20 from project initiation |
 | **Critical path item** | RISK-01 and RISK-02 (YouTube quota strategy, AI cost model) both remain unresolved past their targets, and no AI provider credentials exist anywhere in this environment (TD-023) — blocks TD-020 (14 real Phase 6 workflows), full AI-call verification of Phase 7's test harness, and TD-011 (org management) blocks Phase 8's onboarding flow |
 | **Active blockers** | None |
 | **Open risks** | 2 (YouTube API quota strategy — unresolved past its Week 6 target; AI cost model — unresolved past its Week 9 target) |
-| **Last status update** | 2026-07-28 |
-| **Next milestone** | M9 — Billing Live (Week 15), or M14 — Admin Panel Live if Phase 11 is prioritised first |
+| **Last status update** | 2026-07-29 |
+| **Next milestone** | M9 — Billing Live (Week 15): Milestone 1/6 (Billing Foundation) done; Milestone 2/6 (Checkout & Subscription APIs) next |
 
 ---
 
@@ -223,9 +223,27 @@ All 8 core project documents have been authored and are ready for engineering ha
 - [ ] Full Admin panel (job logs, dead-letter queue, quota, system health) — only the explicitly-requested Prompt Library page was built
 - [ ] OAuth login buttons/callback handler, `next-intl` i18n, Changelog page — not requested; OAuth additionally can't be live-verified (no provider credentials, same gap as Phase 4)
 
-### Next Phase: Phase 9 (Billing) / Phase 10 (Security) / Phase 11 (Admin Panel)
+### In Progress: Phase 9 — Subscription & Billing (Milestone 1/6)
 
-**Start condition:** Phase 9 and Phase 10 both depend on Phase 5 (built) and are independent of each other per `ROADMAP.md` §7. Phase 11 (Super Admin Panel) depends on Phases 5, 6, and 9. None are blocked by TD-020/TD-023/TD-011, though TD-011 (Organisation & Workspace Management) is worth prioritising soon -- it's now the blocker for Phase 8's onboarding flow in addition to Phase 9's billing-per-organisation model.
+**Scope note:** implemented as 6 milestones per the repo owner's explicit instruction, each stopped for review before continuing. A full architecture pass (`docs/architecture/billing/`, 14 documents) and an independent review pass (`docs/reviews/billing/`, 8 documents) preceded any code — the review cross-checked every architectural claim against the real codebase and found several that didn't hold (RLS written against Supabase's `auth.uid()` instead of this project's `current_setting()` pattern, a JWT `role` claim that doesn't exist, a proposed `packages/shared/plans.ts` that duplicated rather than reused `apps/api/src/lib/plan-limits.ts`, four overlapping webhook idempotency mechanisms). Six required decisions were resolved before implementation began (see DEC-026/027 below); all fourteen architecture documents were corrected to match.
+
+**Milestone 1 — Billing Foundation (complete, live-verified):**
+- ✅ `apps/api/src/lib/plan-limits.ts` promoted to `packages/shared/src/plans.ts` (extended, not duplicated — same field names, same `number | null` sentinel); all 5 existing call sites (`watchlist.service.ts`, `alert.service.ts`, `api-key.service.ts`, `usage.service.ts`, `business-rate-limit.ts`) updated to import from `@viralscopes/shared`
+- ✅ `packages/shared` given a real build path (`tsconfig.build.json`, `dist/` output) — the same fix BLK-004 gave `packages/db`, needed because `apps/api`'s production image now depends on it too (DEC-026)
+- ✅ Two new migrations: `0010_billing_cycle_and_checkout_session` (adds `subscriptions.billing_cycle`/`checkout_session_id` + a partial unique index enforcing one non-canceled subscription per org) and `0011_billing_events` (new webhook-idempotency table, no RLS — same "identity looked up before tenant context exists" justification as migrations 0006/0007, not compared to an unrelated table)
+- ✅ `billing.repository.ts` (subscriptions/invoices/billing_events queries) and `billing.service.ts` (plan summary + provider-agnostic checkout/portal method signatures, real logic deferred to Milestone 2 per the "no payment processing yet" scope boundary)
+- ✅ Provider abstraction (`billing-provider.ts`): a `BillingProvider` interface plus a `StripeBillingProvider` implementation — business logic never imports the `stripe` SDK directly (PROJECT_RULES.md P10)
+- ✅ `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`/6 Price ID env vars added to `config.ts` (all optional, same pattern as unset OAuth credentials — billing routes will return `503`, not crash at boot), `.env.example`, and `README.md`
+- ✅ Found and fixed a real bug before it could reach a real migration run: the original design called for `CREATE UNIQUE INDEX CONCURRENTLY`, which Postgres refuses inside a transaction block — and this project's migration runner (`packages/db/src/migrate.ts`) wraps every migration in one. Switched to a plain `CREATE UNIQUE INDEX` (a non-issue at this table's current size — zero production traffic exists yet, per TD-008)
+- ✅ Full verification: migrations applied, rolled back 2, and re-applied cleanly against the real dev Postgres; `type-check`/`lint`/`build` green across all 4 packages; the `apps/api` production Docker image was rebuilt (now including `packages/shared/dist`, mirroring BLK-004's fix for `packages/db`) and booted against the real dev Postgres/Redis containers — `/health` and `/ready` both returned healthy from inside the container, not just a successful `docker build`
+
+**Not done yet — by design, not oversight:** no billing routes exist, nothing is reachable over HTTP, and no live Stripe account has been exercised — that's Milestone 2's explicit scope ("Checkout session creation, Subscription retrieval, Current plan endpoint, Billing portal endpoint, Customer synchronization"), verified against Stripe Test Mode.
+
+---
+
+### Next Phase: Phase 10 (Security) / Phase 11 (Admin Panel)
+
+**Start condition:** Phase 10 depends on Phase 5 (built) and is independent of Phase 9. Phase 11 (Super Admin Panel) depends on Phases 5, 6, and 9. None are blocked by TD-020/TD-023/TD-011, though TD-011 (Organisation & Workspace Management) is worth prioritising soon -- it's now the blocker for Phase 8's onboarding flow in addition to Phase 9's billing-per-organisation model.
 
 ---
 
@@ -243,14 +261,14 @@ Phase 5          █████████████░░░░░░░   
 Phase 6          ██████░░░░░░░░░░░░░░   32%  🚧 Queue infra, base template, retry/dead-letter live (see TD-020–022 for deferred remainder)
 Phase 7          ████████████████████  100%  ✅ Complete per its own checklist (built as far as possible without AI credentials — TD-023)
 Phase 8          ███████░░░░░░░░░░░░░   38%  🚧 Repo owner's explicit requirements complete; ROADMAP's fuller aspirational list deferred (see TD-024)
-Phase 9          ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
+Phase 9          ███░░░░░░░░░░░░░░░░░   16%  🚧 Milestone 1/6 (Billing Foundation) complete
 Phase 10         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 11         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 12         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 13         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 Phase 14         ░░░░░░░░░░░░░░░░░░░░    0%  ⏳ Not started
 ─────────────────────────────────────────────────────────
-Overall MVP      ███████░░░░░░░░░░░░░   37%  🚧 In progress
+Overall MVP      ███████░░░░░░░░░░░░░   38%  🚧 In progress
 ```
 
 ### Task Completion Summary
@@ -289,7 +307,7 @@ Overall MVP      ███████░░░░░░░░░░░░░   
 | Phase 6 | n8n Workflow Engine | 🚧 In progress | 9/28 tasks (32%) | Week 9–12 | Queue infra, base workflow template, retry/dead-letter live; all 14 real workflows deferred (TD-020, blocked on RISK-01/02) |
 | Phase 7 | AI Prompt Library | ✅ Complete (own checklist) | 7/7 tasks (100%) | Week 10–12 | Prompt storage/versioning/caching/test-harness/regression-runner all live; only the actual AI-provider response is unverified (TD-023, no credentials in this environment) |
 | Phase 8 | Frontend Dashboard | ✅ Complete (repo owner's requirements) | 17/45 ROADMAP tasks (38%) | Week 6–13 | Shell, auth, dashboard, Watchlists/Alerts/API Keys/Profile/Organisation CRUD, Phase 7 AI integration all live and live-verified; onboarding/i18n/Changelog/full page coverage/charts deferred (TD-024) |
-| Phase 9 | Subscription & Billing | ⏳ Not started | 0% | Week 13–15 | Depends on Phase 5 |
+| Phase 9 | Subscription & Billing | 🚧 In progress | Milestone 1/6 | Week 13–15 | Billing Foundation (schema, repositories, service interfaces, provider abstraction, config) live-verified; no payment processing yet |
 | Phase 10 | Security & Compliance | ⏳ Not started | 0% | Week 15–16 | Parallel with Phase 9 |
 | Phase 11 | Super Admin Panel | ⏳ Not started | 0% | Week 20–22 | 30 days post-launch |
 | Phase 12 | Testing | ⏳ Not started | 0% | Week 3–18 (ongoing) | Runs incrementally |
@@ -1060,6 +1078,34 @@ Significant decisions are logged here with context, options considered, and rati
 
 ---
 
+### DEC-026 — Plan-limit constants promoted from `apps/api/src/lib/plan-limits.ts` to `packages/shared/src/plans.ts`, given a real build path
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-29 |
+| **Decision** | `PlanTier`/`PlanLimits`/`PLAN_LIMITS` moved to `packages/shared/src/plans.ts` (extended, not duplicated) so `apps/web` can consume the same constants at build time (pricing page, Milestone 4's `PlanGate` component); `packages/shared` given the same `tsconfig.build.json`/`dist/`-output treatment BLK-004 gave `packages/db` |
+| **Decided by** | Engineering Lead (Phase 9 architecture review, `docs/reviews/billing/02-consistency-review.md` §1) |
+
+**Context:** an earlier architecture draft proposed a *second*, independent `PLAN_LIMITS` definition in `packages/shared` with different field names and a different "unlimited" sentinel (`-1` instead of the already-live `null`) — directly against the instruction to reuse Phase 5's plan-limit enforcement rather than duplicate it. Cross-checked against the real `apps/api/src/lib/plan-limits.ts` (already imported by 5 call sites) before writing any code.
+
+**Decision:** move the existing file, don't duplicate it. Field names and the `null` sentinel are unchanged; all 5 call sites updated to import from `@viralscopes/shared`. Since `apps/api`'s production Docker image would otherwise dangle on the new workspace symlink exactly the way BLK-004 documented for `packages/db`, `packages/shared` got the identical fix pre-emptively (`tsconfig.build.json`, `package.json` `main`/`types` pointing at `dist/`, two new `COPY` lines in `Dockerfile.api`) rather than deferring it to when the bug would otherwise resurface. Verified: `apps/api`'s production image was rebuilt and booted against real dev Postgres/Redis; `/health` and `/ready` both returned healthy from inside the container.
+
+---
+
+### DEC-027 — Stripe objects are always stamped with `metadata.org_id`; webhook handlers never look up tenant context by provider ID before resolving it
+
+| Property | Value |
+|---|---|
+| **Date** | 2026-07-29 |
+| **Decision** | Every Stripe object `billing.service.ts`/`billing-provider.ts` creates (Checkout Sessions, and via `subscription_data.metadata`, the Subscriptions they produce) carries `metadata.org_id`; Checkout Sessions additionally carry `client_reference_id = org_id` |
+| **Decided by** | Engineering Lead (found while designing `billing.repository.ts`, not assumed to be needed upfront) |
+
+**Context:** `subscriptions`/`invoices` kept their existing RLS policy unchanged from migration 0003 (confirmed correct and sufficient by the architecture review). But a webhook handler resolving *which org* an event belongs to by looking up `provider_customer_id`/`provider_subscription_id` in the database first would hit exactly the chicken-and-egg RLS problem migrations 0006/0007 already solved for `sessions`/`oauth_accounts`/`organization_members` — a lookup-before-tenant-context query against an RLS-protected table returns zero rows under the restricted `app_user` role, not the row that exists.
+
+**Decision:** avoid the problem entirely rather than extend the RLS-bypass precedent to a financial-data table. Every Stripe object created here is stamped with `org_id` at creation time, so every subsequent webhook event is self-describing — the handler reads `org_id` directly out of the event's own payload (`session.client_reference_id`, or `subscription.metadata.org_id`) and calls `withTenant()` immediately, exactly like an authenticated request would. No new RLS policy, no RLS bypass, and `docs/architecture/billing/04-database-design.md`'s claim that "no RLS change is needed for subscriptions/invoices" holds — provided this metadata-stamping discipline is followed by every future Stripe object creation (Milestone 2 onward).
+
+---
+
 ## 12. Technical Debt Log
 
 Technical debt is tracked here from the moment it is knowingly incurred. Each entry includes the reason it was accepted and a plan to resolve it.
@@ -1478,6 +1524,23 @@ Technical debt is tracked here from the moment it is knowingly incurred. Each en
 
 ---
 
+### TD-025 — No separate API-key vs JWT-session request-authentication path
+
+| Property | Value |
+|---|---|
+| **Logged** | 2026-07-29 |
+| **Severity** | Low |
+| **Phases affected** | Phase 5, Phase 9 |
+| **Status** | Accepted (intentional, deferred) |
+
+**Description:** Every authenticated request goes through the same JWT-session `authenticate` middleware today, regardless of whether it should "count" as billable API usage (Pricing_Strategy.md's Professional+ `apiRequestsPerDay`/`apiRateLimitPerMinute` limits describe API-key traffic specifically, not browser-session traffic). There is no code path that distinguishes the two. Found while designing Phase 9's `api_request` quota tracking (`docs/architecture/billing/08-feature-gating.md`) — the original architecture draft mis-cited this gap as "TD-014," which is actually an unrelated, pre-existing entry (YouTube API Quota Manager); corrected during the Phase 9 architecture review.
+
+**Why accepted:** `api-key.service.ts`'s CRUD (create/list/revoke a key) was built in Phase 5, but nothing yet authenticates an *incoming* request via an API key rather than a JWT — that's a distinct, not-yet-built request-authentication path. Building `api_request` quota enforcement without it would mean quota-gating ordinary browser sessions, which Pricing_Strategy.md never describes.
+
+**Resolution plan:** Build an API-key request-authentication middleware (validate `sha256(key)` against `api_keys`, resolve org/plan context from it) before wiring `api_request` quota tracking (Phase 9 Milestone 5, `08-feature-gating.md`). Until then, `api_request` quota enforcement is a documented no-op, not a silently-skipped requirement.
+
+---
+
 ## 13. Known Issues
 
 *No known issues have been logged yet. Development has not started.*
@@ -1561,6 +1624,8 @@ When a known issue is identified, log it in this format:
 | 2026-07-28 | Engineering (AI-assisted) | PR #19 (`feat/VS-phase7-ai-prompt-library`) opened, all required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green with zero new alerts, squash-merged to `main` (commit `578d9f2`). Verified `main` builds clean post-merge; `develop` fast-forwarded to match; the feature branch pruned from both remote and local, leaving only `main`/`develop`. Phase 7 retrospective: 7/7 of its own `ROADMAP.md` checklist items delivered and live-verified as completely as this environment allows; the only genuine gap (TD-023, no AI provider credentials) is an external dependency, not an unbuilt task — every other phase's remaining debt (RISK-01/02, TD-010 through TD-022) is unaffected by this merge. |
 | 2026-07-28 | Engineering (AI-assisted) | Phase 8 — Frontend Dashboard: delivered against the repo owner's explicit, reduced requirement set (Application Shell, Authentication, Dashboard, CRUD for Watchlists/Alerts/API Keys/Profile/Organisation, Phase 7 AI integration, state management) rather than `ROADMAP.md`'s full 45-task aspirational list — 17/45 checked as a byproduct (DEC-023–025, TD-024). Built in five milestones on `feat/VS-phase8-frontend`, each type-checked/linted/built and live-verified against the real running backend before committing. Delivered: backend CORS (`Security_Architecture.md`'s already-specified policy, never implemented before now); a typed API client with the access token held in memory only and session persistence via the httpOnly refresh cookie (DEC-023), never localStorage; hand-built design-system primitives on Radix + `cva` (shadcn's actual copy-source model, not a runtime dependency); login/register/verify-email/reset-password/logout (email/password only — OAuth deferred per DEC-025, matching Phase 4's own unverified-OAuth status); a responsive app shell and Home dashboard with an honest empty state for the no-organisation case (TD-011); full CRUD for Watchlists (optimistic delete), Alert Rules (+ read-only history), API Keys (one-time reveal), Profile (session management), and a deliberately read-only Organisation page; and an AI Prompt Library admin UI consuming every Phase 7 endpoint, including a test harness that honestly surfaces TD-023's expected queue→retry→dead-letter path rather than hiding it. Found and fixed three real bugs via live testing, not assumed: Turbopack rejects `.js`-extension relative imports that `tsc`'s Bundler mode tolerates; the backend hardcodes `/reset-password/confirm` for the password-reset link, not the flat path first built; `analytics/overview`'s `alertEvents.last30Days` is a per-status breakdown object, not a flat number. Test data (watchlists, alert rules, API keys, a second prompt version, ~30 accumulated sessions) cleaned up after each milestone's verification. |
 | 2026-07-28 | Engineering (AI-assisted) | PR #20 (`feat/VS-phase8-frontend`) opened, all required checks (CI, Dependency Audit, Dependency Review, both CodeQL runs) green with zero new alerts. Before merging, investigated a separate report of 5 PostgreSQL errors (auth failure, `CREATE ROLE ... $1` syntax error, RLS violations on `sessions`/`watchlists`, a UUID empty-string error) — none reproduced against the current codebase; correlating the live Postgres container's own log timestamps against `git log` and `_migrations.applied_at` showed every entry was either already resolved by an existing, documented migration (`0006_identity_tables_no_rls.sql`/`0007_org_members_no_rls.sql`, both Phase 4, commit `0bb43eb`) or the setup-roles.ts literal-escaping approach (Phase 3, commit `8821aae`), or was self-inflicted by an earlier ad-hoc test command in this same session. Re-verified live in both directions: an unauthorized `watchlists` insert (no tenant context) correctly fails RLS; an authorized one (real `set_config` context) succeeds; two different real users each see only their own sessions via `GET /auth/sessions` despite `sessions` intentionally having RLS disabled (confirming the application-layer `user_id` filter, not the database, is the real boundary there, exactly as `0006` documents). No code changed as a result, since nothing reproduced. PR #20 then squash-merged to `main` (commit `e652bc8`). Verified `main` builds clean post-merge; `develop` fast-forwarded to match; the feature branch pruned from both remote and local, leaving only `main`/`develop`; zero open PRs; all checks (Lint/Type-check/Build/Format/Secrets, Dependency Audit, CodeQL) green on `main`'s latest commit, zero open CodeQL alerts. |
+| 2026-07-29 | Engineering (AI-assisted) | Phase 9 (Billing) architecture phase: authored 14 documents (`docs/architecture/billing/`) covering system architecture, domain model, database design, API design, webhook design, subscription lifecycle, feature gating, security, environment, testing strategy, implementation plan, risk register, and open questions. Followed by an independent review pass (`docs/reviews/billing/`, 8 documents) cross-checking every claim against the real codebase rather than trusting the draft — found and corrected several real mismatches: RLS policies written against Supabase's `auth.uid()` (this project uses `current_setting()`); a JWT `role` claim assumed for Super Admin checks that doesn't exist (the real check, `require-super-admin.ts`, is a deliberate live DB read, DEC-017); a proposed `packages/shared/plans.ts` that duplicated rather than extended the already-live `apps/api/src/lib/plan-limits.ts`; four overlapping webhook idempotency mechanisms where one durable table suffices; a testing strategy assuming a Vitest/Playwright setup that doesn't exist anywhere in this repository; `stripe_webhook_events` named provider-specifically despite `subscriptions.billing_provider` already treating Stripe as one of four supported providers; and migration numbers/file paths drifted from the real repository state. Six required decisions were resolved (plan-limits location, billing-mutation RBAC sourced from Security_Architecture.md's actual permission matrix, single-table webhook idempotency, `api_request` quota scope, the grace-period expiry mechanism, and postponing `teamSeats`/`workspaces`/`promptLibraryAccess` enforcement) and all 14 architecture documents were corrected to match before any code was written. Committed directly to `main` (commit `04d2166`), matching the established pattern for documentation-only commits. |
+| 2026-07-29 | Engineering (AI-assisted) | Phase 9 Milestone 1 (Billing Foundation) complete on `feat/VS-phase9-billing`: promoted `apps/api/src/lib/plan-limits.ts` to `packages/shared/src/plans.ts` (extended, not duplicated — DEC-026), gave `packages/shared` a real build path mirroring BLK-004's fix for `packages/db`, added migrations `0010`/`0011` (subscriptions' `billing_cycle`/`checkout_session_id` + partial unique index; the new `billing_events` webhook-idempotency table, no RLS per the migrations-0006/0007 precedent), `billing.repository.ts`, `billing.service.ts` (plan summary implemented; checkout/portal method signatures defined but not implemented — explicitly Milestone 2 scope), a `BillingProvider` interface + `StripeBillingProvider` implementation, and the `STRIPE_*` env vars (all optional). Found and fixed a real bug before it reached a live migration run: `CREATE UNIQUE INDEX CONCURRENTLY` cannot run inside a transaction block, and this project's migration runner wraps every migration in one — switched to a plain `CREATE UNIQUE INDEX`. Made an explicit design decision (DEC-027) to stamp every Stripe object with `metadata.org_id` at creation time specifically so webhook handlers never need to look up tenant context in the database before resolving it — avoiding an RLS-bypass precedent on a financial-data table. Live-verified, not assumed: migrations applied, rolled back, and re-applied cleanly against real dev Postgres; `type-check`/`lint`/`build` green across all 4 packages; the `apps/api` production Docker image rebuilt with the new `packages/shared` dependency and booted against real dev Postgres/Redis containers, with `/health` and `/ready` both returning healthy from inside the running container. No billing routes exist yet and no live Stripe account has been exercised — by design, Milestone 2's scope, not an oversight. |
 
 ---
 

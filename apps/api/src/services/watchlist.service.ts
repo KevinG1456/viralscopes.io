@@ -1,8 +1,8 @@
 import type { Database, TenantContext } from '@viralscopes/db';
+import { PLAN_LIMITS, type PlanTier } from '@viralscopes/shared';
 
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
-import { PLAN_LIMITS, type PlanTier } from '../lib/plan-limits.js';
 import {
   countActiveWatchlistsForOrg,
   createWatchlist,

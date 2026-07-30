@@ -30,14 +30,15 @@ RUN npm ci
 # Pruned full source (only the packages apps/api depends on).
 COPY --from=pruner /app/out/full/ .
 
-# BLK-004: apps/api imports @viralscopes/db at runtime (db.plugin.ts).
-# node_modules/@viralscopes/db is an npm-workspaces symlink into
-# packages/db -- plain `node` (the runner stage's CMD) cannot import that
-# package's TS source directly, so packages/db must be built to real JS
-# first, and its compiled output must actually be present in the runner
-# image alongside the symlink target. `--filter` also builds
-# @viralscopes/db automatically via turbo's dependency graph (turbo.json's
-# build task has dependsOn: ["^build"]) even without listing it explicitly.
+# BLK-004: apps/api imports @viralscopes/db at runtime (db.plugin.ts), and
+# from Phase 9 onward also @viralscopes/shared (packages/shared/src/plans.ts,
+# promoted from apps/api/src/lib/plan-limits.ts). Both are npm-workspaces
+# symlinks into their package directories -- plain `node` (the runner
+# stage's CMD) cannot import TS source directly, so both packages must be
+# built to real JS first, and their compiled output must actually be
+# present in the runner image alongside the symlink targets. `--filter`
+# also builds both automatically via turbo's dependency graph (turbo.json's
+# build task has dependsOn: ["^build"]) even without listing them explicitly.
 RUN turbo run build --filter=@viralscopes/api
 
 # Strip devDependencies from the already-resolved node_modules tree in
@@ -67,6 +68,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/api/test-fixtures ./apps/api
 # the first `import` from it crashes the process (ERR_MODULE_NOT_FOUND).
 COPY --from=builder --chown=nodejs:nodejs /app/packages/db/dist ./packages/db/dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/db/package.json ./packages/db/package.json
+
+# Same reasoning, for @viralscopes/shared (Phase 9: packages/shared/src/plans.ts).
+COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/package.json ./packages/shared/package.json
 
 USER nodejs
 EXPOSE 3001

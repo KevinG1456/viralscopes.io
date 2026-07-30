@@ -1,9 +1,45 @@
 import { type Database, schema, type TenantContext, withTenant } from '@viralscopes/db';
-import { and, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 
 export type SubscriptionRow = typeof schema.subscriptions.$inferSelect;
 export type InvoiceRow = typeof schema.invoices.$inferSelect;
 export type BillingEventRow = typeof schema.billingEvents.$inferSelect;
+
+export interface OrgForBilling {
+  id: string;
+  name: string;
+  plan: string;
+  ownerEmail: string;
+}
+
+// organizations/users have no RLS (root tables, filtered by application
+// logic -- see their own schema comments); no withTenant() needed here, but
+// the explicit id + deletedAt filters are still required (RLS is
+// defense-in-depth, not the only line -- PROJECT_RULES.md §3.8). Used to
+// validate the organisation is real and not soft-deleted before creating a
+// checkout/portal session, and to source the owner's email for Stripe.
+export async function findOrgWithOwnerEmail(
+  db: Database,
+  orgId: string,
+): Promise<OrgForBilling | undefined> {
+  const [row] = await db
+    .select({
+      id: schema.organizations.id,
+      name: schema.organizations.name,
+      plan: schema.organizations.plan,
+      ownerEmail: schema.users.email,
+    })
+    .from(schema.organizations)
+    .innerJoin(schema.users, eq(schema.users.id, schema.organizations.ownerId))
+    .where(
+      and(
+        eq(schema.organizations.id, orgId),
+        isNull(schema.organizations.deletedAt),
+        isNull(schema.users.deletedAt),
+      ),
+    );
+  return row;
+}
 
 // RLS-protected (org_id) -- every query here must run inside withTenant().
 // Design note (Phase 9): unlike sessions/oauth_accounts, subscriptions and

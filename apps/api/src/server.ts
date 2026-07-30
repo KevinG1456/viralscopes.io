@@ -15,6 +15,7 @@ import { alertRoutes } from './routes/alert.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
 import { apiKeyRoutes } from './routes/api-key.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
+import { billingRoutes } from './routes/billing.routes.js';
 import { channelRoutes } from './routes/channel.routes.js';
 import { internalRoutes } from './routes/internal.routes.js';
 import { promptLibraryRoutes } from './routes/prompt-library.routes.js';
@@ -98,6 +99,9 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   await app.register(apiKeyRoutes, { prefix: '/api/v1/api-keys' });
   await app.register(usageRoutes, { prefix: '/api/v1/usage' });
   await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
+  // Phase 9 — Billing (Milestone 2): checkout/portal/subscription/plan.
+  // Webhooks are a separate, unauthenticated route (Milestone 3).
+  await app.register(billingRoutes, { prefix: '/api/v1/billing' });
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
   await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });

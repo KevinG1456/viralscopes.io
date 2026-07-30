@@ -1,14 +1,19 @@
 import { type Database, type TenantContext } from '@viralscopes/db';
 import {
   PLAN_HIERARCHY,
+  PLAN_LIMITS,
   PLANS,
+  type PlanLimits,
   type PlanTier,
   SELF_SERVE_CHECKOUT_PLANS,
 } from '@viralscopes/shared';
 
 import type { BillingProvider } from '../lib/billing-provider.js';
 import { AppError } from '../lib/errors.js';
-import { findActiveSubscriptionForOrg } from '../repositories/billing.repository.js';
+import {
+  findActiveSubscriptionForOrg,
+  findOrgWithOwnerEmail,
+} from '../repositories/billing.repository.js';
 
 export interface CurrentPlanSummary {
   plan: PlanTier;
@@ -21,6 +26,11 @@ export interface CurrentPlanSummary {
   gracePeriodEndsAt: string | null;
 }
 
+export interface PlanAndLimits {
+  plan: PlanTier;
+  limits: PlanLimits;
+}
+
 export interface CreateCheckoutSessionInput {
   plan: string;
   billingCycle: 'monthly' | 'annual';
@@ -28,8 +38,16 @@ export interface CreateCheckoutSessionInput {
   cancelUrl: string;
 }
 
+export interface CheckoutSessionResponse {
+  checkoutUrl: string;
+}
+
 export interface CreatePortalSessionInput {
   returnUrl: string;
+}
+
+export interface PortalSessionResponse {
+  portalUrl: string;
 }
 
 // Business logic only -- no direct Stripe SDK usage anywhere in this class
@@ -129,28 +147,111 @@ export class BillingService {
     return this.billingProvider;
   }
 
-  // Milestone 2 (docs/architecture/billing/12-implementation-plan.md M3):
-  // creates a real Stripe Checkout Session, persists checkout_session_id for
-  // idempotent retry, and is exercised against Stripe Test Mode. Left as an
-  // explicit not-yet-implemented method for Milestone 1 -- the interface
-  // shape is real and reviewable now; no route calls it yet, so nothing in
-  // this environment can actually process a payment until Milestone 2 lands.
-  createCheckoutSession(_tenant: TenantContext, _input: CreateCheckoutSessionInput): never {
-    this.requireProvider();
-    throw new AppError(
-      'NOT_IMPLEMENTED',
-      'Checkout session creation lands in Milestone 2, not Milestone 1.',
-      501,
-    );
+  // Read-only, JWT-derived (no DB call): planTier is display-only outside
+  // enforcement paths (docs/architecture/billing/02-system-architecture.md's
+  // Option A decision -- Redis/DB is authoritative for enforcement, the JWT
+  // is a hint elsewhere). Covers "Get current plan" and "Get feature limits"
+  // together -- there is nothing more to compute than a constant lookup.
+  getPlanAndLimits(planTier: string | null): PlanAndLimits {
+    const plan = (planTier as PlanTier) ?? 'free';
+    return { plan, limits: PLAN_LIMITS[plan] };
   }
 
-  // Same as createCheckoutSession above -- Milestone 2 scope.
-  createPortalSession(_tenant: TenantContext, _input: CreatePortalSessionInput): never {
-    this.requireProvider();
-    throw new AppError(
-      'NOT_IMPLEMENTED',
-      'Billing portal session creation lands in Milestone 2, not Milestone 1.',
-      501,
-    );
+  // Milestone 2. Validates organisation, plan, and upgrade-vs-current-plan
+  // server-side before ever calling the provider -- every validation error
+  // below is reachable and correctly reported even with no Stripe key
+  // configured in this environment, since requireProvider() is deliberately
+  // the LAST check, not the first.
+  async createCheckoutSession(
+    tenant: TenantContext,
+    input: CreateCheckoutSessionInput,
+  ): Promise<CheckoutSessionResponse> {
+    if (!this.isSelfServeCheckoutPlan(input.plan)) {
+      throw new AppError(
+        input.plan === 'enterprise' ? 'ENTERPRISE_CUSTOM_ONLY' : 'INVALID_PLAN_TRANSITION',
+        input.plan === 'enterprise'
+          ? 'Enterprise plans are quote-only. Contact sales to subscribe.'
+          : `"${input.plan}" is not a valid self-serve plan.`,
+        422,
+      );
+    }
+
+    // Validate organisation: re-confirmed against the database, not just
+    // trusted from the JWT -- catches an org soft-deleted after the token
+    // was issued (requireOrgContext only checks the JWT carries an orgId
+    // at all, not that the org still exists).
+    const org = await findOrgWithOwnerEmail(this.db, tenant.orgId);
+    if (!org) {
+      throw new AppError('NO_ORGANIZATION', 'Organisation not found.', 404);
+    }
+
+    const activeSubscription = await findActiveSubscriptionForOrg(this.db, tenant);
+    const currentPlan = (activeSubscription?.plan as PlanTier | undefined) ?? 'free';
+
+    // Prevent duplicate active subscriptions: a real (non-free), currently
+    // paying subscription cannot check out into the same plan or a
+    // downgrade -- that's the Customer Portal's job (Milestone 3+), not
+    // checkout. The one-subscription-rule itself is additionally enforced
+    // at the database level (uq_subscriptions_org_active).
+    const hasRealPaidSubscription =
+      !!activeSubscription &&
+      ['active', 'trialing', 'past_due'].includes(activeSubscription.status);
+    if (hasRealPaidSubscription && !this.isUpgrade(currentPlan, input.plan as PlanTier)) {
+      throw new AppError(
+        'INVALID_PLAN_TRANSITION',
+        `Your organisation already has an active "${currentPlan}" subscription. Checkout only accepts upgrades; use the billing portal to change or cancel.`,
+        422,
+      );
+    }
+
+    const priceId = this.resolvePriceId(input.plan, input.billingCycle);
+    const provider = this.requireProvider();
+
+    // Reuse the existing Stripe Customer if this org already has one
+    // (avoids creating a duplicate Customer object on a repeat checkout);
+    // otherwise Stripe creates one lazily from customer_email during
+    // Checkout itself (Customer objects are never pre-created at org
+    // creation time -- see docs/architecture/billing/03-domain-model.md).
+    const result = await provider.createCheckoutSession({
+      orgId: tenant.orgId,
+      plan: input.plan,
+      billingCycle: input.billingCycle,
+      priceId,
+      customerEmail: org.ownerEmail,
+      existingProviderCustomerId: activeSubscription?.providerCustomerId ?? null,
+      successUrl: input.successUrl,
+      cancelUrl: input.cancelUrl,
+    });
+
+    // checkoutSessionId is deliberately not returned to the client (no
+    // provider IDs leave the server) and deliberately not persisted here --
+    // Stripe's own checkout.session.completed webhook (Milestone 3) is the
+    // only source of truth for "the subscription actually started," per
+    // "never trust the return URL alone."
+    return { checkoutUrl: result.checkoutUrl };
+  }
+
+  // Milestone 2. Portal access requires an existing Stripe Customer -- an
+  // org that has never subscribed has nothing to manage.
+  async createPortalSession(
+    tenant: TenantContext,
+    input: CreatePortalSessionInput,
+  ): Promise<PortalSessionResponse> {
+    const activeSubscription = await findActiveSubscriptionForOrg(this.db, tenant);
+    const providerCustomerId = activeSubscription?.providerCustomerId;
+    if (!providerCustomerId) {
+      throw new AppError(
+        'NO_BILLING_ACCOUNT',
+        'This organisation has never subscribed. Start a checkout first.',
+        402,
+      );
+    }
+
+    const provider = this.requireProvider();
+    const result = await provider.createPortalSession({
+      providerCustomerId,
+      returnUrl: input.returnUrl,
+    });
+    return { portalUrl: result.portalUrl };
   }
 }

@@ -265,6 +265,17 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/api/v1/usage` | Current-period usage vs plan quota |
 | GET | `/api/v1/analytics/overview` | Org KPIs: watchlists, alert rules, alert events (30d), API keys, usage |
 
+**Billing (Phase 9 Milestone 2 — `/api/v1/billing`)**
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/plan` | JWT (any org member) | Current plan tier + feature limits (JWT-derived, no DB call) |
+| GET | `/subscription` | JWT, `owner`/`admin` | Full subscription details (status, billing cycle, periods, grace period) — the first route in this codebase to actually call `requireRole()` (see PROJECT_STATUS.md TD-012) |
+| POST | `/checkout` | JWT, `owner` only | Create a Stripe Checkout Session for a self-serve plan upgrade (`starter`/`professional`/`business`). Returns `503` if Stripe isn't configured in this environment (no account provisioned yet) |
+| POST | `/portal` | JWT, `owner` only | Create a Stripe Customer Portal session (requires an existing subscription; returns `402 NO_BILLING_ACCOUNT` otherwise) |
+
+Webhook processing, invoice sync, cancellation automation, and billing emails are Milestone 3+ — see `docs/architecture/billing/` and `PROJECT_STATUS.md`'s Phase 9 section.
+
 **Admin — platform-wide, `super_admin` only (Phase 5 — `/api/v1/admin`)**
 
 | Method | Path | Description |
@@ -299,7 +310,7 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | POST | `/ai-cache/lookup` | Called by n8n workflows to check the Redis AI-response cache (n8n has no native Redis credential in this stack) |
 | POST | `/ai-cache/store` | Called by n8n workflows to store a successful AI response in the cache (24h TTL) |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-023):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), and a real AI cost estimate (needs live AI provider credentials this environment doesn't have).
+**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-025):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), a real AI cost estimate (needs live AI provider credentials this environment doesn't have), and the Stripe webhook endpoint + outgoing alert-channel webhooks (Phase 9 Milestone 3).
 
 ### Frontend Pages Reference (Phase 8 — `apps/web`)
 

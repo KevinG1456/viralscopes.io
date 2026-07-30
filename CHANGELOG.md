@@ -129,6 +129,20 @@ Each version entry uses the following change categories:
 
 - 14 architecture documents (`docs/architecture/billing/`) and 8 independent review documents (`docs/reviews/billing/`) — the review cross-checked every architectural claim against the real codebase and found (then corrected) several mismatches: RLS written against Supabase's `auth.uid()` instead of this project's actual `current_setting()` pattern, a JWT `role` claim assumed for admin checks that doesn't exist, a proposed plan-limits file that duplicated rather than reused existing code, and a testing strategy assuming a test runner this repository has never had. Six architecture decisions were resolved and reflected across all 14 documents before implementation began. See `PROJECT_STATUS.md` DEC-026/DEC-027, TD-025.
 
+### Added (Phase 9 Milestone 2 of 6: Checkout & Subscription APIs)
+
+- `POST /api/v1/billing/checkout` (Owner only) — creates a Stripe Checkout Session for a self-serve plan upgrade; validates the organisation, the requested plan, and that it's an upgrade from any existing real paid subscription before ever calling the provider
+- `POST /api/v1/billing/portal` (Owner only) — creates a Stripe Customer Portal session; `402 NO_BILLING_ACCOUNT` if the org has never subscribed
+- `GET /api/v1/billing/subscription` (Owner + Admin) — full subscription details (status, billing cycle, periods, grace period)
+- `GET /api/v1/billing/plan` (any authenticated org member) — current plan tier + feature limits, derived from the JWT with no database call
+- `billing.routes.ts` is the first route in this codebase to actually call `requireRole()` — built in Phase 4, never wired to a real route until now (see TD-012 in `PROJECT_STATUS.md`, now resolved)
+
+### Security (Phase 9 Milestone 2)
+
+- Verified RBAC end-to-end against all three organisation roles (owner/admin/member): owner has full checkout/portal/subscription access; admin can view the subscription but is correctly blocked (403) from checkout/portal; member is blocked from all three
+- Re-confirmed RLS directly against Postgres for `subscriptions` (unauthorized insert fails, authorized insert with correct tenant context succeeds) and `billing_events` (no RLS, by design)
+- No provider secrets or provider IDs (`provider_customer_id`, `provider_subscription_id`, `checkout_session_id`) are ever included in an API response
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

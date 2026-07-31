@@ -9,6 +9,7 @@ export interface OrgForBilling {
   id: string;
   name: string;
   plan: string;
+  ownerId: string;
   ownerEmail: string;
 }
 
@@ -18,6 +19,8 @@ export interface OrgForBilling {
 // defense-in-depth, not the only line -- PROJECT_RULES.md §3.8). Used to
 // validate the organisation is real and not soft-deleted before creating a
 // checkout/portal session, and to source the owner's email for Stripe.
+// `ownerId` doubles as the `TenantContext.userId` for webhook-driven writes
+// (a webhook has no acting user of its own -- see webhook.service.ts).
 export async function findOrgWithOwnerEmail(
   db: Database,
   orgId: string,
@@ -27,6 +30,7 @@ export async function findOrgWithOwnerEmail(
       id: schema.organizations.id,
       name: schema.organizations.name,
       plan: schema.organizations.plan,
+      ownerId: schema.organizations.ownerId,
       ownerEmail: schema.users.email,
     })
     .from(schema.organizations)
@@ -39,6 +43,18 @@ export async function findOrgWithOwnerEmail(
       ),
     );
   return row;
+}
+
+// No RLS on organizations (root tenant container) -- plain, explicitly
+// id-filtered update. Kept in sync with subscriptions.plan by every webhook
+// handler that changes plan, since organizations.plan is the fast-path
+// feature-gating value the JWT's planTier claim is populated from.
+export async function updateOrganizationPlan(
+  db: Database,
+  orgId: string,
+  plan: string,
+): Promise<void> {
+  await db.update(schema.organizations).set({ plan }).where(eq(schema.organizations.id, orgId));
 }
 
 // RLS-protected (org_id) -- every query here must run inside withTenant().
@@ -93,6 +109,7 @@ export interface UpsertSubscriptionInput {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   gracePeriodEndsAt: Date | null;
+  canceledAt: Date | null;
 }
 
 // One row per org, matching the documented "one-subscription rule"
@@ -123,6 +140,67 @@ export async function upsertSubscriptionForOrg(
     const [row] = await tx
       .insert(schema.subscriptions)
       .values({ orgId: tenant.orgId, ...input })
+      .returning();
+    return row;
+  });
+}
+
+// Defensive cross-check for customer.subscription.updated/deleted: org_id
+// is already resolved from the event's own metadata (DEC-027), so this is
+// scoped by tenant, not a global lookup -- it just confirms the org's
+// current subscription row actually matches the Stripe subscription the
+// event is about, rather than blindly trusting the one-subscription-rule.
+export async function findSubscriptionByProviderSubscriptionId(
+  db: Database,
+  tenant: TenantContext,
+  providerSubscriptionId: string,
+): Promise<SubscriptionRow | undefined> {
+  return withTenant(db, tenant, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.providerSubscriptionId, providerSubscriptionId));
+    return row;
+  });
+}
+
+export interface UpsertInvoiceInput {
+  subscriptionId: string | null;
+  providerInvoiceId: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  paidAt: Date | null;
+  hostedUrl: string | null;
+  pdfUrl: string | null;
+}
+
+// Idempotent on providerInvoiceId (UNIQUE constraint) -- Stripe can send
+// invoice.payment_failed then later invoice.paid for the same invoice;
+// this must update the existing row, not create a second one.
+export async function upsertInvoiceForOrg(
+  db: Database,
+  tenant: TenantContext,
+  input: UpsertInvoiceInput,
+): Promise<InvoiceRow> {
+  return withTenant(db, tenant, async (tx) => {
+    const [existing] = await tx
+      .select({ id: schema.invoices.id })
+      .from(schema.invoices)
+      .where(eq(schema.invoices.providerInvoiceId, input.providerInvoiceId));
+
+    if (existing) {
+      const [row] = await tx
+        .update(schema.invoices)
+        .set(input)
+        .where(eq(schema.invoices.id, existing.id))
+        .returning();
+      return row;
+    }
+
+    const [row] = await tx
+      .insert(schema.invoices)
+      .values({ orgId: tenant.orgId, provider: 'stripe', ...input })
       .returning();
     return row;
   });

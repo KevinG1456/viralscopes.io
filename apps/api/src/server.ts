@@ -24,6 +24,7 @@ import { trendRoutes } from './routes/trend.routes.js';
 import { usageRoutes } from './routes/usage.routes.js';
 import { videoRoutes } from './routes/video.routes.js';
 import { watchlistRoutes } from './routes/watchlist.routes.js';
+import { webhookRoutes } from './routes/webhook.routes.js';
 
 // Phase 6: the one foundation/demo workflow this instance can actually
 // enqueue jobs for -- see infra/n8n-workflows/foundation-demo.json. Real
@@ -100,8 +101,9 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   await app.register(usageRoutes, { prefix: '/api/v1/usage' });
   await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
   // Phase 9 — Billing (Milestone 2): checkout/portal/subscription/plan.
-  // Webhooks are a separate, unauthenticated route (Milestone 3).
   await app.register(billingRoutes, { prefix: '/api/v1/billing' });
+  // Phase 9 — Billing (Milestone 3): unauthenticated, Stripe-signature-verified.
+  await app.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
   await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });

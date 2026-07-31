@@ -631,20 +631,20 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 **Plan Definition**
-- [ ] Define 5 tiers: Free, Starter, Professional, Business, Enterprise
-- [ ] Define per-plan limits for all quota-gated resources
+- [x] Define 5 tiers: Free, Starter, Professional, Business, Enterprise
+- [x] Define per-plan limits for all quota-gated resources
 - [ ] Feature flags: stored in DB, cached in Redis, no DB hit per request
 
 **Stripe Integration**
-- [ ] Stripe Checkout for new subscriptions
-- [ ] Stripe Customer Portal for plan changes, payment updates, cancellation
-- [ ] Monthly and annual billing with annual discount
-- [ ] Webhook handler with signature verification:
-  - [ ] `invoice.paid` → activate/renew
-  - [ ] `invoice.payment_failed` → grace period + failure email
-  - [ ] `customer.subscription.updated` → sync plan
-  - [ ] `customer.subscription.deleted` → downgrade to free
-- [ ] 3-day grace period on payment failure
+- [x] Stripe Checkout for new subscriptions
+- [x] Stripe Customer Portal for plan changes, payment updates, cancellation
+- [x] Monthly and annual billing with annual discount
+- [x] Webhook handler with signature verification:
+  - [x] `invoice.paid` → activate/renew
+  - [ ] `invoice.payment_failed` → grace period + failure email (grace period live; failure email deferred, out of Milestone 3 scope)
+  - [x] `customer.subscription.updated` → sync plan
+  - [x] `customer.subscription.deleted` → downgrade to free
+- [x] 3-day grace period on payment failure
 - [ ] Billing confirmation email on successful payment
 
 **Usage Tracking**

@@ -37,6 +37,16 @@ export interface BillingProvider {
   createPortalSession(params: CreatePortalSessionParams): Promise<PortalSessionResult>;
   /** Verifies the webhook signature and parses the raw body into a typed event. Throws on an invalid signature. */
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event;
+  /**
+   * Fallback org_id resolution for invoice webhook events. Subscription
+   * objects always carry `metadata.org_id` (stamped at creation via
+   * `subscription_data.metadata` -- see createCheckoutSession above), but an
+   * Invoice event's own payload does not reliably mirror that metadata
+   * across every Stripe API version. Rather than depend on an
+   * under-documented invoice field, this makes one live lookup of the
+   * subscription's own metadata directly.
+   */
+  getSubscriptionMetadata(providerSubscriptionId: string): Promise<Record<string, string>>;
 }
 
 export class StripeBillingProvider implements BillingProvider {
@@ -88,10 +98,14 @@ export class StripeBillingProvider implements BillingProvider {
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
     // Stripe computes the HMAC over the raw body bytes -- this must never be
     // called with a JSON-parsed-and-re-serialised body (key ordering could
-    // differ and the signature would fail). See webhook.routes.ts (Milestone
-    // 3/4), which registers a raw-buffer content-type parser specifically
-    // for this route.
+    // differ and the signature would fail). See webhook.routes.ts, which
+    // registers a raw-buffer content-type parser specifically for this route.
     return this.client.webhooks.constructEvent(rawBody, signature, this.webhookSecret);
+  }
+
+  async getSubscriptionMetadata(providerSubscriptionId: string): Promise<Record<string, string>> {
+    const subscription = await this.client.subscriptions.retrieve(providerSubscriptionId);
+    return subscription.metadata;
   }
 }
 

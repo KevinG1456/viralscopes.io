@@ -143,6 +143,27 @@ Each version entry uses the following change categories:
 - Re-confirmed RLS directly against Postgres for `subscriptions` (unauthorized insert fails, authorized insert with correct tenant context succeeds) and `billing_events` (no RLS, by design)
 - No provider secrets or provider IDs (`provider_customer_id`, `provider_subscription_id`, `checkout_session_id`) are ever included in an API response
 
+### Added (Phase 9 Milestone 3 of 6: Webhooks)
+
+- `POST /api/v1/webhooks/stripe` — unauthenticated by design (verified by the `Stripe-Signature` HMAC, not a JWT/CSRF token), with a scoped raw-`Buffer` content-type parser so Stripe's signature can be verified against the exact bytes received, isolated to this one route via Fastify plugin encapsulation
+- `WebhookService` (`webhook.service.ts`) processes exactly the 6 Stripe events the approved architecture defines: `checkout.session.completed`, `customer.created`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Idempotency via the Milestone-1 `billing_events` table: every event's provider event ID is checked before dispatch; duplicate deliveries are detected and skipped without reprocessing
+- 3-day grace period on `invoice.payment_failed`, only set on the first failure per invoice (Stripe's Smart Retries can re-fire the event for the same invoice)
+- `lib/audit-log.ts` — a new `auditLog()` helper writing to the existing `audit_logs` table, invoked from every billing-state-changing webhook handler
+- Processing failures are recorded to `billing_events` (`status='failed'`) and pushed to the existing (Phase 6) `dead_letter_jobs` table; unknown/unhandled event types are recorded as `status='skipped'` — both cases still answer Stripe `200`, since retrying a signature-valid delivery whose failure won't self-resolve serves no purpose
+
+### Fixed (Phase 9 Milestone 3)
+
+- `subscriptions.canceled_at` existed in the schema since Milestone 1 but no code path ever set it — added `canceledAt` to `UpsertSubscriptionInput` and threaded it through all 5 call sites in `webhook.service.ts`
+
+### Security (Phase 9 Milestone 3)
+
+- Invalid and missing `Stripe-Signature` headers both verified to return `400 INVALID_WEBHOOK_SIGNATURE` without touching `billing_events` or any billing table
+- Idempotency live-verified: replaying the same event ID produces exactly one `billing_events` row and no duplicate side effects
+- Database writes never trust client-supplied billing state — plan/status/period/cancellation are always resolved from the Stripe event's own payload (`metadata.org_id` per DEC-027), never from a request body
+- Audit log metadata carries the Stripe event ID and plan/status fields only — no card or payment-method data is ever logged
+- A deliberate scope decision, not an oversight: Stripe's auto-created Customer object during Checkout carries no metadata, so `customer.created` cannot resolve `org_id` without a database lookup-before-tenant-context that would break the RLS approach DEC-027 established for `subscriptions`/`invoices` — handled as an audit-only no-op (`billing_events` row, `orgId=null`, `status='skipped'`) instead
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

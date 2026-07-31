@@ -313,10 +313,11 @@ Frontend billing UI, invoice UI, billing analytics, and email notifications are 
 
 **Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-025):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), a real AI cost estimate (needs live AI provider credentials this environment doesn't have), and outgoing alert-channel webhook dispatch (needs Phase 6's Alert Dispatch workflow). The Stripe webhook endpoint itself is live as of Phase 9 Milestone 3 — see the Billing table above.
 
-### Frontend Pages Reference (Phase 8 — `apps/web`)
+### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9 Milestone 4)
 
 | Route | Backend endpoint(s) consumed | Auth |
 |---|---|---|
+| `/` | none — instant client-side redirect to `/home` (authenticated) or `/login` (not), mirroring `(dashboard)/layout.tsx`'s own auth gate. Previously the unmodified Phase 1 scaffold splash screen; fixed during Phase 9 Milestone 4 verification | public |
 | `/login`, `/register`, `/verify-email`, `/reset-password`, `/reset-password/confirm` | `/auth/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password` | public |
 | `/home` | `/analytics/overview`, `/watchlists`, `/recommendations`, `/alerts/events` | authed + org |
 | `/watchlists` | `/watchlists` (full CRUD) | authed + org |
@@ -324,9 +325,10 @@ Frontend billing UI, invoice UI, billing analytics, and email notifications are 
 | `/settings/profile` | `/auth/sessions` (list/revoke/revoke-others) | authed |
 | `/settings/api-keys` | `/api-keys` (full CRUD) | authed + org |
 | `/settings/organisation` | none — read-only, derived from the JWT (`orgRole`/`planTier`); no org read/update endpoint exists yet (TD-011) | authed |
+| `/settings/billing` | `/billing/plan` (any member), `/billing/subscription` (owner/admin), `/billing/checkout`/`/billing/portal` (owner only, redirect-to-Stripe only — no payment logic in the frontend), `/usage` (Phase 5, reused as-is) | authed + org, RBAC-gated per section |
 | `/admin/prompts`, `/admin/prompts/:name` | `/admin/prompts/*` (Phase 7) | authed + `super_admin` |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Billing/Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types.
+**Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types. Billing history/invoice UI is deferred within `/settings/billing` itself — no invoice-list endpoint exists yet.
 
 ---
 
@@ -711,7 +713,7 @@ All optional in this environment — `apps/api` boots fine without them; billing
 | `STRIPE_SECRET_KEY` | Stripe Restricted API Key (`sk_test_*`/`sk_live_*`) — Stripe Dashboard → Developers → API Keys |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret — Stripe Dashboard → Developers → Webhooks, or the Stripe CLI's `stripe listen` output for local development |
 | `STRIPE_PRICE_ID_STARTER_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_BUSINESS_MONTHLY` / `_ANNUAL` | Stripe Price IDs for the three self-serve paid plans × two billing cycles (Free has no Stripe price; Enterprise is quote-only) — Stripe Dashboard → Products |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (safe for the browser) — read by `apps/web`, not `apps/api` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (safe for the browser) — read by `apps/web`, not `apps/api`. **Not actually consumed as of Phase 9 Milestone 4**: checkout/portal are redirect-only (the frontend never loads Stripe.js/Elements, per "no payment logic in the frontend" — see `/settings/billing`), so nothing reads this yet. Documented here for whenever embedded Elements are wanted instead of a full redirect. |
 
 **Local development:** install the [Stripe CLI](https://docs.stripe.com/stripe-cli), then `stripe listen --forward-to localhost:3001/api/v1/webhooks/stripe` to forward webhook events and print a signing secret for `STRIPE_WEBHOOK_SECRET`.
 

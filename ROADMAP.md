@@ -653,7 +653,7 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Real-time Redis increment; async batch persist every 5 minutes
 - [ ] Usage reset at billing period start
 - [ ] Quota warning email at 80% of monthly limit
-- [ ] Billing UI embedded in Settings (Stripe Customer Portal)
+- [x] Billing UI embedded in Settings (Stripe Customer Portal)
 
 **Milestone:** Stripe billing live. Usage tracked. Plan limits enforced. Emails sending. Grace period tested.
 

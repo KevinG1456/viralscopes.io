@@ -164,6 +164,28 @@ Each version entry uses the following change categories:
 - Audit log metadata carries the Stripe event ID and plan/status fields only — no card or payment-method data is ever logged
 - A deliberate scope decision, not an oversight: Stripe's auto-created Customer object during Checkout carries no metadata, so `customer.created` cannot resolve `org_id` without a database lookup-before-tenant-context that would break the RLS approach DEC-027 established for `subscriptions`/`invoices` — handled as an audit-only no-op (`billing_events` row, `orgId=null`, `status='skipped'`) instead
 
+### Fixed
+
+- `apps/web/src/app/page.tsx` (root `/`) was still the unmodified Phase 1 scaffold splash screen, never wired to redirect anywhere once real pages existed from Phase 4 onward — found when the repo owner reported the frontend was inaccessible. Replaced with an instant client-side redirect (`/home` if authenticated, `/login` otherwise) mirroring `(dashboard)/layout.tsx`'s existing auth-gate pattern
+
+### Added (Phase 9 Milestone 4 of 6: Frontend Billing)
+
+- `/settings/billing` — current-subscription summary, usage & limits, a plan comparison table, and a billing-history placeholder, added as a fourth Settings tab
+- `apps/web` now depends on `@viralscopes/shared` for the first time: the plan comparison table reads `PLANS`/`PLAN_LIMITS`/`PLAN_HIERARCHY`/`SELF_SERVE_CHECKOUT_PLANS` directly rather than re-typing `Pricing_Strategy.md`'s numbers in the frontend
+- `components/billing/{SubscriptionSummaryCard,PlanComparisonTable,UsageMeter}.tsx`, `components/ui/progress.tsx`, `hooks/use-billing.ts`, `hooks/use-billing-actions.ts`, `hooks/use-usage.ts`, `lib/api/{billing,usage}.ts`
+- Checkout and the billing portal are redirect-only: create the session via the existing Milestone 2 endpoints, then hand the tab to the returned Stripe-hosted URL — no Stripe.js/Elements or card fields anywhere in the frontend
+- Downgrade routes to the billing portal rather than a second checkout call, since `createCheckoutSession` only ever accepts upgrades (Milestone 2) — the plan comparison table's downgrade CTA and the "Manage subscription" button open the same portal session
+
+### Fixed (Phase 9 Milestone 4)
+
+- `Dockerfile.web`'s build step switched from `npm run build --workspace=apps/web` to `npx turbo run build --filter=@viralscopes/web`, so turbo's dependency graph builds `packages/shared/dist` before `apps/web` — needed now that `apps/web` depends on it (mirrors BLK-004's fix for `Dockerfile.api`)
+
+### Security (Phase 9 Milestone 4)
+
+- RBAC gates the queries themselves, not just the UI: `GET /billing/subscription` is only requested if the org role is owner/admin, so a member never issues a request the backend would 403 anyway; checkout/downgrade actions stay owner-only, matching `billing.routes.ts`
+- Verified live against the real backend: member role gets `403 INSUFFICIENT_PERMISSIONS` on `/billing/subscription` and `200` on `/billing/plan`, exactly matching the frontend's per-query gate
+- No provider secrets, provider IDs, or payment data ever reach the frontend — checkout/portal responses are a bare redirect URL, nothing else
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

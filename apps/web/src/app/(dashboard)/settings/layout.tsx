@@ -10,6 +10,7 @@ const TABS = [
   { href: ROUTES.settings.profile, label: 'Profile' },
   { href: ROUTES.settings.apiKeys, label: 'API Keys' },
   { href: ROUTES.settings.organisation, label: 'Organisation' },
+  { href: ROUTES.settings.billing, label: 'Billing' },
 ] as const;
 
 export default function SettingsLayout({

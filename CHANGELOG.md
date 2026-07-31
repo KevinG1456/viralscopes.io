@@ -186,6 +186,13 @@ Each version entry uses the following change categories:
 - Verified live against the real backend: member role gets `403 INSUFFICIENT_PERMISSIONS` on `/billing/subscription` and `200` on `/billing/plan`, exactly matching the frontend's per-query gate
 - No provider secrets, provider IDs, or payment data ever reach the frontend — checkout/portal responses are a bare redirect URL, nothing else
 
+### Verified (Phase 9 Milestone 4 — complete manual verification pass)
+
+- Re-confirmed all 14 requested checklist items against the real running backend before approving Milestone 5: billing page load/redirect behavior, current subscription/plan display, usage meter thresholds (seeded real `usage_events` to hit warning/error bands), plan comparison branch logic, loading/error states (including a genuine `apps/api` outage, not simulated), the full 3-role RBAC matrix (owner/admin/member, admin case newly tested via a temporary role promotion), and the refresh/session-persistence mechanism
+- Checkout and billing-portal requests traced to the deepest boundary this environment allows without live Stripe credentials (`502`/`503 STRIPE_ERROR`) — a temporary Stripe-backed `subscriptions` row pushed the portal request one level past its default `402`
+- Confirmed "organisation switching" has no feature to test yet (no org-switcher UI exists; a JWT carries exactly one `orgId` — TD-011)
+- All temporary test data (usage events, a temporary subscription row, the admin role promotion) confirmed reverted; `lint`/`type-check`/`build` re-run clean; no regressions found, no code changes required
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

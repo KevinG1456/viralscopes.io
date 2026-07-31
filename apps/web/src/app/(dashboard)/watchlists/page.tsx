@@ -3,6 +3,7 @@
 import { ListChecks, Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
+import { PlanLimitErrorMessage } from '../../../components/billing/PlanLimitErrorMessage';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -141,7 +142,7 @@ function CreateWatchlistDialog({ onDone }: { onDone: () => void }): React.ReactE
   const [name, setName] = React.useState('');
   const [type, setType] = React.useState<WatchlistType>('keyword');
   const [target, setTarget] = React.useState('');
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<unknown>(null);
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -153,7 +154,7 @@ function CreateWatchlistDialog({ onDone }: { onDone: () => void }): React.ReactE
       setTarget('');
       onDone();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'Failed to create watchlist.');
+      setError(err);
     }
   }
 
@@ -192,7 +193,7 @@ function CreateWatchlistDialog({ onDone }: { onDone: () => void }): React.ReactE
             onChange={(e) => setTarget(e.target.value)}
           />
         </div>
-        {error ? <p className="text-sm text-error">{error}</p> : null}
+        <PlanLimitErrorMessage error={error} />
         <DialogFooter>
           <Button type="submit" loading={createWatchlist.isPending}>
             Create

@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config.js';
+import { createBillingMaintenanceQueue } from './lib/billing-maintenance-queue.js';
 import { createWorkflowQueue, queueName, type WorkflowQueue } from './lib/queue.js';
 import { cookiePlugin } from './plugins/cookie.plugin.js';
 import { corsPlugin } from './plugins/cors.plugin.js';
@@ -82,6 +83,15 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   );
   app.addHook('onClose', async () => {
     await Promise.all([...workflowQueues.values()].map((wq) => wq.close()));
+  });
+
+  // Phase 9 — Billing (Milestone 5): daily grace-period-expiry sweep +
+  // billing_events retention purge (docs/architecture/billing/
+  // 07-subscription-lifecycle.md's resolved decision) — an in-process
+  // maintenance task, not an n8n-dispatched workflow.
+  const billingMaintenanceQueue = createBillingMaintenanceQueue(app.db, config, app.log);
+  app.addHook('onClose', async () => {
+    await billingMaintenanceQueue.close();
   });
 
   await app.register(healthPlugin, { config, workflowQueues });

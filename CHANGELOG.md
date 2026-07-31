@@ -193,6 +193,27 @@ Each version entry uses the following change categories:
 - Confirmed "organisation switching" has no feature to test yet (no org-switcher UI exists; a JWT carries exactly one `orgId` — TD-011)
 - All temporary test data (usage events, a temporary subscription row, the admin role promotion) confirmed reverted; `lint`/`type-check`/`build` re-run clean; no regressions found, no code changes required
 
+### Changed (Phase 9 Milestone 5 of 6: Feature Enforcement)
+
+- `watchlist.service.ts`, `alert.service.ts`, `api-key.service.ts` — the existing plan-limit checks (watchlist count, alert-rule count, API-key `apiAccess`) now resolve the org's plan live from the database (`lib/plan-enforcement.ts`'s `getEnforcedPlanTier()`) instead of the JWT's `planTier` claim, so an upgrade, downgrade, or grace-period expiry takes effect on the very next request rather than waiting for token refresh. No new plan logic — same `PLAN_LIMITS`, same error codes; only the source of the plan value changed
+
+### Added (Phase 9 Milestone 5)
+
+- `lib/plan-enforcement.ts` — `getEnforcedPlanTier()`, a plain (uncached) live DB read; deliberately not the Redis-cached design sketched in the architecture docs, since the three real call sites are low-frequency mutations, not a hot path
+- `jobs/grace-period-expiry.job.ts` + `lib/billing-maintenance-queue.ts` — a daily (06:00 UTC) BullMQ repeatable job, in-process rather than an n8n workflow, that downgrades subscriptions whose 3-day payment-failure grace period has expired (`status → past_due`, `organizations.plan → free`, audit-logged) and purges `billing_events` rows older than 90 days
+- `components/billing/UpgradeRequiredNotice.tsx` (proactive gating for binary plan flags) and `components/billing/PlanLimitErrorMessage.tsx` (reactive handling for count-based `403 PLAN_LIMIT_EXCEEDED` responses), both linking to `/settings/billing`
+- `/settings/api-keys` now hides the "New API key" action when `GET /billing/plan`'s `limits.apiAccess` is `false` — existing keys remain visible/revocable regardless, matching the backend's own list-vs-create distinction
+
+### Fixed (Phase 9 Milestone 5)
+
+- `purgeOldBillingEvents` used a raw `sql` template comparing a timestamp column against a JS `Date`, which the postgres.js driver can't serialize outside of drizzle's own comparison operators — switched to `lt()`, matching every other timestamp comparison in this codebase. Found via direct testing of the new job, not caught by type-checking
+
+### Security (Phase 9 Milestone 5)
+
+- Grace-period enforcement is live and independent of the daily job: `getEnforcedPlanTier()` checks `grace_period_ends_at` against `now()` on every call, so an expired grace period is enforced immediately, not only after the next job run
+- The per-organization loop in the grace-period job reuses the existing `withTenant()` tenant-scoping for each org's own `subscriptions` read — no new RLS-bypass precedent, since `subscriptions` deliberately keeps its RLS policy (DEC-027)
+- Live-verified: upgrade/downgrade of the org's plan directly in the database takes effect on the very next request using the *same* (stale) JWT, with no re-login — proving enforcement doesn't depend on token freshness in either direction
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

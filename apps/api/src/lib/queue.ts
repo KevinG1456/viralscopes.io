@@ -27,8 +27,9 @@ function backoffStrategy(attemptsMade: number): number {
 // BullMQ requires a dedicated connection per Queue/Worker/QueueEvents (not
 // shared with the app's other ioredis usage -- rate limiting, lockout) and
 // `maxRetriesPerRequest: null` specifically for the blocking connections
-// Worker/QueueEvents hold open.
-function createBullConnection(redisUrl: string): Redis {
+// Worker/QueueEvents hold open. Exported for lib/billing-maintenance-queue.ts,
+// which needs the same connection semantics for a non-n8n-dispatch queue.
+export function createBullConnection(redisUrl: string): Redis {
   return new Redis(redisUrl, { maxRetriesPerRequest: null });
 }
 

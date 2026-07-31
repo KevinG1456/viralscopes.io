@@ -1,5 +1,5 @@
 import { type Database, schema, type TenantContext, withTenant } from '@viralscopes/db';
-import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, lt, ne, sql } from 'drizzle-orm';
 
 export type SubscriptionRow = typeof schema.subscriptions.$inferSelect;
 export type InvoiceRow = typeof schema.invoices.$inferSelect;
@@ -274,4 +274,40 @@ export async function recordBillingEvent(
     })
     .returning();
   return row;
+}
+
+// No RLS (billing_events, see above) -- the 90-day retention purge
+// docs/architecture/billing/04-database-design.md documents, run daily by
+// jobs/grace-period-expiry.job.ts's repeatable BullMQ job alongside the
+// grace-period sweep, per 07-subscription-lifecycle.md's resolved decision
+// ("the same repeatable job also runs the billing_events 90-day retention
+// purge... rather than a separate unspecified mechanism").
+export async function purgeOldBillingEvents(db: Database, olderThan: Date): Promise<number> {
+  const deleted = await db
+    .delete(schema.billingEvents)
+    .where(lt(schema.billingEvents.createdAt, olderThan))
+    .returning({ id: schema.billingEvents.id });
+  return deleted.length;
+}
+
+// organizations has no RLS (root tenant container) -- safe to list every
+// org directly. Used only by the grace-period-expiry maintenance job,
+// which must loop per-org to check `subscriptions` (which DOES have RLS)
+// under each org's own tenant context via withTenant() -- there is no
+// single-query way to scan an RLS-protected, org-scoped table across every
+// tenant at once under the app_user role (DEC-014), and this codebase's
+// established pattern for "needs cross-tenant access" is dedicated no-RLS
+// tables (sessions/oauth_accounts/organization_members/billing_events),
+// not a superuser-role bypass -- subscriptions/invoices deliberately were
+// NOT added to that list (DEC-027), so a per-org loop is the correct fit
+// here rather than a new bypass precedent. Fine for a low-frequency daily
+// batch job at this org count; revisit if the org count ever makes an N+1
+// loop here a real cost.
+export async function listOrganizationsForMaintenance(
+  db: Database,
+): Promise<{ id: string; ownerId: string }[]> {
+  return db
+    .select({ id: schema.organizations.id, ownerId: schema.organizations.ownerId })
+    .from(schema.organizations)
+    .where(isNull(schema.organizations.deletedAt));
 }

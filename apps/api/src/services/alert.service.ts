@@ -1,8 +1,9 @@
 import type { Database, TenantContext } from '@viralscopes/db';
-import { PLAN_LIMITS, type PlanTier } from '@viralscopes/shared';
+import { PLAN_LIMITS } from '@viralscopes/shared';
 
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
+import { getEnforcedPlanTier } from '../lib/plan-enforcement.js';
 import {
   listAlertEventsForOrg,
   type AlertEventListFilters,
@@ -21,7 +22,6 @@ import {
 export interface AlertActor {
   tenant: TenantContext;
   orgRole: string | null;
-  planTier: string | null;
 }
 
 const MANAGE_ROLES = ['owner', 'admin'];
@@ -61,7 +61,10 @@ export class AlertService {
     },
   ): Promise<AlertRuleRow> {
     // Pricing_Strategy.md §2.6/§3 -- plan-tier alert-rule ceiling (FR-37).
-    const limit = PLAN_LIMITS[(actor.planTier as PlanTier) ?? 'free'].alertRules;
+    // Resolved live (Phase 9 Milestone 5) -- see watchlist.service.ts's
+    // identical comment for why this isn't sourced from the JWT.
+    const planTier = await getEnforcedPlanTier(this.db, actor.tenant);
+    const limit = PLAN_LIMITS[planTier].alertRules;
     if (limit !== null) {
       const current = await countActiveAlertRulesForOrg(this.db, actor.tenant);
       if (current >= limit) {

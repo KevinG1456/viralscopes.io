@@ -1,8 +1,9 @@
 import type { Database, TenantContext } from '@viralscopes/db';
-import { PLAN_LIMITS, type PlanTier } from '@viralscopes/shared';
+import { PLAN_LIMITS } from '@viralscopes/shared';
 
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
+import { getEnforcedPlanTier } from '../lib/plan-enforcement.js';
 import { generateOpaqueToken, hashOpaqueToken } from '../lib/tokens.js';
 import {
   createApiKey,
@@ -29,11 +30,13 @@ export class ApiKeyService {
   /** Returns the created row plus the plaintext key -- shown exactly once, never persisted or logged. */
   async create(
     tenant: TenantContext,
-    planTier: string | null,
     input: { name: string; scopes: string[]; expiresAt: Date | null },
   ): Promise<{ row: ApiKeyRow; plaintextKey: string }> {
     // Pricing_Strategy.md §2.6 -- "API access: No" on Free/Starter (FR-37).
-    if (!PLAN_LIMITS[(planTier as PlanTier) ?? 'free'].apiAccess) {
+    // Resolved live (Phase 9 Milestone 5) -- see watchlist.service.ts's
+    // identical comment for why this isn't sourced from the JWT.
+    const planTier = await getEnforcedPlanTier(this.db, tenant);
+    if (!PLAN_LIMITS[planTier].apiAccess) {
       throw new AppError(
         'PLAN_LIMIT_EXCEEDED',
         'API access is not included on your current plan. Upgrade to Professional or higher.',

@@ -275,7 +275,9 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | POST | `/billing/portal` | JWT, `owner` only | Create a Stripe Customer Portal session (requires an existing subscription; returns `402 NO_BILLING_ACCOUNT` otherwise) |
 | POST | `/webhooks/stripe` | Stripe-Signature HMAC (unauthenticated — no JWT/CSRF, verified by signature instead) | Synchronizes subscription/invoice/customer state from Stripe: `checkout.session.completed`, `customer.created` (audit-only no-op — see below), `invoice.paid`, `invoice.payment_failed` (3-day grace period), `customer.subscription.updated`, `customer.subscription.deleted`. Idempotent on Stripe's event ID; always returns `200` for a signature-valid event, even on internal processing failure (recorded to `billing_events` + `dead_letter_jobs` instead) |
 
-Frontend billing UI, invoice UI, billing analytics, and email notifications are Milestone 4+ — see `docs/architecture/billing/` and `PROJECT_STATUS.md`'s Phase 9 section. `customer.created` is deliberately a no-op: Stripe's auto-created Customer object during Checkout carries no metadata, so `org_id` can't be resolved without a database lookup-before-tenant-context that would break the RLS approach used for `subscriptions`/`invoices`.
+Frontend billing UI (Milestone 4) and feature enforcement (Milestone 5) are both live as of this document; billing emails remain unbuilt. `customer.created` is deliberately a no-op: Stripe's auto-created Customer object during Checkout carries no metadata, so `org_id` can't be resolved without a database lookup-before-tenant-context that would break the RLS approach used for `subscriptions`/`invoices`.
+
+**Feature enforcement (Phase 9 Milestone 5):** `watchlist.service.ts`, `alert.service.ts`, and `api-key.service.ts`'s existing plan-limit checks (Phase 5) now resolve the org's enforceable plan live from the database (`lib/plan-enforcement.ts`) instead of trusting the JWT's `planTier` claim, so plan changes take effect immediately rather than waiting for token refresh — see the Frontend Pages Reference table above for the exact mechanism. A daily BullMQ repeatable job (`lib/billing-maintenance-queue.ts` + `jobs/grace-period-expiry.job.ts`, 06:00 UTC) downgrades any subscription whose 3-day payment-failure grace period has expired and purges `billing_events` older than 90 days — this is a data-hygiene/billing-history-accuracy job, not the real-time security boundary; `getEnforcedPlanTier()` itself already checks grace-period expiry live on every request, independent of when this job last ran.
 
 **Admin — platform-wide, `super_admin` only (Phase 5 — `/api/v1/admin`)**
 
@@ -313,22 +315,24 @@ Frontend billing UI, invoice UI, billing analytics, and email notifications are 
 
 **Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-025):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), a real AI cost estimate (needs live AI provider credentials this environment doesn't have), and outgoing alert-channel webhook dispatch (needs Phase 6's Alert Dispatch workflow). The Stripe webhook endpoint itself is live as of Phase 9 Milestone 3 — see the Billing table above.
 
-### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9 Milestone 4)
+### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9 Milestones 4–5)
 
 | Route | Backend endpoint(s) consumed | Auth |
 |---|---|---|
 | `/` | none — instant client-side redirect to `/home` (authenticated) or `/login` (not), mirroring `(dashboard)/layout.tsx`'s own auth gate. Previously the unmodified Phase 1 scaffold splash screen; fixed during Phase 9 Milestone 4 verification | public |
 | `/login`, `/register`, `/verify-email`, `/reset-password`, `/reset-password/confirm` | `/auth/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password` | public |
 | `/home` | `/analytics/overview`, `/watchlists`, `/recommendations`, `/alerts/events` | authed + org |
-| `/watchlists` | `/watchlists` (full CRUD) | authed + org |
-| `/alerts` | `/alerts/rules` (full CRUD), `/alerts/events` (read) | authed + org |
+| `/watchlists` | `/watchlists` (full CRUD; plan-limited — see below) | authed + org |
+| `/alerts` | `/alerts/rules` (full CRUD; plan-limited), `/alerts/events` (read) | authed + org |
 | `/settings/profile` | `/auth/sessions` (list/revoke/revoke-others) | authed |
-| `/settings/api-keys` | `/api-keys` (full CRUD) | authed + org |
+| `/settings/api-keys` | `/api-keys` (full CRUD; create requires `apiAccess`, gated in the UI via `GET /billing/plan`'s `limits.apiAccess`, not hard-coded) | authed + org |
 | `/settings/organisation` | none — read-only, derived from the JWT (`orgRole`/`planTier`); no org read/update endpoint exists yet (TD-011) | authed |
 | `/settings/billing` | `/billing/plan` (any member), `/billing/subscription` (owner/admin), `/billing/checkout`/`/billing/portal` (owner only, redirect-to-Stripe only — no payment logic in the frontend), `/usage` (Phase 5, reused as-is) | authed + org, RBAC-gated per section |
 | `/admin/prompts`, `/admin/prompts/:name` | `/admin/prompts/*` (Phase 7) | authed + `super_admin` |
 
 **Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types. Billing history/invoice UI is deferred within `/settings/billing` itself — no invoice-list endpoint exists yet.
+
+**Plan-limited actions (Phase 9 Milestone 5 — "Feature Enforcement"):** `POST /watchlists` (count vs `PLAN_LIMITS.watchlists`), `POST /alerts/rules` (count vs `PLAN_LIMITS.alertRules`), and `POST /api-keys` (`PLAN_LIMITS.apiAccess`) all resolve the org's plan **live from the database** at request time (`apps/api/src/lib/plan-enforcement.ts`'s `getEnforcedPlanTier()`) rather than trusting the JWT's `planTier` claim, so an upgrade, downgrade, or grace-period expiry takes effect on the very next request — no re-login or token refresh needed. A rejected request returns `403 PLAN_LIMIT_EXCEEDED` with a message the frontend surfaces alongside a link to `/settings/billing`.
 
 ---
 

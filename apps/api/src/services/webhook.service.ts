@@ -81,8 +81,17 @@ export class WebhookService {
     // processing. Stripe's own 5-minute replay window (enforced inside
     // constructWebhookEvent) is layer one; this is the layer that survives
     // a legitimate retry days later.
+    //
+    // Only 'processed'/'skipped' are terminal, already-handled outcomes.
+    // A 'failed' row must NOT short-circuit here (Milestone 6 hardening,
+    // found during the reliability review): since this route always
+    // answers Stripe 200 regardless of internal outcome, a processing
+    // failure never gets a real Stripe-driven retry -- the only way a
+    // failed event is ever reprocessed is a manual dead-letter replay or a
+    // future automated retry, and both must be allowed to actually run the
+    // handler again, not be silently swallowed as "already seen."
     const existing = await findBillingEventByProviderEventId(this.db, PROVIDER, event.id);
-    if (existing) {
+    if (existing && existing.status !== 'failed') {
       this.logger.info(
         { eventId: event.id, eventType: event.type },
         'Duplicate webhook event — skipping',
@@ -442,9 +451,26 @@ export class WebhookService {
       canceledAt: subscription.status === 'canceled' ? new Date() : (existing?.canceledAt ?? null),
     });
 
-    if (existing && existing.plan !== plan) {
-      await updateOrganizationPlan(this.db, org.id, plan);
-    }
+    // Always sync organizations.plan to the subscription's *effective*
+    // state -- not only when the plan text changed, and unconditional on
+    // `existing` (Milestone 6 hardening: found this was a real
+    // quota-bypass path, not just a theoretical one). Stripe's
+    // subscription.status can transition to a terminal state (canceled,
+    // unpaid, incomplete_expired, paused) via customer.subscription.updated
+    // without the plan metadata field itself changing -- the previous
+    // `if (existing && existing.plan !== plan)` guard meant
+    // organizations.plan stayed stuck at the old paid tier in that case,
+    // and getEnforcedPlanTier's fallback path (findActiveSubscriptionForOrg
+    // excludes any non-'active'/'trialing' status) would then read that
+    // stale value indefinitely. `past_due` is deliberately excluded from
+    // this terminal set: the grace period it represents is enforced live
+    // by getEnforcedPlanTier's own grace_period_ends_at check, and
+    // organizations.plan must stay at the paid tier for the duration of
+    // that grace period per "org retains current plan features" (see
+    // 07-subscription-lifecycle.md's Grace Period Gating section).
+    const TERMINAL_STATUSES = new Set(['canceled', 'unpaid', 'incomplete_expired', 'paused']);
+    const effectivePlan = TERMINAL_STATUSES.has(subscription.status) ? 'free' : plan;
+    await updateOrganizationPlan(this.db, org.id, effectivePlan);
 
     await auditLog(this.db, tenant, {
       userId: null,

@@ -116,11 +116,24 @@ export class StripeBillingProvider implements BillingProvider {
  * must handle the null case explicitly (503, not a crash at boot) rather
  * than assume a provider always exists.
  */
+// Milestone 6 hardening: the Stripe SDK's own default timeout (80s) is far
+// longer than any reasonable synchronous HTTP request should block for --
+// a slow/hanging Stripe API call would otherwise tie up a request (and a
+// connection-pool slot) for up to 80 seconds. 15s matches the general
+// order of magnitude already used elsewhere in this codebase for an
+// external-call timeout (lib/queue.ts's n8n dispatch: 25s). Automatic
+// SDK-level retries are deliberately left at the SDK default (off) rather
+// than enabled here: retrying a non-idempotent POST like
+// checkout.sessions.create() without an Idempotency-Key risks creating a
+// duplicate Checkout Session on a lost response -- enabling retries safely
+// needs idempotency keys added first, which is a separate, larger change.
+const STRIPE_CLIENT_TIMEOUT_MS = 15_000;
+
 export function createBillingProvider(
   secretKey: string | null,
   webhookSecret: string | null,
 ): BillingProvider | null {
   if (!secretKey || !webhookSecret) return null;
-  const client = new Stripe(secretKey);
+  const client = new Stripe(secretKey, { timeout: STRIPE_CLIENT_TIMEOUT_MS });
   return new StripeBillingProvider(client, webhookSecret);
 }

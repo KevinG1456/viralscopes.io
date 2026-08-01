@@ -212,16 +212,25 @@ export class BillingService {
     // otherwise Stripe creates one lazily from customer_email during
     // Checkout itself (Customer objects are never pre-created at org
     // creation time -- see docs/architecture/billing/03-domain-model.md).
-    const result = await provider.createCheckoutSession({
-      orgId: tenant.orgId,
-      plan: input.plan,
-      billingCycle: input.billingCycle,
-      priceId,
-      customerEmail: org.ownerEmail,
-      existingProviderCustomerId: activeSubscription?.providerCustomerId ?? null,
-      successUrl: input.successUrl,
-      cancelUrl: input.cancelUrl,
-    });
+    //
+    // Milestone 6 hardening: a raw provider-network/API failure here
+    // (timeout, Stripe API error) previously fell through to the generic
+    // error handler as an unlabelled 500 ("An unexpected error occurred.")
+    // -- correct from a security standpoint (no leakage) but inconsistent
+    // with every other Stripe-configuration failure in this service, which
+    // already surfaces as a specific 502 STRIPE_ERROR. Normalised to match.
+    const result = await this.callProvider(() =>
+      provider.createCheckoutSession({
+        orgId: tenant.orgId,
+        plan: input.plan,
+        billingCycle: input.billingCycle,
+        priceId,
+        customerEmail: org.ownerEmail,
+        existingProviderCustomerId: activeSubscription?.providerCustomerId ?? null,
+        successUrl: input.successUrl,
+        cancelUrl: input.cancelUrl,
+      }),
+    );
 
     // checkoutSessionId is deliberately not returned to the client (no
     // provider IDs leave the server) and deliberately not persisted here --
@@ -248,10 +257,32 @@ export class BillingService {
     }
 
     const provider = this.requireProvider();
-    const result = await provider.createPortalSession({
-      providerCustomerId,
-      returnUrl: input.returnUrl,
-    });
+    const result = await this.callProvider(() =>
+      provider.createPortalSession({
+        providerCustomerId,
+        returnUrl: input.returnUrl,
+      }),
+    );
     return { portalUrl: result.portalUrl };
+  }
+
+  // Translates any thrown error from a provider call (network failure,
+  // timeout, a Stripe API error) into the same 502 STRIPE_ERROR shape
+  // this service already uses for a missing configuration -- never lets a
+  // raw provider exception fall through to the generic 500 handler, and
+  // never echoes the provider's own error message verbatim (it could
+  // reasonably include account-identifying details Stripe's SDK is not
+  // contractually obligated to keep generic).
+  private async callProvider<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      throw new AppError(
+        'STRIPE_ERROR',
+        'The billing provider could not complete this request. Please try again.',
+        502,
+      );
+    }
   }
 }

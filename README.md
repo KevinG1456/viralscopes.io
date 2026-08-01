@@ -265,7 +265,7 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/api/v1/usage` | Current-period usage vs plan quota |
 | GET | `/api/v1/analytics/overview` | Org KPIs: watchlists, alert rules, alert events (30d), API keys, usage |
 
-**Billing (Phase 9 Milestones 1–3 — `/api/v1/billing`, `/api/v1/webhooks`)**
+**Billing (Phase 9 — complete, all 6 milestones — `/api/v1/billing`, `/api/v1/webhooks`)**
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
@@ -275,7 +275,7 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | POST | `/billing/portal` | JWT, `owner` only | Create a Stripe Customer Portal session (requires an existing subscription; returns `402 NO_BILLING_ACCOUNT` otherwise) |
 | POST | `/webhooks/stripe` | Stripe-Signature HMAC (unauthenticated — no JWT/CSRF, verified by signature instead) | Synchronizes subscription/invoice/customer state from Stripe: `checkout.session.completed`, `customer.created` (audit-only no-op — see below), `invoice.paid`, `invoice.payment_failed` (3-day grace period), `customer.subscription.updated`, `customer.subscription.deleted`. Idempotent on Stripe's event ID; always returns `200` for a signature-valid event, even on internal processing failure (recorded to `billing_events` + `dead_letter_jobs` instead) |
 
-Frontend billing UI (Milestone 4) and feature enforcement (Milestone 5) are both live as of this document; billing emails remain unbuilt. `customer.created` is deliberately a no-op: Stripe's auto-created Customer object during Checkout carries no metadata, so `org_id` can't be resolved without a database lookup-before-tenant-context that would break the RLS approach used for `subscriptions`/`invoices`.
+Frontend billing UI (Milestone 4), feature enforcement (Milestone 5), and a hardening/testing pass (Milestone 6) are all live as of this document — **Phase 9 is complete**; billing emails remain unbuilt (TD-010). `customer.created` is deliberately a no-op: Stripe's auto-created Customer object during Checkout carries no metadata, so `org_id` can't be resolved without a database lookup-before-tenant-context that would break the RLS approach used for `subscriptions`/`invoices`. Milestone 6's hardening pass found and fixed a real quota-bypass vulnerability (a subscription canceled via `customer.subscription.updated` rather than `.deleted` could retain its old paid-tier `organizations.plan` indefinitely) and a webhook retry-safety bug (a failed event could never be reprocessed) — see `PROJECT_STATUS.md`'s Phase 9 section for the full write-up.
 
 **Feature enforcement (Phase 9 Milestone 5):** `watchlist.service.ts`, `alert.service.ts`, and `api-key.service.ts`'s existing plan-limit checks (Phase 5) now resolve the org's enforceable plan live from the database (`lib/plan-enforcement.ts`) instead of trusting the JWT's `planTier` claim, so plan changes take effect immediately rather than waiting for token refresh — see the Frontend Pages Reference table above for the exact mechanism. A daily BullMQ repeatable job (`lib/billing-maintenance-queue.ts` + `jobs/grace-period-expiry.job.ts`, 06:00 UTC) downgrades any subscription whose 3-day payment-failure grace period has expired and purges `billing_events` older than 90 days — this is a data-hygiene/billing-history-accuracy job, not the real-time security boundary; `getEnforcedPlanTier()` itself already checks grace-period expiry live on every request, independent of when this job last ran.
 
@@ -315,7 +315,7 @@ Frontend billing UI (Milestone 4) and feature enforcement (Milestone 5) are both
 
 **Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-025):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), a real AI cost estimate (needs live AI provider credentials this environment doesn't have), and outgoing alert-channel webhook dispatch (needs Phase 6's Alert Dispatch workflow). The Stripe webhook endpoint itself is live as of Phase 9 Milestone 3 — see the Billing table above.
 
-### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9 Milestones 4–5)
+### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9, complete)
 
 | Route | Backend endpoint(s) consumed | Auth |
 |---|---|---|

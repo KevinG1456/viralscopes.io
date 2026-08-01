@@ -214,6 +214,26 @@ Each version entry uses the following change categories:
 - The per-organization loop in the grace-period job reuses the existing `withTenant()` tenant-scoping for each org's own `subscriptions` read — no new RLS-bypass precedent, since `subscriptions` deliberately keeps its RLS policy (DEC-027)
 - Live-verified: upgrade/downgrade of the org's plan directly in the database takes effect on the very next request using the *same* (stale) JWT, with no re-login — proving enforcement doesn't depend on token freshness in either direction
 
+## Phase 9 Milestone 6 — Hardening & Testing (Phase 9 complete)
+
+### Fixed (Phase 9 Milestone 6 — security)
+
+- **Quota-bypass vulnerability:** `handleSubscriptionUpdated` only synced `organizations.plan` when the plan *text* changed, so a subscription that transitioned to a terminal Stripe status (`canceled`, `unpaid`, `incomplete_expired`, `paused`) via `customer.subscription.updated` — rather than `customer.subscription.deleted` — kept its old paid-tier `organizations.plan` value indefinitely, since `findActiveSubscriptionForOrg` excludes non-active subscriptions and `getEnforcedPlanTier()`'s fallback then read the stale value. Fixed by always syncing `organizations.plan` to the subscription's effective state; `past_due` is deliberately excluded from the "force free" set to preserve the grace period's intended behavior
+- **Webhook retry-safety bug:** a `'failed'` `billing_events` row was treated the same as `'processed'` by the idempotency check, so any webhook event that failed partway through could never be reprocessed — not by Stripe (the route always answers `200`), not by a manual dead-letter replay. Fixed: idempotency now only short-circuits on `'processed'`/`'skipped'`, and `recordBillingEvent` is a real upsert (`onConflictDoUpdate`) instead of a plain insert that would crash on retry
+
+### Fixed (Phase 9 Milestone 6 — reliability/hygiene)
+
+- `billing.service.ts`'s `createCheckoutSession`/`createPortalSession` now translate any provider-layer failure into the existing `502 STRIPE_ERROR` shape instead of leaking through as an unlabelled generic `500`
+- Stripe client now has an explicit 15s request timeout (previously the SDK's 80s default)
+- `errorHandlerPlugin` now logs any `AppError` with `statusCode >= 500` — previously it logged nothing for `AppError` instances at any severity, codebase-wide (not billing-specific; also affects the pre-existing OAuth-profile-fetch failure path)
+
+### Security (Phase 9 Milestone 6)
+
+- Live-verified both fixes above end-to-end: reproduced each bug first (a real canceled-but-still-paid org; a real mid-handler failure via an invalid `plan` value), then confirmed the fix, including a full regression pass inside a rebuilt Docker image
+- Confirmed via code review: `requireRole()` (billing RBAC) checks only `request.user.orgRole`, never any platform `super_admin` flag — no privilege-escalation path between platform admin status and org billing authority
+- Confirmed no route or service touches `organization_members.role` — no privilege-escalation surface exists for org roles at all (TD-011 is fully unbuilt)
+- Reviewed and accepted (logged as TD-026) a narrower race-condition window in `upsertSubscriptionForOrg`'s non-locking SELECT-then-branch pattern — the database's own unique constraint plus the retry-safety fix above mean a worst-case race fails safely and recoverably, not silently
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

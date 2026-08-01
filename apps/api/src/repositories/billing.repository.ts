@@ -256,21 +256,34 @@ export async function findBillingEventByProviderEventId(
   return row;
 }
 
+// Upsert, not a plain insert (Milestone 6 hardening -- found during the
+// reliability review, not merely theoretical): WebhookService's own
+// idempotency check only ever short-circuits on a 'processed'/'skipped'
+// row (see processEvent), so a 'failed' row for a given provider_event_id
+// can legitimately be written again on a later reprocessing attempt (a
+// manual dead-letter replay, or a future automated retry). A plain
+// `.insert()` would violate `uq_billing_events_provider_event_id` on that
+// second attempt and crash instead of recording the new outcome.
 export async function recordBillingEvent(
   db: Database,
   input: RecordBillingEventInput,
 ): Promise<BillingEventRow> {
+  const values = {
+    provider: input.provider,
+    providerEventId: input.providerEventId,
+    eventType: input.eventType,
+    orgId: input.orgId,
+    subscriptionId: input.subscriptionId,
+    status: input.status,
+    errorMessage: input.errorMessage ?? null,
+    rawPayload: input.rawPayload as Record<string, unknown>,
+  };
   const [row] = await db
     .insert(schema.billingEvents)
-    .values({
-      provider: input.provider,
-      providerEventId: input.providerEventId,
-      eventType: input.eventType,
-      orgId: input.orgId,
-      subscriptionId: input.subscriptionId,
-      status: input.status,
-      errorMessage: input.errorMessage ?? null,
-      rawPayload: input.rawPayload as Record<string, unknown>,
+    .values(values)
+    .onConflictDoUpdate({
+      target: [schema.billingEvents.provider, schema.billingEvents.providerEventId],
+      set: { ...values, processedAt: new Date() },
     })
     .returning();
   return row;

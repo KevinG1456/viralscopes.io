@@ -120,7 +120,24 @@
 **Description:** Registration/password-change validate length only, not against a common-password list, as `Security_Architecture.md` §2 specifies.
 
 **Owner:** To be assigned
-**Target resolution:** Milestone 2 (low effort, bundled with other application hardening)
+**Target resolution:** Was proposed for Milestone 2's bundle, but deliberately excluded from that milestone's approved scope (the repo owner's Milestone 2 instruction listed 5 specific findings, not including F-01) — remains open, no milestone currently assigned
+
+---
+
+### SEC-RISK-08 — Open redirect via the login page's `from` parameter (F-11)
+
+| Property | Value |
+|---|---|
+| **Severity** | Medium |
+| **Probability** | Medium — requires only a crafted link, no privileged access; the kind of link a phishing campaign would send anyway |
+| **Subsystem** | Frontend Authentication |
+| **Phases affected** | Phase 4/8 (login page built), Phase 10 (found and fixed same milestone) |
+| **Status** | **Resolved** — Milestone 3. `safeRedirectTarget()` added to `login/page.tsx`; verified against a full battery of attack payloads (absolute URL, protocol-relative, backslash-prefixed, bare hostname, `javascript:`) all correctly falling back to `/home`, and confirmed the exact fix logic present in the built production Docker bundle |
+
+**Description:** `router.push(searchParams.get('from') ?? '/home')` on the login page passed an unvalidated, fully attacker-controlled query parameter straight into Next.js's client router. Traced through the router's own source (not assumed) to confirm an external URL there triggers a genuine full-page browser navigation (`mpaNavigation: true`), not merely a failed internal route lookup — a real, exploitable post-login open redirect, not a theoretical one.
+
+**Owner:** Resolved in Phase 10 Milestone 3
+**Target resolution:** Done
 
 ---
 
@@ -131,6 +148,7 @@
 | F-02 (RBAC doc mismatch) | Documentation-only correction, not a code risk |
 | F-06 (n8n's non-timing-safe comparison) | Third-party tool constraint; negligible practical exploitability |
 | F-07 (n8n shared public hostname) | Standard n8n deployment shape; each surface has its own independent credential |
+| F-12 (auth rate-limit table drift) | Documentation-only correction, code was never laxer than documented anywhere it drifted — corrected in Milestone 3 |
 
 ---
 
@@ -140,8 +158,8 @@
 |---|---|---|---|
 | Critical | 0 | — | — |
 | High | 0 | — | — |
-| Medium | 5 | SEC-RISK-01, 02, 03, 04, 05 | **All 5 resolved in Milestone 2** |
-| Low | 2 | SEC-RISK-06, 07 | Open — SEC-RISK-06 scoped to Milestone 4; SEC-RISK-07 (password blocklist) deliberately not in Milestone 2's approved scope, remains open |
-| Informational (accepted, no risk entry) | 3 | F-02, F-06, F-07 | N/A |
+| Medium | 6 | SEC-RISK-01, 02, 03, 04, 05, 08 | **All 6 resolved** (5 in Milestone 2, 1 — SEC-RISK-08, found and fixed the same day — in Milestone 3) |
+| Low | 2 | SEC-RISK-06, 07 | Open — SEC-RISK-06 scoped to Milestone 4; SEC-RISK-07 (password blocklist) has no milestone currently assigned |
+| Informational (accepted, no risk entry) | 4 | F-02, F-06, F-07, F-12 | N/A |
 
-*See `06-remediation-plan.md` for original sequencing. Milestone 2 (Phase 10 Milestone 2, 2026-08-01) resolved every Medium finding — all 5 verified with real tests (live HTTP requests, direct DB queries, or both), not assumed. See `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*
+*See `06-remediation-plan.md` for original sequencing. Milestone 2 (2026-08-01) resolved 5 Medium findings from the Milestone 1 review. Milestone 3 (2026-08-01) resolved a 6th Medium finding (SEC-RISK-08 / F-11) discovered during its own open-redirect audit, plus a documentation-only rate-limit-table correction (F-12) — both verified with real tests, not assumed. See `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*

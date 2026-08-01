@@ -1052,14 +1052,47 @@ fastify.register(fastifyRateLimit, {
 
 ### Auth Endpoint Rate Limits (Per IP)
 
-| Endpoint | Limit | Window | Lockout |
-|---|---|---|---|
-| `POST /auth/login` | 10 | 1 minute | Block for 5 minutes after 10th attempt |
-| `POST /auth/register` | 5 | 1 minute | — |
-| `POST /auth/forgot-password` | 5 | 15 minutes | — |
-| `POST /auth/reset-password` | 3 | 15 minutes | — |
-| `POST /auth/verify-email` | 5 | 15 minutes | — |
-| `GET /auth/oauth/*` | 20 | 1 minute | — |
+Cross-checked against the real routes in Phase 10 Milestone 3 (previous
+drafts of this table had drifted from what was actually implemented in
+three places, corrected below): the login row's own "Lockout" column
+conflated the IP rate limit with the separate, account-keyed lockout
+mechanism (see Brute Force Account Lockout below — they're independent
+controls, not one number); the OAuth row's `20/1 minute` didn't match the
+callback routes' real `10/1 minute`; and the OAuth *start* redirect
+routes (`/oauth/google`, `/oauth/github`, registered internally by
+`@fastify/oauth2` from its own `startRedirectPath` option) have no
+route-level override reachable through that library's registration
+options at all, so `GET /auth/oauth/*` as a single wildcard row was never
+accurate — the two halves of the OAuth flow are protected differently.
+
+| Endpoint | Limit | Window |
+|---|---|---|
+| `POST /auth/login` | 10 | 1 minute |
+| `POST /auth/register` | 5 | 1 minute |
+| `POST /auth/logout` | 10 | 1 minute |
+| `POST /auth/forgot-password` | 5 | 15 minutes |
+| `POST /auth/reset-password` | 3 | 15 minutes |
+| `POST /auth/verify-email` | 5 | 15 minutes |
+| `GET /auth/oauth/{google,github}/callback` | 10 | 1 minute |
+| `GET /auth/oauth/{google,github}` (start redirect) | 300 (global default, not a dedicated limit) | 1 minute |
+| `POST /auth/refresh` | 300 (global default) | 1 minute |
+
+`POST /auth/refresh` has no dedicated rate limit because its real defense
+isn't request-volume throttling: refresh tokens rotate on every use, and
+presenting an already-rotated (revoked) token triggers reuse detection
+that revokes every session for that user immediately (`auth.service.ts`'s
+`refresh()`) -- a stolen-token replay is caught by that mechanism, not by
+counting requests. The OAuth start routes are lightweight 302 redirects
+with no database write and no expensive computation (the same category
+of endpoint as `/health`), so the global per-IP floor (see Two Layers,
+Not One above) is the intentional, sufficient control -- not a gap
+requiring a workaround around a third-party plugin's own route
+registration.
+
+Login's IP-based rate limit (10/min) and the account-keyed lockout below
+are independent, separately-triggered controls: the former slows down a
+single IP hammering any account; the latter locks one specific account
+regardless of which IP(s) the attempts came from.
 
 ### Brute Force Account Lockout
 

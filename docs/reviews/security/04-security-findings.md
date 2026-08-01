@@ -169,19 +169,57 @@
 
 ---
 
+## F-11 — Open redirect via the login page's `from` query parameter
+
+**Severity:** Medium
+
+**Subsystem:** Frontend Authentication
+
+**Discovered:** Phase 10 Milestone 3 (not in the original Milestone 1 review — found during this milestone's own open-redirect audit, fixed the same day).
+
+**Description:** `apps/web/src/app/(auth)/login/page.tsx` read the `from` query parameter directly and passed it to `next/navigation`'s `router.push()` with no validation: `router.push(searchParams.get('from') ?? '/home')`. `from` is fully attacker-controlled (any visitor can craft `?from=...`), and it is not limited to values `proxy.ts` itself generates (that middleware only ever sets it to the current pathname, but nothing stops a direct link from setting anything else).
+
+**How it could be exploited:** Traced through Next.js's own client-router source (`router-reducer/reducers/navigate-reducer.js`, `segment-cache/navigation.js`'s `completeHardNavigation`) rather than assumed: `router.push()` on a same-origin path performs an internal SPA transition, but on a cross-origin URL it sets `mpaNavigation: true` and `canonicalUrl: url.href` — a genuine full-page browser navigation to the external URL. Next.js explicitly blocks `javascript:` URLs in this same code path (proving the maintainers are aware of and handle at least one redirect-adjacent risk here), but plain `http(s)://` targets are not blocked. A crafted link like `https://viralscopes.io/login?from=https://attacker.example/fake-2fa` would silently send a user straight to the attacker's page immediately after a real, successful login — a textbook post-login open-redirect, useful for phishing a second factor or payment details from a user who has every reason to trust the link (it points at the real domain right up until the redirect fires).
+
+**Why it exists:** `from` was added to support returning a user to the page they were trying to reach before being bounced to `/login` (`proxy.ts`'s own redirect sets it to `pathname`) — the read side never validated that the value actually came from that trusted generation path rather than an arbitrary visitor-supplied query string.
+
+**Fix applied this milestone:** `safeRedirectTarget()` only accepts values starting with a single `/` not followed by another `/` or `\` (both of which browsers/URL parsers can normalise into a protocol-relative external URL, defeating a naive `.startsWith('/')` check) — everything else falls back to `/home`. Verified against a battery of attack payloads (absolute `http(s)://`, protocol-relative `//`, backslash-prefixed, bare hostname, `javascript:`, whitespace-padded) confirming every one now resolves to `/home`, and against real in-app paths confirming they still pass through unchanged. Confirmed shipped in the actual production bundle by grepping the built Docker image's compiled JS for the exact regex.
+
+---
+
+## F-12 — Documented auth-route rate limits had drifted from the real values
+
+**Severity:** Informational
+
+**Subsystem:** Rate Limiting (documentation)
+
+**Discovered:** Phase 10 Milestone 3 (auth-route rate-limit table cross-check).
+
+**Description:** `Security_Architecture.md`'s "Auth Endpoint Rate Limits" table had drifted from the real routes in three places: the login row's "Lockout" column conflated the IP-based rate limit with the separate, account-keyed lockout mechanism as if they were one number; the OAuth row claimed `20/1 minute` for a `GET /auth/oauth/*` wildcard, while the real callback routes use `10/1 minute` and the start-redirect routes (registered internally by `@fastify/oauth2`, with no route-level override reachable through that library's own options) have no dedicated limit at all — protected only by the global 300/min/IP floor from F-10/Milestone 2; and `/auth/logout`/`/auth/refresh` weren't listed at all.
+
+**How it could be exploited:** Not exploitable — a documentation-accuracy issue, not a code defect. The real code is, if anything, stricter or equally protected everywhere the doc was wrong, never laxer.
+
+**Why it exists:** The table was authored before the OAuth callback routes' actual rate-limit values were finalized, and before Milestone 2 introduced the global pre-auth floor that now covers the routes with no dedicated limit — never reconciled against the code afterward.
+
+**Fix applied this milestone:** Corrected the table to list real, current values for every auth route including the two previously-missing ones, and added an explanation of why `/auth/refresh` and the OAuth start routes have no dedicated limit (rotation/reuse-detection and lightweight-redirect-with-no-DB-write, respectively, rather than an oversight).
+
+---
+
 ## Findings Index
 
 | ID | Subsystem | Severity | Status |
 |---|---|---|---|
 | F-01 | Authentication | Low | Open — recommend Milestone 2 |
 | F-02 | RBAC (documentation) | Informational | Open — documentation correction only |
-| F-03 | OAuth / Encryption at Rest | Medium | Open — recommend Milestone 2 or when a token-consuming feature is built |
-| F-04 | RLS / Audit Logs | Medium | Open — already scoped into Milestone 2 (TD-013 resolution) |
-| F-05 | API Keys / RBAC | Medium | Open — recommend Milestone 2 |
+| F-03 | OAuth / Encryption at Rest | Medium | **Resolved — Milestone 2** |
+| F-04 | RLS / Audit Logs | Medium | **Resolved — Milestone 2** |
+| F-05 | API Keys / RBAC | Medium | **Resolved — Milestone 2** |
 | F-06 | n8n Workflows | Informational | Accepted — no action recommended |
 | F-07 | n8n Workflows / Infrastructure | Informational | Deferred — infra not provisioned |
-| F-08 | CSP/CORS/CSRF, Frontend Auth | Medium | Open — already scoped into Milestone 2 |
+| F-08 | CSP/CORS/CSRF, Frontend Auth | Medium | **Resolved — Milestone 2** |
 | F-09 | Docker | Low | Open — already scoped into Milestone 4 |
-| F-10 | Rate Limiting | Medium | Open — already scoped into Milestone 3 |
+| F-10 | Rate Limiting | Medium | **Resolved — Milestone 2** (moved up from Milestone 3) |
+| F-11 | Frontend Authentication (open redirect) | Medium | **Resolved — Milestone 3** |
+| F-12 | Rate Limiting (documentation) | Informational | **Resolved — Milestone 3** |
 
 *See `05-risk-register.md` for these findings translated into tracked risks with owners/timelines, and `06-remediation-plan.md` for the prioritized fix sequence.*

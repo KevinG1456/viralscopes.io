@@ -17,6 +17,22 @@ import { Label } from '../../../components/ui/label';
 import { ApiClientError } from '../../../lib/api/client';
 import { useAuth } from '../../../providers/AuthProvider';
 
+// Phase 10 Milestone 3: `from` is attacker-controlled (a query param, not
+// just something proxy.ts itself sets) -- confirmed via next.js's own
+// router source (router-reducer/reducers/navigate-reducer.js) that
+// `router.push()` on an external URL performs a real MPA (full browser)
+// navigation, not merely an internal route transition. `?from=https://
+// evil.example` would silently redirect a user straight off the app
+// immediately after a successful login -- a real post-login open
+// redirect, not a theoretical one. Only same-app relative paths are
+// accepted; `//` and `/\` are both rejected too, since browsers can
+// normalise either into a protocol-relative external URL, bypassing a
+// naive `.startsWith('/')` check.
+function safeRedirectTarget(value: string | null): string {
+  if (!value || !/^\/(?!\/|\\)/.test(value)) return '/home';
+  return value;
+}
+
 export default function LoginPage(): React.ReactElement {
   const { login } = useAuth();
   const router = useRouter();
@@ -32,7 +48,7 @@ export default function LoginPage(): React.ReactElement {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push(searchParams.get('from') ?? '/home');
+      router.push(safeRedirectTarget(searchParams.get('from')));
     } catch (err) {
       setError(
         err instanceof ApiClientError ? err.message : 'Something went wrong. Please try again.',

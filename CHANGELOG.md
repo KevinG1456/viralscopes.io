@@ -257,6 +257,19 @@ Each version entry uses the following change categories:
 - `Security_Architecture.md` §15 (Rate Limiting) now accurately describes two separate mechanisms — the new global pre-auth floor and the pre-existing post-auth plan-tier limiter — rather than the single combined design an earlier draft described but was never built
 - `docs/reviews/security/05-risk-register.md`: SEC-RISK-01 through 05 marked Resolved
 
+## Phase 10 Milestone 3 — API Security & Abuse Protection
+
+> F-10 (global pre-auth rate limiting), the one finding originally scoped to this milestone, was resolved early in Milestone 2 above at the repo owner's request. This milestone's work is three fresh audits performed against the running application, not a backlog of already-known fixes.
+
+### Security (Phase 10 Milestone 3)
+
+- **Open redirect on the login page (F-11):** `router.push(searchParams.get('from') ?? '/home')` passed a fully attacker-controlled query parameter straight into Next.js's client router with no validation. Confirmed via the router's own source that an external URL there triggers a genuine full-page browser redirect (the same code path that explicitly blocks `javascript:` URLs, but not plain `http(s)://` targets) — a real post-login open redirect, not a theoretical one. Fixed with `safeRedirectTarget()`, which only accepts same-app relative paths (rejecting absolute URLs, protocol-relative `//`, and backslash-prefixed variants a browser could normalise into an external origin)
+- Corrected `Security_Architecture.md`'s Auth Endpoint Rate Limits table, which had drifted from the real routes in three places (F-12, informational — the code was never laxer than documented, only the documentation was wrong): the login row's "Lockout" column conflated the IP rate limit with the separate account-keyed lockout; the OAuth row claimed `20/min` for both halves of the flow when only the callback routes use a dedicated `10/min` (the `@fastify/oauth2`-registered start-redirect routes have no route-level override reachable through that library's own options, and rely on the global 300/min/IP floor); `/auth/logout`/`/auth/refresh` were missing from the table entirely
+
+### Verified (Phase 10 Milestone 3)
+
+- Confirmed, by tracing every outbound server-side HTTP call in the codebase, that no SSRF vector exists anywhere today: OAuth provider profile fetches target hardcoded hosts; n8n webhook dispatch uses a hardcoded internal URL with request input only ever used as a `Map`-lookup key, never concatenated into a URL; no user-configurable webhook/callback-URL feature exists in the schema; Next's image optimizer has no `remotePatterns` configured
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

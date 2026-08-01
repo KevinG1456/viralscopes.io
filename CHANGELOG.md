@@ -234,6 +234,29 @@ Each version entry uses the following change categories:
 - Confirmed no route or service touches `organization_members.role` — no privilege-escalation surface exists for org roles at all (TD-011 is fully unbuilt)
 - Reviewed and accepted (logged as TD-026) a narrower race-condition window in `upsertSubscriptionForOrg`'s non-locking SELECT-then-branch pattern — the database's own unique constraint plus the retry-safety fix above mean a worst-case race fails safely and recoverably, not silently
 
+## Phase 10 Milestone 2 — Application Security Hardening
+
+> Milestone 1 (Security Architecture Review) produced `docs/reviews/security/` but changed no code, so it has no entry here. This milestone fixes the 5 confirmed Medium findings that review surfaced.
+
+### Security (Phase 10 Milestone 2)
+
+- **Audit log tenant-isolation gap (F-04):** `audit_logs`' RLS policy rejected every insert with a `NULL` `org_id`, which would have made TD-013's planned auth-event logging (failed logins for nonexistent emails, pre-organisation registration events) fail immediately. Migration `0012_audit_logs_null_org_write.sql` relaxes only `WITH CHECK` to permit `org_id IS NULL`; `USING` (read visibility) is deliberately unchanged, so a tenant-scoped read still can never see a null-org row
+- **API key RBAC gap (F-05):** `POST`/`DELETE /api-keys` were reachable by any org member, contradicting `Security_Architecture.md`'s own Role Permissions Matrix (Owner/Admin only). Added `requireRole('owner', 'admin')` to both routes; `GET` (list) intentionally left unrestricted, outside this finding's scope
+- **Missing Content-Security-Policy (F-08):** neither app set a CSP or most other standard security headers. `apps/api` now sends a `default-src 'none'` policy via Helmet (it returns JSON only — no page exists to author a `'self'`-based policy for), plus HSTS/Referrer-Policy/Permissions-Policy/frame-ancestors/X-Frame-Options. `apps/web`'s middleware (`src/proxy.ts`) now generates a fresh nonce per request and sends a `script-src 'self' 'nonce-{nonce}'` policy — verified via raw HTML inspection that Next.js automatically applies the nonce to every framework-injected `<script>` tag
+- **No rate limiting ahead of authentication (F-10):** `plugins/rate-limit.plugin.ts` previously registered `@fastify/rate-limit` with `global: false`, so any route without its own explicit override (every protected business route) had no throttle at all before `authenticate` ran. Now `global: true` with a 300 requests/minute/IP default, applied via Fastify's `onRequest` hook — ahead of authentication on every route by construction, not by each route opting in. Existing per-route overrides (login, etc.) are unaffected
+- **No encryption at rest for OAuth provider tokens (F-03):** `oauth_accounts.access_token`/`refresh_token` relied on disk-level encryption only. New `lib/encryption.ts` (AES-256-GCM, optional `DB_ENCRYPTION_KEY`) is now wired transparently into the OAuth repository's create/find functions — callers read and write plaintext; only the stored column is ciphertext
+
+### Fixed (Phase 10 Milestone 2)
+
+- Found while verifying F-10: `@fastify/rate-limit`'s `errorResponseBuilder` was returning a plain object instead of an `Error`-like value carrying `.statusCode`, so every rate-limit rejection (on any route, not just the new global one — this bug predates this milestone) fell through the generic error handler as an unstyled `500` instead of the intended `429`. Fixed by returning a proper `AppError`
+- `ROADMAP.md`'s "Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy" task item checked off — the last piece (Permissions-Policy) was added to both apps while already inside this same code for F-08
+
+### Documentation (Phase 10 Milestone 2)
+
+- `Security_Architecture.md` §14 (Helmet.js example) now matches the actual API policy (`default-src 'none'`) instead of a generic `'self'`-based one
+- `Security_Architecture.md` §15 (Rate Limiting) now accurately describes two separate mechanisms — the new global pre-auth floor and the pre-existing post-auth plan-tier limiter — rather than the single combined design an earlier draft described but was never built
+- `docs/reviews/security/05-risk-register.md`: SEC-RISK-01 through 05 marked Resolved
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

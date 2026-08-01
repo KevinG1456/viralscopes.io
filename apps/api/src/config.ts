@@ -43,6 +43,18 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
 
+  // Phase 10 Milestone 2 (F-03): AES-256-GCM key for oauth_accounts'
+  // access_token/refresh_token columns (lib/encryption.ts). Optional, same
+  // "boots fine without it" pattern as OAuth/Stripe above -- nothing writes
+  // a real token value yet (TD-023-adjacent: no feature reads these back),
+  // so there's nothing to encrypt in this environment today. 32 raw bytes,
+  // hex-encoded (64 hex chars) -- generate with `openssl rand -hex 32`.
+  DB_ENCRYPTION_KEY: z
+    .string()
+    .length(64, 'DB_ENCRYPTION_KEY must be 64 hex characters (32 bytes)')
+    .regex(/^[0-9a-f]+$/i, 'DB_ENCRYPTION_KEY must be hex-encoded')
+    .optional(),
+
   // Phase 6: shared secret authenticating n8n <-> apps/api calls in both
   // directions (requireServiceToken checks incoming calls from n8n;
   // the admin manual-trigger route attaches it calling out to n8n).
@@ -97,6 +109,7 @@ export interface AppConfig {
     google: OAuthProviderConfig | null;
     github: OAuthProviderConfig | null;
   };
+  encryptionKey: Buffer | null;
   n8n: {
     serviceToken: string;
     internalUrl: string;
@@ -148,6 +161,7 @@ export function loadConfig(): AppConfig {
       refreshExpiry: data.JWT_REFRESH_EXPIRY,
     },
     oauth: { google, github },
+    encryptionKey: data.DB_ENCRYPTION_KEY ? Buffer.from(data.DB_ENCRYPTION_KEY, 'hex') : null,
     n8n: {
       serviceToken: data.N8N_SERVICE_TOKEN,
       internalUrl: data.N8N_INTERNAL_URL,

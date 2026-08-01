@@ -671,7 +671,7 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 #### Tasks
 
 - [ ] HTTPS enforced; HTTP → HTTPS redirect at Traefik
-- [ ] Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy
+- [x] Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy (Phase 10 Milestone 2, F-08 — `apps/api/src/plugins/security-headers.plugin.ts` + `apps/web/src/proxy.ts`)
 - [ ] CORS: locked to allowed origins; no wildcard in production
 - [ ] CSRF protection on all state-changing browser-session endpoints
 - [ ] XSS: sanitise all user-generated content before rendering

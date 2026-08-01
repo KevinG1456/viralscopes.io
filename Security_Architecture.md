@@ -969,58 +969,71 @@ No wildcard (`*`) is ever used in production.
 
 ### Security Headers (Helmet.js)
 
+Implemented in `plugins/security-headers.plugin.ts` (Phase 10 Milestone 2,
+finding F-08). `apps/api` only ever returns JSON (never HTML -- see this
+document's own API Responses row above), so its CSP is deliberately
+`default-src 'none'` rather than the `'self'`-based policy an HTML-serving
+app would need -- there is no page here to author a script/style/img
+allowlist for:
+
 ```typescript
 fastify.register(helmet, {
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://cdn.viralscopes.io"],
-      connectSrc: ["'self'"],
+      defaultSrc: ["'none'"],
       frameAncestors: ["'none'"],
     },
   },
+  frameguard: { action: "deny" },
+  crossOriginResourcePolicy: { policy: "same-site" },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true,
   },
-  frameguard: { action: "deny" },
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   permittedCrossDomainPolicies: false,
-  xContentTypeOptions: true,
-  xDnsPrefetchControl: { allow: false },
 });
 ```
+
+The nonce-based CSP described below (`default-src 'self'`, `script-src
+'self' 'nonce-{nonce}'`) is what actually matters for XSS defense-in-depth,
+and is enforced by `apps/web`'s own middleware (`src/proxy.ts`), not by
+this API.
 
 ---
 
 ## 15. Rate Limiting & Brute Force Prevention
 
-### Redis-Backed Sliding Window Rate Limiter
+### Two Layers, Not One
+
+Actual implementation is two separate mechanisms, not the single
+plan-tier-aware global limiter earlier drafts of this document described
+(that single-mechanism design was never built -- Phase 4 shipped
+`global:false` with only per-route auth-endpoint limits, leaving every
+other route with no floor at all until Phase 10 Milestone 2 closed that
+gap, finding F-10):
+
+1. **`plugins/rate-limit.plugin.ts`** -- a `global: true` registration with
+   a flat 300 requests/minute/IP default, applied via `@fastify/rate-limit`'s
+   `onRequest` hook to every route, running *before* `authenticate` in the
+   request lifecycle by construction. This is a backstop against
+   unauthenticated floods (credential stuffing, scraping, brute-force
+   probing), not the business throttle -- its ceiling is deliberately
+   generous. Per-route overrides (the Auth Endpoint table below) replace
+   this default for their own route via `config.rateLimit`.
 
 ```typescript
 // plugins/rate-limit.plugin.ts
 fastify.register(fastifyRateLimit, {
   global: true,
-  redis: redisClient,
-  keyGenerator: (request) => {
-    // Rate limit by API key if present, otherwise by user ID, fallback to IP
-    return request.apiKeyId ?? request.user?.id ?? request.ip;
-  },
-  max: async (request) => {
-    const plan = request.user?.planTier ?? "free";
-    return RATE_LIMITS[plan].perMinute;
-  },
+  max: 300,
   timeWindow: "1 minute",
-  errorResponseBuilder: () => ({
-    success: false,
-    error: {
-      code: "RATE_LIMIT_EXCEEDED",
-      message: "Rate limit exceeded. Upgrade your plan or wait for the window to reset.",
-    },
-  }),
+  redis: redisClient,
+  keyGenerator: (request) => request.ip,
+  errorResponseBuilder: (_request, context) =>
+    new AppError("RATE_LIMIT_EXCEEDED", "Too many requests. Please wait before trying again.", context.statusCode),
   addHeaders: {
     "x-ratelimit-limit": true,
     "x-ratelimit-remaining": true,
@@ -1029,6 +1042,13 @@ fastify.register(fastifyRateLimit, {
   },
 });
 ```
+
+2. **`middleware/business-rate-limit.ts`** -- the actual plan-tier-aware
+   limiter, keyed by authenticated `userId` (not IP, so multiple users
+   behind one office IP don't share a budget) and looked up from
+   `PLAN_LIMITS` by the caller's `planTier`. Runs as a `preHandler`, so it
+   only ever applies *after* `authenticate` succeeds -- by definition it
+   cannot be the pre-auth control, which is exactly why layer 1 exists.
 
 ### Auth Endpoint Rate Limits (Per IP)
 

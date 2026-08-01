@@ -39,8 +39,9 @@ export async function findOrCreateUserFromOAuth(
   db: Database,
   provider: 'google' | 'github',
   profile: OAuthProfile,
+  encryptionKey: Buffer | null,
 ): Promise<{ user: UserRow; isNewUser: boolean }> {
-  const existingLink = await findOAuthAccount(db, provider, profile.providerUid);
+  const existingLink = await findOAuthAccount(db, provider, profile.providerUid, encryptionKey);
   if (existingLink) {
     const user = await findUserById(db, existingLink.userId);
     if (!user) {
@@ -60,11 +61,11 @@ export async function findOrCreateUserFromOAuth(
       );
     }
 
-    await createOAuthAccount(db, {
-      userId: existingUser.id,
-      provider,
-      providerUid: profile.providerUid,
-    });
+    await createOAuthAccount(
+      db,
+      { userId: existingUser.id, provider, providerUid: profile.providerUid },
+      encryptionKey,
+    );
     return { user: existingUser, isNewUser: false };
   }
 
@@ -74,7 +75,11 @@ export async function findOrCreateUserFromOAuth(
     passwordHash: null,
   });
   await markEmailVerified(db, newUser.id);
-  await createOAuthAccount(db, { userId: newUser.id, provider, providerUid: profile.providerUid });
+  await createOAuthAccount(
+    db,
+    { userId: newUser.id, provider, providerUid: profile.providerUid },
+    encryptionKey,
+  );
 
   return { user: { ...newUser, emailVerified: true }, isNewUser: true };
 }

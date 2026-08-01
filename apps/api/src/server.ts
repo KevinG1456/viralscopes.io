@@ -11,6 +11,7 @@ import { healthPlugin } from './plugins/health.plugin.js';
 import { buildLoggerOptions } from './plugins/logger.plugin.js';
 import { rateLimitPlugin } from './plugins/rate-limit.plugin.js';
 import { redisPlugin } from './plugins/redis.plugin.js';
+import { securityHeadersPlugin } from './plugins/security-headers.plugin.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { alertRoutes } from './routes/alert.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
@@ -52,6 +53,7 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   app.decorate('appConfig', config);
 
   await app.register(errorHandlerPlugin);
+  await app.register(securityHeadersPlugin);
   await app.register(corsPlugin, { config });
   await app.register(dbPlugin, { config });
   await app.register(redisPlugin, { config });

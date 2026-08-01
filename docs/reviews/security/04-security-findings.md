@@ -217,7 +217,7 @@
 | F-06 | n8n Workflows | Informational | Accepted — no action recommended |
 | F-07 | n8n Workflows / Infrastructure | Informational | Deferred — infra not provisioned |
 | F-08 | CSP/CORS/CSRF, Frontend Auth | Medium | **Resolved — Milestone 2** |
-| F-09 | Docker | Low | Open — already scoped into Milestone 4 |
+| F-09 | Docker | Low | **Resolved — Milestone 4** |
 | F-10 | Rate Limiting | Medium | **Resolved — Milestone 2** (moved up from Milestone 3) |
 | F-11 | Frontend Authentication (open redirect) | Medium | **Resolved — Milestone 3** |
 | F-12 | Rate Limiting (documentation) | Informational | **Resolved — Milestone 3** |

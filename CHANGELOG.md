@@ -270,6 +270,24 @@ Each version entry uses the following change categories:
 
 - Confirmed, by tracing every outbound server-side HTTP call in the codebase, that no SSRF vector exists anywhere today: OAuth provider profile fetches target hardcoded hosts; n8n webhook dispatch uses a hardcoded internal URL with request input only ever used as a `Map`-lookup key, never concatenated into a URL; no user-configurable webhook/callback-URL feature exists in the schema; Next's image optimizer has no `remotePatterns` configured
 
+## Phase 10 Milestone 4 — Infrastructure Security
+
+### Security (Phase 10 Milestone 4)
+
+- **HTTP never actually redirected to HTTPS (found during this milestone's own review, not a pre-identified finding):** Traefik's `web` (port 80) entrypoint had no router or redirect attached to it — `redirect-to-https`, a middleware written in Phase 2, was already known to be unreferenced dead code (Milestone 1's review), but the real consequence (a plain `http://` request hitting Traefik's default 404 instead of redirecting) had never been traced through. Fixed with an entrypoint-level redirect on `web` in `infra/traefik/traefik.yml`, covering every current and future service unconditionally rather than requiring each router to attach a middleware individually. Verified live against a real `traefik:v3` container: `http://` now returns `301 Moved Permanently` to the same host/path on HTTPS
+- **F-09 — Docker base images pinned to a digest:** both `FROM node:22-alpine` lines in `Dockerfile.api` and `Dockerfile.web` pinned to a verified digest instead of the floating `:22-alpine` tag; both images rebuilt and reconfirmed booting correctly
+- SHA-pinned every third-party GitHub Action referenced in `ci.yml`/`security.yml` (each commit verified against the real upstream repos, not guessed) — discovered `actions/dependency-review-action@v5` resolves to a movable, unprotected branch rather than a fixed tag, exactly the kind of reference this hardens against
+- Added explicit least-privilege `permissions: contents: read` to both GitHub Actions workflows
+
+### Added (Phase 10 Milestone 4)
+
+- `.github/dependabot.yml` — npm (workspace root), github-actions, and docker ecosystems, weekly cadence, production/dev dependency-type grouping so security patches never get bundled behind an unrelated update
+- `no-new-privileges` security option on every service in `docker-compose.prod.yml`; `read_only` root filesystem + `tmpfs /tmp` on `api`/`web` specifically (the two images this project builds and controls, both rebuilt and live-verified functioning correctly under the hardened flags)
+
+### Verified (Phase 10 Milestone 4)
+
+- Reviewed the npm audit allowlist and confirmed all 4 entries are current (not stale); cross-checked against GitHub's live Dependabot Alerts API directly and found exactly one other real alert (`esbuild`, medium, dev-dependency only) — correctly outside this project's allowlist mechanism by design, not a gap
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

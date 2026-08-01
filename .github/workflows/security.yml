@@ -14,14 +14,23 @@ concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 
+# Phase 10 Milestone 4: explicit least-privilege default for every job
+# that doesn't declare its own (matches the repo's actual
+# default_workflow_permissions=read setting, verified via the API). The
+# `codeql` job below still declares its own broader
+# `security-events: write` -- job-level permissions override this
+# workflow-level default, so that job is unaffected by this addition.
+permissions:
+  contents: read
+
 jobs:
   dependency-audit:
     name: Dependency Audit (production-aware)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -46,10 +55,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v5
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0 (v5 is a movable branch, not a fixed tag -- confirmed via the API)
         with:
           fail-on-severity: high
 
@@ -60,10 +69,10 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: github/codeql-action/init@v4
+      - uses: github/codeql-action/init@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4
         with:
           languages: javascript-typescript
 
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4

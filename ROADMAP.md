@@ -670,7 +670,7 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 
 #### Tasks
 
-- [ ] HTTPS enforced; HTTP → HTTPS redirect at Traefik
+- [x] HTTPS enforced; HTTP → HTTPS redirect at Traefik (Phase 10 Milestone 4 — the `web` entrypoint had no redirect attached at all until this milestone; fixed with an entrypoint-level redirect in `infra/traefik/traefik.yml`, verified live against a real Traefik v3 container)
 - [x] Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy (Phase 10 Milestone 2, F-08 — `apps/api/src/plugins/security-headers.plugin.ts` + `apps/web/src/proxy.ts`)
 - [ ] CORS: locked to allowed origins; no wildcard in production
 - [ ] CSRF protection on all state-changing browser-session endpoints
@@ -679,8 +679,8 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] API key storage: `sha256(key)` only in DB — never plaintext
 - [ ] JWT secret rotation procedure documented
 - [ ] Environment variables encrypted at rest in Coolify
-- [ ] `npm audit` in CI: high/critical CVEs block the build
-- [ ] Dependabot/Renovate active; Docker base images pinned
+- [x] `npm audit` in CI: high/critical CVEs block the build (already implemented in an earlier phase — `.github/workflows/security.yml`'s `dependency-audit` job + `.github/scripts/check-audit.mjs`; re-verified live in Phase 10 Milestone 4, allowlist confirmed current)
+- [x] Dependabot/Renovate active; Docker base images pinned (Phase 10 Milestone 4, F-09 — `.github/dependabot.yml`, both Dockerfiles pinned to a digest)
 - [ ] GDPR: `DELETE /api/v1/account` (hard delete, 30-day purge)
 - [ ] GDPR: `GET /api/v1/account/export` (JSON ZIP)
 - [ ] GDPR: Cookie consent banner on first visit

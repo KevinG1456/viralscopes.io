@@ -1,0 +1,49 @@
+# .github/dependabot.yml
+#
+# Phase 10 Milestone 4 (ROADMAP.md's "Dependabot/Renovate active" item).
+# Three ecosystems, matching what this repo actually has:
+#
+# - npm: one entry at the workspace root. Dependabot understands npm
+#   workspaces from the root manifest -- it does not need one entry per
+#   app/package (apps/api, apps/web, packages/db, packages/shared all get
+#   covered from here).
+# - github-actions: the two workflow files under .github/workflows/.
+# - docker: both Dockerfiles, now that Milestone 4 pins their base image
+#   to a digest (F-09). Pinning without monitoring just freezes the image
+#   forever -- this is what proposes a PR when node:22-alpine publishes a
+#   new digest, so the pin stays a deliberate, reviewed choice rather than
+#   silently going stale.
+#
+# Weekly cadence and a 5-PR cap per ecosystem, matching this being a
+# solo-maintainer repo (Security_Architecture.md's own threat model) where
+# a flood of daily dependency PRs would be noise, not signal.
+
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    groups:
+      # Security patches land as their own PR, never bundled with routine
+      # version bumps, so they're never silently held up behind reviewing
+      # an unrelated group.
+      production-dependencies:
+        applies-to: version-updates
+        dependency-type: 'production'
+      development-dependencies:
+        applies-to: version-updates
+        dependency-type: 'development'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: 'docker'
+    directory: '/infra/docker'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5

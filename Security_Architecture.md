@@ -535,8 +535,23 @@ Preferred version:      1.3
 Certificate authority:  Let's Encrypt (via Coolify / Traefik)
 Certificate renewal:    Automatic (60-day certificates, renewed at 30 days)
 HSTS:                   max-age=31536000; includeSubDomains; preload
-HTTP redirect:          All HTTP → HTTPS at Traefik (307 Temporary Redirect)
+HTTP redirect:          All HTTP → HTTPS at Traefik (301 Moved Permanently)
 ```
+
+Permanent (301), not temporary, and deliberately so (corrected in Phase 10
+Milestone 4 -- a previous draft of this line said 307): this redirect
+policy itself is permanent, not conditional, so 301 lets browsers cache
+the redirect and skip the plaintext round-trip on every subsequent
+request -- a real security improvement (no repeated downgrade window per
+request) as well as a performance one. Configured as an entrypoint-level
+redirect on Traefik's `web` (port 80) entrypoint (`infra/traefik/
+traefik.yml`), not a per-router middleware -- covers every request on
+port 80 unconditionally, including any future service, rather than
+requiring each router to remember to attach a redirect middleware
+individually (a `redirect-to-https` middleware existed for this since
+Phase 2 but was never actually referenced by any router -- confirmed dead
+code during Milestone 1's review, replaced by this entrypoint-level
+config instead of finally being wired in as a per-router middleware).
 
 ### Cipher Suite Policy
 

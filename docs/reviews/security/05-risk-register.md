@@ -98,12 +98,12 @@
 | **Probability** | Low — requires a successful upstream compromise of an official, widely-scrutinized image |
 | **Subsystem** | Docker |
 | **Phases affected** | Phase 2 (Dockerfiles authored), Phase 10 (found) |
-| **Status** | Open — already scoped into Milestone 4 |
+| **Status** | **Resolved** — Milestone 4. Both `FROM node:22-alpine` lines in each Dockerfile pinned to the digest verified via `docker pull` immediately before pinning; both images rebuilt and confirmed booting correctly (verified live: `/ready`, `/health`, security headers, CSP, login redirect all functioning) |
 
 **Description:** `node:22-alpine` is a floating tag in both Dockerfiles. Supply-chain reproducibility gap, not an active vulnerability.
 
-**Owner:** To be assigned (Phase 10 Milestone 4)
-**Target resolution:** Milestone 4 (Infrastructure Security)
+**Owner:** Resolved in Phase 10 Milestone 4
+**Target resolution:** ~~Milestone 4 (Infrastructure Security)~~ Done
 
 ---
 
@@ -159,7 +159,7 @@
 | Critical | 0 | — | — |
 | High | 0 | — | — |
 | Medium | 6 | SEC-RISK-01, 02, 03, 04, 05, 08 | **All 6 resolved** (5 in Milestone 2, 1 — SEC-RISK-08, found and fixed the same day — in Milestone 3) |
-| Low | 2 | SEC-RISK-06, 07 | Open — SEC-RISK-06 scoped to Milestone 4; SEC-RISK-07 (password blocklist) has no milestone currently assigned |
+| Low | 2 | SEC-RISK-06, 07 | SEC-RISK-06 **resolved in Milestone 4**; SEC-RISK-07 (password blocklist) has no milestone currently assigned |
 | Informational (accepted, no risk entry) | 4 | F-02, F-06, F-07, F-12 | N/A |
 
-*See `06-remediation-plan.md` for original sequencing. Milestone 2 (2026-08-01) resolved 5 Medium findings from the Milestone 1 review. Milestone 3 (2026-08-01) resolved a 6th Medium finding (SEC-RISK-08 / F-11) discovered during its own open-redirect audit, plus a documentation-only rate-limit-table correction (F-12) — both verified with real tests, not assumed. See `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*
+*See `06-remediation-plan.md` for original sequencing. Milestone 2 (2026-08-01) resolved 5 Medium findings from the Milestone 1 review. Milestone 3 (2026-08-01) resolved a 6th Medium finding (SEC-RISK-08 / F-11) discovered during its own open-redirect audit, plus a documentation-only rate-limit-table correction (F-12) — both verified with real tests, not assumed. Milestone 4 (2026-08-01) resolved the one remaining scoped finding (SEC-RISK-06 / F-09, Docker digest pinning) plus infrastructure hardening beyond the original findings list (Traefik HTTP->HTTPS redirect, Dependabot, GitHub Actions SHA-pinning, container hardening flags) — see `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*

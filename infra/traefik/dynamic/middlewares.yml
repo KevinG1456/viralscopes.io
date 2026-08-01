@@ -17,7 +17,10 @@ http:
         contentTypeNosniff: true
         referrerPolicy: 'strict-origin-when-cross-origin'
 
-    redirect-to-https:
-      redirectScheme:
-        scheme: https
-        permanent: true
+# Phase 10 Milestone 4: an HTTP->HTTPS `redirect-to-https` middleware used
+# to live here, written for Phase 2 but never referenced by any router
+# (confirmed dead code during Milestone 1's review). Replaced with an
+# entrypoint-level redirect in ../traefik.yml's `web` entrypoint instead,
+# which covers every request on :80 unconditionally -- a per-router
+# middleware would need every current and future service to remember to
+# attach it, and one already hadn't.

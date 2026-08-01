@@ -39,15 +39,13 @@ export async function webhookRoutes(
       request.log.warn(
         'Received a Stripe webhook but billing is not configured in this environment',
       );
-      return reply
-        .code(503)
-        .send({
-          success: false,
-          error: {
-            code: 'STRIPE_ERROR',
-            message: 'Billing is not configured in this environment.',
-          },
-        });
+      return reply.code(503).send({
+        success: false,
+        error: {
+          code: 'STRIPE_ERROR',
+          message: 'Billing is not configured in this environment.',
+        },
+      });
     }
 
     const webhookService = new WebhookService(fastify.db, billingProvider, request.log);
@@ -61,15 +59,13 @@ export async function webhookRoutes(
     } catch (err) {
       if (err instanceof SignatureVerificationError) {
         request.log.warn({ err }, 'Stripe webhook signature verification failed');
-        return reply
-          .code(400)
-          .send({
-            success: false,
-            error: {
-              code: 'INVALID_WEBHOOK_SIGNATURE',
-              message: 'Webhook signature verification failed.',
-            },
-          });
+        return reply.code(400).send({
+          success: false,
+          error: {
+            code: 'INVALID_WEBHOOK_SIGNATURE',
+            message: 'Webhook signature verification failed.',
+          },
+        });
       }
       throw err;
     }

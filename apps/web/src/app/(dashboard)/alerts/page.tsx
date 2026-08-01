@@ -3,6 +3,7 @@
 import { Bell, Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
+import { PlanLimitErrorMessage } from '../../../components/billing/PlanLimitErrorMessage';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -244,7 +245,7 @@ function CreateAlertRuleDialog({ onDone }: { onDone: () => void }): React.ReactE
   const [triggerType, setTriggerType] = React.useState<AlertTriggerType>('viral_score_threshold');
   const [thresholdValue, setThresholdValue] = React.useState('');
   const [watchlistId, setWatchlistId] = React.useState<string>('');
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<unknown>(null);
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -261,7 +262,7 @@ function CreateAlertRuleDialog({ onDone }: { onDone: () => void }): React.ReactE
       setThresholdValue('');
       onDone();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'Failed to create alert rule.');
+      setError(err);
     }
   }
 
@@ -318,7 +319,7 @@ function CreateAlertRuleDialog({ onDone }: { onDone: () => void }): React.ReactE
             </Select>
           </div>
         ) : null}
-        {error ? <p className="text-sm text-error">{error}</p> : null}
+        <PlanLimitErrorMessage error={error} />
         <DialogFooter>
           <Button type="submit" loading={createRule.isPending}>
             Create

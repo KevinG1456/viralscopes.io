@@ -3,6 +3,8 @@
 import { Check, Copy, KeyRound, Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
+import { PlanLimitErrorMessage } from '../../../../components/billing/PlanLimitErrorMessage';
+import { UpgradeRequiredNotice } from '../../../../components/billing/UpgradeRequiredNotice';
 import { EmptyState } from '../../../../components/common/EmptyState';
 import { Badge } from '../../../../components/ui/badge';
 import { Button } from '../../../../components/ui/button';
@@ -20,6 +22,7 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Spinner } from '../../../../components/ui/spinner';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '../../../../hooks/use-api-keys';
+import { usePlan } from '../../../../hooks/use-billing';
 import { ApiClientError } from '../../../../lib/api/client';
 import { useToast } from '../../../../providers/ToastProvider';
 
@@ -28,10 +31,16 @@ const LIMIT = 50;
 
 export default function ApiKeysPage(): React.ReactElement {
   const { data, isLoading, isError, error } = useApiKeys(PAGE, LIMIT);
+  const planQuery = usePlan();
   const revokeKey = useRevokeApiKey();
   const { showToast } = useToast();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [revealedKey, setRevealedKey] = React.useState<string | null>(null);
+
+  // Reads the real apiAccess flag from GET /billing/plan (never hard-coded)
+  // -- listing/revoking existing keys stays available either way (the
+  // backend only gates creation), so only the create action is hidden.
+  const canCreateApiKeys = planQuery.data?.limits.apiAccess ?? true;
 
   async function handleRevoke(id: string, name: string): Promise<void> {
     if (
@@ -51,19 +60,26 @@ export default function ApiKeysPage(): React.ReactElement {
 
   return (
     <div className="flex flex-col gap-4 pt-2">
-      <div className="flex justify-end">
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4" /> New API key
-            </Button>
-          </DialogTrigger>
-          <CreateApiKeyDialog
-            onCreated={(key) => setRevealedKey(key)}
-            onDone={() => setCreateOpen(false)}
-          />
-        </Dialog>
-      </div>
+      {canCreateApiKeys ? (
+        <div className="flex justify-end">
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4" /> New API key
+              </Button>
+            </DialogTrigger>
+            <CreateApiKeyDialog
+              onCreated={(key) => setRevealedKey(key)}
+              onDone={() => setCreateOpen(false)}
+            />
+          </Dialog>
+        </div>
+      ) : (
+        <UpgradeRequiredNotice
+          title="API access requires Professional or higher"
+          description="Upgrade your plan to create API keys. Existing keys below still work until revoked."
+        />
+      )}
 
       <RevealKeyDialog apiKey={revealedKey} onClose={() => setRevealedKey(null)} />
 
@@ -79,11 +95,13 @@ export default function ApiKeysPage(): React.ReactElement {
           }
         />
       ) : data && data.data.length === 0 ? (
-        <EmptyState
-          icon={KeyRound}
-          title="No API keys yet"
-          description="Create one to access the ViralScopes API programmatically."
-        />
+        canCreateApiKeys ? (
+          <EmptyState
+            icon={KeyRound}
+            title="No API keys yet"
+            description="Create one to access the ViralScopes API programmatically."
+          />
+        ) : null
       ) : (
         <Card>
           <CardContent className="p-0">
@@ -140,7 +158,7 @@ function CreateApiKeyDialog({
 }): React.ReactElement {
   const createKey = useCreateApiKey();
   const [name, setName] = React.useState('');
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<unknown>(null);
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -151,7 +169,7 @@ function CreateApiKeyDialog({
       onDone();
       onCreated(created.key);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'Failed to create API key.');
+      setError(err);
     }
   }
 
@@ -171,7 +189,7 @@ function CreateApiKeyDialog({
             onChange={(e) => setName(e.target.value)}
           />
         </div>
-        {error ? <p className="text-sm text-error">{error}</p> : null}
+        <PlanLimitErrorMessage error={error} />
         <DialogFooter>
           <Button type="submit" loading={createKey.isPending}>
             Create

@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config.js';
+import { createBillingMaintenanceQueue } from './lib/billing-maintenance-queue.js';
 import { createWorkflowQueue, queueName, type WorkflowQueue } from './lib/queue.js';
 import { cookiePlugin } from './plugins/cookie.plugin.js';
 import { corsPlugin } from './plugins/cors.plugin.js';
@@ -15,6 +16,7 @@ import { alertRoutes } from './routes/alert.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
 import { apiKeyRoutes } from './routes/api-key.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
+import { billingRoutes } from './routes/billing.routes.js';
 import { channelRoutes } from './routes/channel.routes.js';
 import { internalRoutes } from './routes/internal.routes.js';
 import { promptLibraryRoutes } from './routes/prompt-library.routes.js';
@@ -23,6 +25,7 @@ import { trendRoutes } from './routes/trend.routes.js';
 import { usageRoutes } from './routes/usage.routes.js';
 import { videoRoutes } from './routes/video.routes.js';
 import { watchlistRoutes } from './routes/watchlist.routes.js';
+import { webhookRoutes } from './routes/webhook.routes.js';
 
 // Phase 6: the one foundation/demo workflow this instance can actually
 // enqueue jobs for -- see infra/n8n-workflows/foundation-demo.json. Real
@@ -82,6 +85,15 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
     await Promise.all([...workflowQueues.values()].map((wq) => wq.close()));
   });
 
+  // Phase 9 — Billing (Milestone 5): daily grace-period-expiry sweep +
+  // billing_events retention purge (docs/architecture/billing/
+  // 07-subscription-lifecycle.md's resolved decision) — an in-process
+  // maintenance task, not an n8n-dispatched workflow.
+  const billingMaintenanceQueue = createBillingMaintenanceQueue(app.db, config, app.log);
+  app.addHook('onClose', async () => {
+    await billingMaintenanceQueue.close();
+  });
+
   await app.register(healthPlugin, { config, workflowQueues });
   await app.register(authRoutes, { config, prefix: '/api/v1/auth' });
   await app.register(internalRoutes, { prefix: '/api/v1/internal' });
@@ -98,6 +110,10 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   await app.register(apiKeyRoutes, { prefix: '/api/v1/api-keys' });
   await app.register(usageRoutes, { prefix: '/api/v1/usage' });
   await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
+  // Phase 9 — Billing (Milestone 2): checkout/portal/subscription/plan.
+  await app.register(billingRoutes, { prefix: '/api/v1/billing' });
+  // Phase 9 — Billing (Milestone 3): unauthenticated, Stripe-signature-verified.
+  await app.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
 
   // Platform-wide, super_admin-gated (no RLS, no org scoping):
   await app.register(adminRoutes, { prefix: '/api/v1/admin', workflowQueues });

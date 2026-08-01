@@ -15,6 +15,15 @@ async function errorHandlerPluginImpl(
 ): Promise<void> {
   fastify.setErrorHandler((err, request, reply) => {
     if (err instanceof AppError) {
+      // A 5xx AppError (e.g. STRIPE_ERROR, OAUTH_PROFILE_FETCH_FAILED) is
+      // still a genuine operational failure worth seeing in logs, same as
+      // any other unhandled 500 -- found during Phase 9 Milestone 6's
+      // hardening review: this branch previously never logged anything,
+      // silently hiding every 5xx AppError from server-side observability
+      // codebase-wide, not just for billing.
+      if (err.statusCode >= 500) {
+        request.log.error({ err }, 'Unhandled 5xx AppError');
+      }
       return reply.code(err.statusCode).send(toErrorEnvelope(err));
     }
 

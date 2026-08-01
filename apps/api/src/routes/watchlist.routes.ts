@@ -29,7 +29,6 @@ function actorFrom(request: FastifyRequest): WatchlistActor {
   return {
     tenant: { orgId: request.user!.orgId!, userId: request.user!.userId },
     orgRole: request.user!.orgRole,
-    planTier: request.user!.planTier,
   };
 }
 

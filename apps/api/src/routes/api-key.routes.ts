@@ -35,7 +35,7 @@ export async function apiKeyRoutes(
   fastify.post('/', { preHandler }, async (request, reply) => {
     const body = createSchema.parse(request.body);
     const tenant = { orgId: request.user!.orgId!, userId: request.user!.userId };
-    const { row, plaintextKey } = await apiKeyService.create(tenant, request.user!.planTier, {
+    const { row, plaintextKey } = await apiKeyService.create(tenant, {
       name: body.name,
       scopes: body.scopes,
       expiresAt: body.expiresAt ?? null,

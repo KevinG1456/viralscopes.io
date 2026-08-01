@@ -17,6 +17,13 @@ export const queryKeys = {
   analytics: {
     overview: ['analytics', 'overview'] as const,
   },
+  billing: {
+    plan: ['billing', 'plan'] as const,
+    subscription: ['billing', 'subscription'] as const,
+  },
+  usage: {
+    summary: ['usage', 'summary'] as const,
+  },
   recommendations: {
     list: (page: number, limit: number) => ['recommendations', 'list', page, limit] as const,
   },

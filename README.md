@@ -265,6 +265,20 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | GET | `/api/v1/usage` | Current-period usage vs plan quota |
 | GET | `/api/v1/analytics/overview` | Org KPIs: watchlists, alert rules, alert events (30d), API keys, usage |
 
+**Billing (Phase 9 — complete, all 6 milestones — `/api/v1/billing`, `/api/v1/webhooks`)**
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/billing/plan` | JWT (any org member) | Current plan tier + feature limits (JWT-derived, no DB call) |
+| GET | `/billing/subscription` | JWT, `owner`/`admin` | Full subscription details (status, billing cycle, periods, grace period) — the first route in this codebase to actually call `requireRole()` (see PROJECT_STATUS.md TD-012) |
+| POST | `/billing/checkout` | JWT, `owner` only | Create a Stripe Checkout Session for a self-serve plan upgrade (`starter`/`professional`/`business`). Returns `503` if Stripe isn't configured in this environment (no account provisioned yet) |
+| POST | `/billing/portal` | JWT, `owner` only | Create a Stripe Customer Portal session (requires an existing subscription; returns `402 NO_BILLING_ACCOUNT` otherwise) |
+| POST | `/webhooks/stripe` | Stripe-Signature HMAC (unauthenticated — no JWT/CSRF, verified by signature instead) | Synchronizes subscription/invoice/customer state from Stripe: `checkout.session.completed`, `customer.created` (audit-only no-op — see below), `invoice.paid`, `invoice.payment_failed` (3-day grace period), `customer.subscription.updated`, `customer.subscription.deleted`. Idempotent on Stripe's event ID; always returns `200` for a signature-valid event, even on internal processing failure (recorded to `billing_events` + `dead_letter_jobs` instead) |
+
+Frontend billing UI (Milestone 4), feature enforcement (Milestone 5), and a hardening/testing pass (Milestone 6) are all live as of this document — **Phase 9 is complete**; billing emails remain unbuilt (TD-010). `customer.created` is deliberately a no-op: Stripe's auto-created Customer object during Checkout carries no metadata, so `org_id` can't be resolved without a database lookup-before-tenant-context that would break the RLS approach used for `subscriptions`/`invoices`. Milestone 6's hardening pass found and fixed a real quota-bypass vulnerability (a subscription canceled via `customer.subscription.updated` rather than `.deleted` could retain its old paid-tier `organizations.plan` indefinitely) and a webhook retry-safety bug (a failed event could never be reprocessed) — see `PROJECT_STATUS.md`'s Phase 9 section for the full write-up.
+
+**Feature enforcement (Phase 9 Milestone 5):** `watchlist.service.ts`, `alert.service.ts`, and `api-key.service.ts`'s existing plan-limit checks (Phase 5) now resolve the org's enforceable plan live from the database (`lib/plan-enforcement.ts`) instead of trusting the JWT's `planTier` claim, so plan changes take effect immediately rather than waiting for token refresh — see the Frontend Pages Reference table above for the exact mechanism. A daily BullMQ repeatable job (`lib/billing-maintenance-queue.ts` + `jobs/grace-period-expiry.job.ts`, 06:00 UTC) downgrades any subscription whose 3-day payment-failure grace period has expired and purges `billing_events` older than 90 days — this is a data-hygiene/billing-history-accuracy job, not the real-time security boundary; `getEnforcedPlanTier()` itself already checks grace-period expiry live on every request, independent of when this job last ran.
+
 **Admin — platform-wide, `super_admin` only (Phase 5 — `/api/v1/admin`)**
 
 | Method | Path | Description |
@@ -299,22 +313,26 @@ Every endpoint returns the standard envelope (`{ success, data, error?, meta? }`
 | POST | `/ai-cache/lookup` | Called by n8n workflows to check the Redis AI-response cache (n8n has no native Redis credential in this stack) |
 | POST | `/ai-cache/store` | Called by n8n workflows to store a successful AI response in the cache (24h TTL) |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-023):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, Stripe/outgoing webhooks, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), and a real AI cost estimate (needs live AI provider credentials this environment doesn't have).
+**Deferred (not built — see PROJECT_STATUS.md TD-014 through TD-025):** `POST /videos/analyze` and `/videos/refresh` (needs the YouTube quota manager + a job runner), YouTube API Quota Manager, unified `/search`, `/exports`, `/analytics/viral-scores` and `/analytics/engagement`, the OpenAPI/Swagger spec itself, all 14 of ROADMAP.md's real Phase 6 business workflows (Video Discovery, AI Analysis Pipeline, etc. — `foundation-demo` is the template they'll be built from), a real AI cost estimate (needs live AI provider credentials this environment doesn't have), and outgoing alert-channel webhook dispatch (needs Phase 6's Alert Dispatch workflow). The Stripe webhook endpoint itself is live as of Phase 9 Milestone 3 — see the Billing table above.
 
-### Frontend Pages Reference (Phase 8 — `apps/web`)
+### Frontend Pages Reference (Phase 8 — `apps/web`; Billing added Phase 9, complete)
 
 | Route | Backend endpoint(s) consumed | Auth |
 |---|---|---|
+| `/` | none — instant client-side redirect to `/home` (authenticated) or `/login` (not), mirroring `(dashboard)/layout.tsx`'s own auth gate. Previously the unmodified Phase 1 scaffold splash screen; fixed during Phase 9 Milestone 4 verification | public |
 | `/login`, `/register`, `/verify-email`, `/reset-password`, `/reset-password/confirm` | `/auth/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password` | public |
 | `/home` | `/analytics/overview`, `/watchlists`, `/recommendations`, `/alerts/events` | authed + org |
-| `/watchlists` | `/watchlists` (full CRUD) | authed + org |
-| `/alerts` | `/alerts/rules` (full CRUD), `/alerts/events` (read) | authed + org |
+| `/watchlists` | `/watchlists` (full CRUD; plan-limited — see below) | authed + org |
+| `/alerts` | `/alerts/rules` (full CRUD; plan-limited), `/alerts/events` (read) | authed + org |
 | `/settings/profile` | `/auth/sessions` (list/revoke/revoke-others) | authed |
-| `/settings/api-keys` | `/api-keys` (full CRUD) | authed + org |
+| `/settings/api-keys` | `/api-keys` (full CRUD; create requires `apiAccess`, gated in the UI via `GET /billing/plan`'s `limits.apiAccess`, not hard-coded) | authed + org |
 | `/settings/organisation` | none — read-only, derived from the JWT (`orgRole`/`planTier`); no org read/update endpoint exists yet (TD-011) | authed |
+| `/settings/billing` | `/billing/plan` (any member), `/billing/subscription` (owner/admin), `/billing/checkout`/`/billing/portal` (owner only, redirect-to-Stripe only — no payment logic in the frontend), `/usage` (Phase 5, reused as-is) | authed + org, RBAC-gated per section |
 | `/admin/prompts`, `/admin/prompts/:name` | `/admin/prompts/*` (Phase 7) | authed + `super_admin` |
 
-**Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Billing/Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types.
+**Deferred (not built — see PROJECT_STATUS.md TD-024):** Trending, Videos/Video Detail, Channels, Trends, Opportunities, Search, Export, Team/Notifications settings, the rest of the Admin panel (job logs, dead-letter queue, quota, system health), onboarding, OAuth login UI, i18n, the Changelog page, and all 5 chart types. Billing history/invoice UI is deferred within `/settings/billing` itself — no invoice-list endpoint exists yet.
+
+**Plan-limited actions (Phase 9 Milestone 5 — "Feature Enforcement"):** `POST /watchlists` (count vs `PLAN_LIMITS.watchlists`), `POST /alerts/rules` (count vs `PLAN_LIMITS.alertRules`), and `POST /api-keys` (`PLAN_LIMITS.apiAccess`) all resolve the org's plan **live from the database** at request time (`apps/api/src/lib/plan-enforcement.ts`'s `getEnforcedPlanTier()`) rather than trusting the JWT's `planTier` claim, so an upgrade, downgrade, or grace-period expiry takes effect on the very next request — no re-login or token refresh needed. A rejected request returns `403 PLAN_LIMIT_EXCEEDED` with a message the frontend surfaces alongside a link to `/settings/billing`.
 
 ---
 
@@ -692,9 +710,16 @@ Only `APP_ENV`, `PORT`, and `APP_VERSION` are validated today — those are the 
 
 ### Required Starting Phase 9 — Subscription & Billing
 
+All optional in this environment — `apps/api` boots fine without them; billing routes return `503` ("billing is not configured") rather than crashing at startup, the same pattern already used for unset OAuth credentials. No Stripe account has been provisioned in this environment yet.
+
 | Variable | Description |
 |---|---|
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe billing |
+| `STRIPE_SECRET_KEY` | Stripe Restricted API Key (`sk_test_*`/`sk_live_*`) — Stripe Dashboard → Developers → API Keys |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret — Stripe Dashboard → Developers → Webhooks, or the Stripe CLI's `stripe listen` output for local development |
+| `STRIPE_PRICE_ID_STARTER_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` / `_ANNUAL`, `STRIPE_PRICE_ID_BUSINESS_MONTHLY` / `_ANNUAL` | Stripe Price IDs for the three self-serve paid plans × two billing cycles (Free has no Stripe price; Enterprise is quote-only) — Stripe Dashboard → Products |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (safe for the browser) — read by `apps/web`, not `apps/api`. **Not actually consumed as of Phase 9 Milestone 4**: checkout/portal are redirect-only (the frontend never loads Stripe.js/Elements, per "no payment logic in the frontend" — see `/settings/billing`), so nothing reads this yet. Documented here for whenever embedded Elements are wanted instead of a full redirect. |
+
+**Local development:** install the [Stripe CLI](https://docs.stripe.com/stripe-cli), then `stripe listen --forward-to localhost:3001/api/v1/webhooks/stripe` to forward webhook events and print a signing secret for `STRIPE_WEBHOOK_SECRET`.
 
 ---
 

@@ -1,6 +1,6 @@
 import type { Database, TenantContext } from '@viralscopes/db';
+import { PLAN_LIMITS, type PlanTier } from '@viralscopes/shared';
 
-import { PLAN_LIMITS, type PlanTier } from '../lib/plan-limits.js';
 import { sumUsageSince } from '../repositories/usage.repository.js';
 
 export interface UsageSummary {

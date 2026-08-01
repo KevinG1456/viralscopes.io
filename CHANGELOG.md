@@ -113,6 +113,127 @@ Each version entry uses the following change categories:
 - Fixed `analytics/overview`'s `alertEvents.last30Days` being rendered as if it were a number — it's actually a per-status breakdown object (`{sent, failed, ...}`)
 - Fixed relative imports using a trailing `.js` extension, which `tsc`'s Bundler module resolution tolerates but Turbopack does not — a real build failure, not a type-check-only issue
 
+### Added (Phase 9 — Subscription & Billing, Milestone 1 of 6: Billing Foundation)
+
+- `packages/shared/src/plans.ts` — `PlanTier`/`PlanLimits`/`PLAN_LIMITS`/`PLAN_HIERARCHY`/`PLANS`, promoted from `apps/api/src/lib/plan-limits.ts` (extended, not duplicated) so `apps/web` can share the same constants; `packages/shared` given a real build path (mirrors BLK-004's fix for `packages/db`)
+- Two new migrations: `subscriptions.billing_cycle`/`checkout_session_id` + a partial unique index enforcing one non-canceled subscription per org, and a new `billing_events` table (webhook idempotency ledger, no RLS by design — same identity-lookup-before-tenant-context justification as `sessions`/`oauth_accounts`)
+- `billing.repository.ts`, `billing.service.ts` (current-plan summary implemented; checkout/portal session creation defined but intentionally not implemented — Milestone 2 scope), and a `BillingProvider` interface + `StripeBillingProvider` implementation so business logic never imports the `stripe` SDK directly
+- `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`/6 Stripe Price ID environment variables (all optional — billing returns `503` rather than crashing at boot when unset, same as unconfigured OAuth)
+- No billing routes, no HTTP surface, no live Stripe account exercised yet — by design; see `PROJECT_STATUS.md`'s Phase 9 section
+
+### Fixed (Phase 9 Milestone 1)
+
+- Caught before it could reach a real migration run: the draft design used `CREATE UNIQUE INDEX CONCURRENTLY`, which Postgres refuses inside a transaction block — and this project's migration runner (`packages/db/src/migrate.ts`) wraps every migration in one. Switched to a plain `CREATE UNIQUE INDEX` (negligible lock cost at this table's current size).
+
+### Documentation (Phase 9)
+
+- 14 architecture documents (`docs/architecture/billing/`) and 8 independent review documents (`docs/reviews/billing/`) — the review cross-checked every architectural claim against the real codebase and found (then corrected) several mismatches: RLS written against Supabase's `auth.uid()` instead of this project's actual `current_setting()` pattern, a JWT `role` claim assumed for admin checks that doesn't exist, a proposed plan-limits file that duplicated rather than reused existing code, and a testing strategy assuming a test runner this repository has never had. Six architecture decisions were resolved and reflected across all 14 documents before implementation began. See `PROJECT_STATUS.md` DEC-026/DEC-027, TD-025.
+
+### Added (Phase 9 Milestone 2 of 6: Checkout & Subscription APIs)
+
+- `POST /api/v1/billing/checkout` (Owner only) — creates a Stripe Checkout Session for a self-serve plan upgrade; validates the organisation, the requested plan, and that it's an upgrade from any existing real paid subscription before ever calling the provider
+- `POST /api/v1/billing/portal` (Owner only) — creates a Stripe Customer Portal session; `402 NO_BILLING_ACCOUNT` if the org has never subscribed
+- `GET /api/v1/billing/subscription` (Owner + Admin) — full subscription details (status, billing cycle, periods, grace period)
+- `GET /api/v1/billing/plan` (any authenticated org member) — current plan tier + feature limits, derived from the JWT with no database call
+- `billing.routes.ts` is the first route in this codebase to actually call `requireRole()` — built in Phase 4, never wired to a real route until now (see TD-012 in `PROJECT_STATUS.md`, now resolved)
+
+### Security (Phase 9 Milestone 2)
+
+- Verified RBAC end-to-end against all three organisation roles (owner/admin/member): owner has full checkout/portal/subscription access; admin can view the subscription but is correctly blocked (403) from checkout/portal; member is blocked from all three
+- Re-confirmed RLS directly against Postgres for `subscriptions` (unauthorized insert fails, authorized insert with correct tenant context succeeds) and `billing_events` (no RLS, by design)
+- No provider secrets or provider IDs (`provider_customer_id`, `provider_subscription_id`, `checkout_session_id`) are ever included in an API response
+
+### Added (Phase 9 Milestone 3 of 6: Webhooks)
+
+- `POST /api/v1/webhooks/stripe` — unauthenticated by design (verified by the `Stripe-Signature` HMAC, not a JWT/CSRF token), with a scoped raw-`Buffer` content-type parser so Stripe's signature can be verified against the exact bytes received, isolated to this one route via Fastify plugin encapsulation
+- `WebhookService` (`webhook.service.ts`) processes exactly the 6 Stripe events the approved architecture defines: `checkout.session.completed`, `customer.created`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Idempotency via the Milestone-1 `billing_events` table: every event's provider event ID is checked before dispatch; duplicate deliveries are detected and skipped without reprocessing
+- 3-day grace period on `invoice.payment_failed`, only set on the first failure per invoice (Stripe's Smart Retries can re-fire the event for the same invoice)
+- `lib/audit-log.ts` — a new `auditLog()` helper writing to the existing `audit_logs` table, invoked from every billing-state-changing webhook handler
+- Processing failures are recorded to `billing_events` (`status='failed'`) and pushed to the existing (Phase 6) `dead_letter_jobs` table; unknown/unhandled event types are recorded as `status='skipped'` — both cases still answer Stripe `200`, since retrying a signature-valid delivery whose failure won't self-resolve serves no purpose
+
+### Fixed (Phase 9 Milestone 3)
+
+- `subscriptions.canceled_at` existed in the schema since Milestone 1 but no code path ever set it — added `canceledAt` to `UpsertSubscriptionInput` and threaded it through all 5 call sites in `webhook.service.ts`
+
+### Security (Phase 9 Milestone 3)
+
+- Invalid and missing `Stripe-Signature` headers both verified to return `400 INVALID_WEBHOOK_SIGNATURE` without touching `billing_events` or any billing table
+- Idempotency live-verified: replaying the same event ID produces exactly one `billing_events` row and no duplicate side effects
+- Database writes never trust client-supplied billing state — plan/status/period/cancellation are always resolved from the Stripe event's own payload (`metadata.org_id` per DEC-027), never from a request body
+- Audit log metadata carries the Stripe event ID and plan/status fields only — no card or payment-method data is ever logged
+- A deliberate scope decision, not an oversight: Stripe's auto-created Customer object during Checkout carries no metadata, so `customer.created` cannot resolve `org_id` without a database lookup-before-tenant-context that would break the RLS approach DEC-027 established for `subscriptions`/`invoices` — handled as an audit-only no-op (`billing_events` row, `orgId=null`, `status='skipped'`) instead
+
+### Fixed
+
+- `apps/web/src/app/page.tsx` (root `/`) was still the unmodified Phase 1 scaffold splash screen, never wired to redirect anywhere once real pages existed from Phase 4 onward — found when the repo owner reported the frontend was inaccessible. Replaced with an instant client-side redirect (`/home` if authenticated, `/login` otherwise) mirroring `(dashboard)/layout.tsx`'s existing auth-gate pattern
+
+### Added (Phase 9 Milestone 4 of 6: Frontend Billing)
+
+- `/settings/billing` — current-subscription summary, usage & limits, a plan comparison table, and a billing-history placeholder, added as a fourth Settings tab
+- `apps/web` now depends on `@viralscopes/shared` for the first time: the plan comparison table reads `PLANS`/`PLAN_LIMITS`/`PLAN_HIERARCHY`/`SELF_SERVE_CHECKOUT_PLANS` directly rather than re-typing `Pricing_Strategy.md`'s numbers in the frontend
+- `components/billing/{SubscriptionSummaryCard,PlanComparisonTable,UsageMeter}.tsx`, `components/ui/progress.tsx`, `hooks/use-billing.ts`, `hooks/use-billing-actions.ts`, `hooks/use-usage.ts`, `lib/api/{billing,usage}.ts`
+- Checkout and the billing portal are redirect-only: create the session via the existing Milestone 2 endpoints, then hand the tab to the returned Stripe-hosted URL — no Stripe.js/Elements or card fields anywhere in the frontend
+- Downgrade routes to the billing portal rather than a second checkout call, since `createCheckoutSession` only ever accepts upgrades (Milestone 2) — the plan comparison table's downgrade CTA and the "Manage subscription" button open the same portal session
+
+### Fixed (Phase 9 Milestone 4)
+
+- `Dockerfile.web`'s build step switched from `npm run build --workspace=apps/web` to `npx turbo run build --filter=@viralscopes/web`, so turbo's dependency graph builds `packages/shared/dist` before `apps/web` — needed now that `apps/web` depends on it (mirrors BLK-004's fix for `Dockerfile.api`)
+
+### Security (Phase 9 Milestone 4)
+
+- RBAC gates the queries themselves, not just the UI: `GET /billing/subscription` is only requested if the org role is owner/admin, so a member never issues a request the backend would 403 anyway; checkout/downgrade actions stay owner-only, matching `billing.routes.ts`
+- Verified live against the real backend: member role gets `403 INSUFFICIENT_PERMISSIONS` on `/billing/subscription` and `200` on `/billing/plan`, exactly matching the frontend's per-query gate
+- No provider secrets, provider IDs, or payment data ever reach the frontend — checkout/portal responses are a bare redirect URL, nothing else
+
+### Verified (Phase 9 Milestone 4 — complete manual verification pass)
+
+- Re-confirmed all 14 requested checklist items against the real running backend before approving Milestone 5: billing page load/redirect behavior, current subscription/plan display, usage meter thresholds (seeded real `usage_events` to hit warning/error bands), plan comparison branch logic, loading/error states (including a genuine `apps/api` outage, not simulated), the full 3-role RBAC matrix (owner/admin/member, admin case newly tested via a temporary role promotion), and the refresh/session-persistence mechanism
+- Checkout and billing-portal requests traced to the deepest boundary this environment allows without live Stripe credentials (`502`/`503 STRIPE_ERROR`) — a temporary Stripe-backed `subscriptions` row pushed the portal request one level past its default `402`
+- Confirmed "organisation switching" has no feature to test yet (no org-switcher UI exists; a JWT carries exactly one `orgId` — TD-011)
+- All temporary test data (usage events, a temporary subscription row, the admin role promotion) confirmed reverted; `lint`/`type-check`/`build` re-run clean; no regressions found, no code changes required
+
+### Changed (Phase 9 Milestone 5 of 6: Feature Enforcement)
+
+- `watchlist.service.ts`, `alert.service.ts`, `api-key.service.ts` — the existing plan-limit checks (watchlist count, alert-rule count, API-key `apiAccess`) now resolve the org's plan live from the database (`lib/plan-enforcement.ts`'s `getEnforcedPlanTier()`) instead of the JWT's `planTier` claim, so an upgrade, downgrade, or grace-period expiry takes effect on the very next request rather than waiting for token refresh. No new plan logic — same `PLAN_LIMITS`, same error codes; only the source of the plan value changed
+
+### Added (Phase 9 Milestone 5)
+
+- `lib/plan-enforcement.ts` — `getEnforcedPlanTier()`, a plain (uncached) live DB read; deliberately not the Redis-cached design sketched in the architecture docs, since the three real call sites are low-frequency mutations, not a hot path
+- `jobs/grace-period-expiry.job.ts` + `lib/billing-maintenance-queue.ts` — a daily (06:00 UTC) BullMQ repeatable job, in-process rather than an n8n workflow, that downgrades subscriptions whose 3-day payment-failure grace period has expired (`status → past_due`, `organizations.plan → free`, audit-logged) and purges `billing_events` rows older than 90 days
+- `components/billing/UpgradeRequiredNotice.tsx` (proactive gating for binary plan flags) and `components/billing/PlanLimitErrorMessage.tsx` (reactive handling for count-based `403 PLAN_LIMIT_EXCEEDED` responses), both linking to `/settings/billing`
+- `/settings/api-keys` now hides the "New API key" action when `GET /billing/plan`'s `limits.apiAccess` is `false` — existing keys remain visible/revocable regardless, matching the backend's own list-vs-create distinction
+
+### Fixed (Phase 9 Milestone 5)
+
+- `purgeOldBillingEvents` used a raw `sql` template comparing a timestamp column against a JS `Date`, which the postgres.js driver can't serialize outside of drizzle's own comparison operators — switched to `lt()`, matching every other timestamp comparison in this codebase. Found via direct testing of the new job, not caught by type-checking
+
+### Security (Phase 9 Milestone 5)
+
+- Grace-period enforcement is live and independent of the daily job: `getEnforcedPlanTier()` checks `grace_period_ends_at` against `now()` on every call, so an expired grace period is enforced immediately, not only after the next job run
+- The per-organization loop in the grace-period job reuses the existing `withTenant()` tenant-scoping for each org's own `subscriptions` read — no new RLS-bypass precedent, since `subscriptions` deliberately keeps its RLS policy (DEC-027)
+- Live-verified: upgrade/downgrade of the org's plan directly in the database takes effect on the very next request using the *same* (stale) JWT, with no re-login — proving enforcement doesn't depend on token freshness in either direction
+
+## Phase 9 Milestone 6 — Hardening & Testing (Phase 9 complete)
+
+### Fixed (Phase 9 Milestone 6 — security)
+
+- **Quota-bypass vulnerability:** `handleSubscriptionUpdated` only synced `organizations.plan` when the plan *text* changed, so a subscription that transitioned to a terminal Stripe status (`canceled`, `unpaid`, `incomplete_expired`, `paused`) via `customer.subscription.updated` — rather than `customer.subscription.deleted` — kept its old paid-tier `organizations.plan` value indefinitely, since `findActiveSubscriptionForOrg` excludes non-active subscriptions and `getEnforcedPlanTier()`'s fallback then read the stale value. Fixed by always syncing `organizations.plan` to the subscription's effective state; `past_due` is deliberately excluded from the "force free" set to preserve the grace period's intended behavior
+- **Webhook retry-safety bug:** a `'failed'` `billing_events` row was treated the same as `'processed'` by the idempotency check, so any webhook event that failed partway through could never be reprocessed — not by Stripe (the route always answers `200`), not by a manual dead-letter replay. Fixed: idempotency now only short-circuits on `'processed'`/`'skipped'`, and `recordBillingEvent` is a real upsert (`onConflictDoUpdate`) instead of a plain insert that would crash on retry
+
+### Fixed (Phase 9 Milestone 6 — reliability/hygiene)
+
+- `billing.service.ts`'s `createCheckoutSession`/`createPortalSession` now translate any provider-layer failure into the existing `502 STRIPE_ERROR` shape instead of leaking through as an unlabelled generic `500`
+- Stripe client now has an explicit 15s request timeout (previously the SDK's 80s default)
+- `errorHandlerPlugin` now logs any `AppError` with `statusCode >= 500` — previously it logged nothing for `AppError` instances at any severity, codebase-wide (not billing-specific; also affects the pre-existing OAuth-profile-fetch failure path)
+
+### Security (Phase 9 Milestone 6)
+
+- Live-verified both fixes above end-to-end: reproduced each bug first (a real canceled-but-still-paid org; a real mid-handler failure via an invalid `plan` value), then confirmed the fix, including a full regression pass inside a rebuilt Docker image
+- Confirmed via code review: `requireRole()` (billing RBAC) checks only `request.user.orgRole`, never any platform `super_admin` flag — no privilege-escalation path between platform admin status and org billing authority
+- Confirmed no route or service touches `organization_members.role` — no privilege-escalation surface exists for org roles at all (TD-011 is fully unbuilt)
+- Reviewed and accepted (logged as TD-026) a narrower race-condition window in `upsertSubscriptionForOrg`'s non-locking SELECT-then-branch pattern — the database's own unique constraint plus the retry-safety fix above mean a worst-case race fails safely and recoverably, not silently
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

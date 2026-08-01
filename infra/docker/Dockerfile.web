@@ -30,7 +30,14 @@ ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
-RUN npm run build --workspace=apps/web
+# Phase 9 Milestone 4: apps/web now depends on @viralscopes/shared (plan
+# definitions for the billing pages) -- `turbo run build` (not `npm run
+# build --workspace=apps/web`) so turbo's own dependency graph builds
+# @viralscopes/shared's dist/ first, same fix BLK-004 gave Dockerfile.api.
+# `npx` (not a bare `turbo`) since this Dockerfile has no global turbo
+# install -- unlike Dockerfile.api's `base` stage, `npm ci` here already
+# installs the root devDependency into node_modules/.bin, which npx finds.
+RUN npx turbo run build --filter=@viralscopes/web
 
 # ---- Stage 2: production runtime ----
 FROM node:22-alpine AS runner

@@ -1,7 +1,11 @@
+import type { PlanLimits, PlanTier } from '@viralscopes/shared';
+
 // Mirrors apps/api/src/lib/response.ts's envelope exactly -- every backend
-// response is one of these two shapes. packages/shared has no types yet
-// (still an empty stub), so these are defined here rather than shared
-// with the backend; keep in sync manually if the envelope ever changes.
+// response is one of these two shapes. Response *body* shapes below are
+// still defined here rather than shared with the backend (keep in sync
+// manually if the envelope ever changes); `PlanLimits`/`PlanTier` are the
+// one exception -- those come from `@viralscopes/shared`, the actual
+// source of truth both apps/api and apps/web import (Phase 9 DEC-026).
 export interface ApiError {
   code: string;
   message: string;
@@ -66,6 +70,34 @@ export interface UsageSummary {
   periodEnd: string;
   usage: Record<string, number>;
   videosAnalyzed: { used: number; limit: number | null; remaining: number | null };
+}
+
+// --- Billing (Phase 9) --- mirrors apps/api/src/services/billing.service.ts's
+// CurrentPlanSummary/PlanAndLimits/CheckoutSessionResponse/PortalSessionResponse
+// response shapes exactly. No provider IDs (Stripe customer/subscription/
+// checkout-session IDs) ever appear here -- the backend never returns them.
+export interface CurrentPlanSummary {
+  plan: PlanTier;
+  status: string;
+  billingProvider: string;
+  billingCycle: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  gracePeriodEndsAt: string | null;
+}
+
+export interface PlanAndLimits {
+  plan: PlanTier;
+  limits: PlanLimits;
+}
+
+export interface CheckoutSessionResponse {
+  checkoutUrl: string;
+}
+
+export interface PortalSessionResponse {
+  portalUrl: string;
 }
 
 // --- Watchlists ---

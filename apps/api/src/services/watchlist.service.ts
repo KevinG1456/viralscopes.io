@@ -1,8 +1,9 @@
 import type { Database, TenantContext } from '@viralscopes/db';
+import { PLAN_LIMITS } from '@viralscopes/shared';
 
 import { AppError } from '../lib/errors.js';
 import { paginationMeta, type PaginationQuery } from '../lib/pagination.js';
-import { PLAN_LIMITS, type PlanTier } from '../lib/plan-limits.js';
+import { getEnforcedPlanTier } from '../lib/plan-enforcement.js';
 import {
   countActiveWatchlistsForOrg,
   createWatchlist,
@@ -16,7 +17,6 @@ import {
 export interface WatchlistActor {
   tenant: TenantContext;
   orgRole: string | null;
-  planTier: string | null;
 }
 
 const MANAGE_ROLES = ['owner', 'admin'];
@@ -56,7 +56,11 @@ export class WatchlistService {
     },
   ): Promise<WatchlistRow> {
     // Pricing_Strategy.md §2.6/§3 -- plan-tier watchlist ceiling (FR-37).
-    const limit = PLAN_LIMITS[(actor.planTier as PlanTier) ?? 'free'].watchlists;
+    // Resolved live (Phase 9 Milestone 5), not from the JWT's `planTier`
+    // claim, so an upgrade/downgrade/grace-period-expiry takes effect on
+    // the very next request rather than waiting for token refresh.
+    const planTier = await getEnforcedPlanTier(this.db, actor.tenant);
+    const limit = PLAN_LIMITS[planTier].watchlists;
     if (limit !== null) {
       const current = await countActiveWatchlistsForOrg(this.db, actor.tenant);
       if (current >= limit) {

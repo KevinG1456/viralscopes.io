@@ -13,6 +13,7 @@ export * from './subscriptions.js';
 export * from './invoices.js';
 export * from './usage-events.js';
 export * from './api-keys.js';
+export * from './billing-events.js';
 
 export * from './channels.js';
 export * from './videos.js';

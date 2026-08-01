@@ -11,6 +11,7 @@ export const ROUTES = {
     profile: '/settings/profile',
     organisation: '/settings/organisation',
     apiKeys: '/settings/api-keys',
+    billing: '/settings/billing',
   },
   admin: {
     prompts: '/admin/prompts',

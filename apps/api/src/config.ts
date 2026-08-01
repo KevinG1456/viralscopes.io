@@ -50,6 +50,24 @@ const envSchema = z.object({
     .string()
     .min(32, 'N8N_SERVICE_TOKEN must be at least 32 characters (shared secret with n8n)'),
   N8N_INTERNAL_URL: z.string().url().default('http://localhost:5678'),
+
+  // Phase 9 (Billing): optional, same pattern as OAuth above. The API boots
+  // fine without it -- BillingService.createBillingProvider() returns null
+  // and billing routes return 503 ("billing is not configured") rather than
+  // crashing at boot, since no Stripe account has been provisioned in this
+  // environment yet (same category of gap as GOOGLE_CLIENT_ID/TD-023's
+  // missing AI keys -- see docs/architecture/billing/10-environment.md).
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Price IDs, one per self-serve paid plan x billing cycle (Free has no
+  // Stripe price; Enterprise is quote-only, not self-serve -- see
+  // packages/shared/src/plans.ts's SELF_SERVE_CHECKOUT_PLANS).
+  STRIPE_PRICE_ID_STARTER_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_ID_STARTER_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_ID_PROFESSIONAL_ANNUAL: z.string().optional(),
+  STRIPE_PRICE_ID_BUSINESS_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_ID_BUSINESS_ANNUAL: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>['APP_ENV'];
@@ -82,6 +100,12 @@ export interface AppConfig {
   n8n: {
     serviceToken: string;
     internalUrl: string;
+  };
+  billing: {
+    stripeSecretKey: string | null;
+    stripeWebhookSecret: string | null;
+    /** Keyed by the env var name (matches PlanDefinition.stripePriceIdMonthlyEnvVar/AnnualEnvVar in packages/shared/src/plans.ts), not by plan id. */
+    stripePriceIds: Record<string, string | undefined>;
   };
 }
 
@@ -127,6 +151,18 @@ export function loadConfig(): AppConfig {
     n8n: {
       serviceToken: data.N8N_SERVICE_TOKEN,
       internalUrl: data.N8N_INTERNAL_URL,
+    },
+    billing: {
+      stripeSecretKey: data.STRIPE_SECRET_KEY ?? null,
+      stripeWebhookSecret: data.STRIPE_WEBHOOK_SECRET ?? null,
+      stripePriceIds: {
+        STRIPE_PRICE_ID_STARTER_MONTHLY: data.STRIPE_PRICE_ID_STARTER_MONTHLY,
+        STRIPE_PRICE_ID_STARTER_ANNUAL: data.STRIPE_PRICE_ID_STARTER_ANNUAL,
+        STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY: data.STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY,
+        STRIPE_PRICE_ID_PROFESSIONAL_ANNUAL: data.STRIPE_PRICE_ID_PROFESSIONAL_ANNUAL,
+        STRIPE_PRICE_ID_BUSINESS_MONTHLY: data.STRIPE_PRICE_ID_BUSINESS_MONTHLY,
+        STRIPE_PRICE_ID_BUSINESS_ANNUAL: data.STRIPE_PRICE_ID_BUSINESS_ANNUAL,
+      },
     },
   };
 }

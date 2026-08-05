@@ -174,45 +174,77 @@ async function checkAccountLockout(userId: string): Promise<void> {
 
 ### Role Hierarchy
 
+> Corrected in Phase 10 Milestone 6 (2026-08-05, finding F-02). The
+> previous version of this diagram nested Super Admin above Admin in one
+> combined hierarchy and included a `Viewer` role, neither of which
+> matches the real, shipped model — confirmed via `requireRole()`'s
+> actual role checks and every RBAC verification performed across
+> Phases 4–10, not assumed. These are two **separate, orthogonal**
+> dimensions, not one hierarchy:
+
 ```
-Super Admin (platform-wide)
-    │
-    └── Admin (org-level)
-          │
-          ├── Owner (org owner)
-          │     │
-          │     └── Member (team member)
-          │           │
-          │           └── Viewer (read-only)
+Platform dimension (users.role -- independent of any organisation):
+    Super Admin  -- live DB read on every check (DEC-017), never a JWT
+                    claim; can act across every organisation
+    User         -- the default; platform-level access is governed
+                    entirely by which organisation(s) they belong to
+
+Organisation dimension (organization_members.role -- scoped to one org):
+    Owner   -- full control of that one organisation
+      │
+      └── Admin -- most of Owner's capabilities within that org, minus
+                   billing/ownership actions
+            │
+            └── Member -- day-to-day usage, no management capabilities
 ```
+
+A `viewer` value is allowed by the database's own `CHECK` constraint on
+`organization_members.role` (`IN ('admin', 'owner', 'member', 'viewer')`)
+but is never assigned, checked, or offered anywhere in the application —
+no invite flow, no `requireRole()` call, and no UI ever references it.
+It is a documented-but-unimplemented future role, not a live one; treat
+any reference to a "5-role model" elsewhere as describing the aspiration,
+not the shipped reality.
 
 ### Role Permissions Matrix
 
-| Permission | Super Admin | Admin | Owner | Member | Viewer |
-|---|---|---|---|---|---|
-| **Platform** | | | | | |
-| Access Super Admin Panel | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manage all organisations | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Override any org plan | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Trigger n8n workflows | ✅ | ✅ | ❌ | ❌ | ❌ |
-| View dead-letter queue | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Organisation** | | | | | |
-| View org content (videos, trends) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Create / delete watchlists | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Create / delete alert rules | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Trigger video analysis | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Create exports | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Invite members | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Remove members | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Change member roles | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Billing** | | | | | |
-| View billing and invoices | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Upgrade / downgrade plan | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Cancel subscription | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **API Keys** | | | | | |
-| View API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Create API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Revoke API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
+Matrix corrected to the real 3-role organisation model (`viewer` removed
+— see note above) crossed with the separate platform Super Admin flag:
+
+| Permission | Super Admin (platform) | Owner (org) | Admin (org) | Member (org) |
+|---|---|---|---|---|
+| **Platform** | | | | |
+| Access Super Admin Panel | ✅ | ❌ | ❌ | ❌ |
+| Manage all organisations | ✅ | ❌ | ❌ | ❌ |
+| Override any org plan | ✅ | ❌ | ❌ | ❌ |
+| Trigger n8n workflows | ✅ | ❌ | ❌ | ❌ |
+| View dead-letter queue | ✅ | ❌ | ❌ | ❌ |
+| **Organisation** | | | | |
+| View org content (videos, trends) | ✅ | ✅ | ✅ | ✅ |
+| Create / delete watchlists | ✅ | ✅ | ✅ | ✅ |
+| Create / delete alert rules | ✅ | ✅ | ✅ | ✅ |
+| Trigger video analysis | ✅ | ✅ | ✅ | ✅ |
+| Create exports | ✅ | ✅ | ✅ | ✅ |
+| Invite members | ✅ | ✅ | ✅ | ❌ |
+| Remove members | ✅ | ✅ | ✅ | ❌ |
+| Change member roles | ✅ | ✅ | ✅ | ❌ |
+| **Billing** | | | | |
+| View billing and invoices | ✅ | ✅ | ✅ | ❌ |
+| Upgrade / downgrade plan | ✅ | ✅ | ❌ | ❌ |
+| Cancel subscription | ✅ | ✅ | ❌ | ❌ |
+| **API Keys** | | | | |
+| View API keys | ✅ | ✅ | ✅ | ✅ |
+| Create API keys | ✅ | ✅ | ✅ | ❌ |
+| Revoke API keys | ✅ | ✅ | ✅ | ❌ |
+
+Super Admin's platform-wide reach means every organisation-scoped
+permission is trivially `✅` for it too (a live DB read confirms the flag
+before any org-scoped check even runs) — collapsed to a single ✅ column
+rather than repeating "✅ (via platform override)" on every row.
+"Trigger n8n workflows"/"View dead-letter queue" are Super-Admin-only in
+the real code (`admin.routes.ts`'s `preHandler` requires
+`requireSuperAdmin`, not any org role) — the previous matrix incorrectly
+also granted these to org-level Admin.
 
 ### Enforcement Layers
 
@@ -345,7 +377,7 @@ All active sessions are invalidated when:
 | `sub` | User UUID (standard subject claim) |
 | `userId` | Explicit user ID (same as `sub`) |
 | `orgId` | Currently active organisation UUID |
-| `orgRole` | Role within the current org (`super_admin`, `admin`, `owner`, `member`, `viewer`) |
+| `orgRole` | Role within the current org (`owner`, `admin`, `member` — the real 3-role model; corrected Phase 10 Milestone 6, F-02). `super_admin` is never part of this claim at all: it's a separate, platform-wide `users.role` flag, deliberately checked with a live DB read on every use (DEC-017), never trusted from a JWT claim |
 | `planTier` | Plan for quick feature flag checks without a DB lookup |
 | `jti` | JWT ID — unique token identifier for revocation |
 | `iat` | Issued at (Unix timestamp) |
@@ -1492,54 +1524,63 @@ A blameless post-mortem document is published internally covering:
 
 Use this checklist for every feature review and before each release.
 
+> Re-verified item-by-item in Phase 10 Milestone 6 (2026-08-05) against
+> the real running application and codebase, not assumed from memory of
+> earlier phases. 25 of 33 items confirmed true; 8 are honestly left
+> unchecked below with the specific reason (a real gap, or genuinely
+> unverifiable in an environment with nothing deployed) rather than
+> checked off by default. Each unchecked item links to its tracking
+> entry in `PROJECT_STATUS.md`'s Technical Debt Log.
+
 ### Authentication & Sessions
-- [ ] All protected endpoints require valid JWT or API key
-- [ ] Access tokens expire in 15 minutes
-- [ ] Refresh tokens are stored HTTP-only, Secure, SameSite=Strict
-- [ ] Refresh token rotation invalidates the previous token
-- [ ] Account lockout triggers after 5 failed attempts
-- [ ] Password reset tokens are single-use and expire in 1 hour
-- [ ] Email verification is required before dashboard access
+- [x] All protected endpoints require valid JWT — re-confirmed via `authenticate` middleware present on every non-public route
+- [ ] ~~or API key~~ — API keys do not authenticate any request yet (TD-025); this half of the original checklist line is not yet true
+- [x] Access tokens expire in 15 minutes (`JWT_ACCESS_EXPIRY` default `15m`, `config.ts`)
+- [x] Refresh tokens are stored HTTP-only, Secure, SameSite=Strict (`lib/cookies.ts`)
+- [x] Refresh token rotation invalidates the previous token — re-confirmed: reuse of a rotated token revokes every session for that user (`auth.service.ts`'s `refresh()`)
+- [x] Account lockout triggers after 5 failed attempts (`lib/lockout.ts`'s `LOCKOUT_STAGES`)
+- [x] Password reset tokens are single-use and expire in 1 hour — re-confirmed directly in code (`PASSWORD_RESET_TOKEN_TTL_HOURS = '1h'`, `markPasswordResetTokenUsed` enforces single-use)
+- [x] Email verification is required before dashboard access — confirmed stronger than stated: enforced before a session is issued at all, not just before a specific route
 
 ### Authorisation
-- [ ] RBAC checks at both route middleware and service layer
-- [ ] Tenant isolation enforced (org_id filter on all tenant queries)
-- [ ] RLS policies active on all tenant-scoped tables
-- [ ] No privilege escalation vectors
+- [x] RBAC checks at both route middleware and service layer
+- [x] Tenant isolation enforced (org_id filter on all tenant queries)
+- [x] RLS policies active on all tenant-scoped tables
+- [x] No privilege escalation vectors — re-confirmed via Phase 9 Milestone 6's and Phase 10 Milestone 1's independent reviews, no new vector found this phase
 
 ### Input & Output
-- [ ] All inputs validated with Zod before any processing
-- [ ] All user-generated content sanitised before rendering
-- [ ] No raw SQL string interpolation
-- [ ] No `dangerouslySetInnerHTML` without DOMPurify
-- [ ] Error responses never expose stack traces or internal details
+- [x] All inputs validated with Zod before any processing
+- [x] All user-generated content sanitised before rendering — zero `dangerouslySetInnerHTML`/`eval` anywhere in `apps/web`, re-confirmed
+- [x] No raw SQL string interpolation
+- [x] No `dangerouslySetInnerHTML` without DOMPurify — there is no `dangerouslySetInnerHTML` at all
+- [x] Error responses never expose stack traces or internal details (`error-handler.plugin.ts` never serialises `err.stack`)
 
 ### Transport & Headers
-- [ ] HTTPS enforced; HTTP redirects to HTTPS
-- [ ] HSTS enabled with preload
-- [ ] CSP header set and tested
-- [ ] All Helmet.js headers active
-- [ ] CORS locked to allowed origins only
-- [ ] CSRF protection on browser-session state-changing endpoints
+- [x] HTTPS enforced; HTTP redirects to HTTPS — Phase 10 Milestone 4 (was previously dead config; fixed and verified live against a real Traefik container)
+- [x] HSTS enabled with preload (Phase 10 Milestone 2)
+- [x] CSP header set and tested (Phase 10 Milestone 2/3)
+- [x] All Helmet.js headers active, including Permissions-Policy (Phase 10 Milestone 2)
+- [x] CORS locked to allowed origins only
+- [x] CSRF protection on browser-session state-changing endpoints
 
 ### Secrets & Keys
-- [ ] No secrets in source code or Docker images
-- [ ] No secrets in application logs
-- [ ] API keys stored as sha256 hash only
-- [ ] Webhook signatures verified on all inbound webhooks
-- [ ] OAuth state parameter validated on callback
+- [x] No secrets in source code or Docker images
+- [x] No secrets in application logs (Pino redaction list, wider than this document's own minimum)
+- [x] API keys stored as sha256 hash only
+- [x] Webhook signatures verified on all inbound webhooks
+- [x] OAuth state parameter validated on callback (`@fastify/oauth2` + PKCE)
 
 ### Audit & Monitoring
-- [ ] All auth events logged to audit_logs
-- [ ] All admin actions logged to audit_logs
-- [ ] Prometheus alert configured for auth failure rate spike
-- [ ] Prometheus alert configured for anomalous API usage
+- [ ] All auth events logged to audit_logs — **not done.** `auditLog()` is called only from `account.service.ts` (Phase 10 Milestone 5's deletion event) and `webhook.service.ts` (billing events); `auth.service.ts` calls it nowhere. Tracked as TD-013 — its own blocker (F-04's RLS gap) was fixed in Milestone 2, but the wiring itself was deliberately out of scope for every milestone since
+- [ ] All admin actions logged to audit_logs — **not done.** `admin.routes.ts` never calls `auditLog()`. Newly tracked as TD-027 (found during this checklist re-verification, not previously logged)
+- [ ] Prometheus alert configured for auth failure rate spike — **not done.** No `rule_files`/alerting section exists in `prometheus.yml` at all. Newly tracked as TD-028
+- [ ] Prometheus alert configured for anomalous API usage — **not done.** Same gap as above, same TD-028
 
 ### Dependencies & Infrastructure
-- [ ] npm audit passes with no high/critical CVEs
-- [ ] All Docker base images pinned to specific digest
-- [ ] Coolify environment variables used for all secrets
-- [ ] No sensitive data in Grafana dashboards or Loki logs
+- [x] npm audit passes with no high/critical CVEs — re-verified clean in Phase 10 Milestone 5 (upgraded `next` to resolve postcss/sharp's bundled CVEs rather than continuing to allowlist them)
+- [x] All Docker base images pinned to specific digest (Phase 10 Milestone 4)
+- [ ] Coolify environment variables used for all secrets — **Unable to Verify.** No Coolify instance or production deployment exists in this environment to check against (same gating as TD-001/TD-006)
+- [x] No sensitive data in Grafana dashboards or Loki logs — true today because neither has any real content yet (`infra/monitoring/grafana/provisioning/dashboards/files/` is empty, no application log shipping to Loki is wired up); Pino's redaction list would protect whatever ships once this is built
 
 ---
 

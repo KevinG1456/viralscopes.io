@@ -9,17 +9,21 @@
 
 ## F-01 — No common-password blocklist enforced at registration
 
-**Severity:** Low
+**Correction (Phase 10 Milestone 6, 2026-08-05): this finding was wrong.** While re-verifying every open finding during the final audit, direct code inspection (`apps/api/src/lib/password.ts`, `common-passwords.ts`) and a live logic-level test (9 cases: common passwords rejected case-insensitively, length bounds enforced, strong/uncommon passwords accepted) confirmed a real, functioning ~300-entry blocklist has existed since **Phase 4's original commit** (`0bb43eb`) — before this review was ever written. `hashPassword()` calls `validatePasswordStrength()`, which checks `isCommonPassword()`, on both the registration and password-reset paths (the only two places passwords are ever set). This entire finding, as originally written below, was inaccurate — logged here rather than quietly deleted, so the record of the error is honest rather than erased.
 
-**Subsystem:** Authentication
+~~**Severity:** Low~~
 
-**Description:** `Security_Architecture.md` §2 specifies rejecting the top 10,000 common passwords (HaveIBeenPwned list). The real registration path (`auth.service.ts`) validates only length (10–128 chars) and type before hashing — no blocklist check exists.
+~~**Subsystem:** Authentication~~
 
-**How it could be exploited:** An attacker with a list of common passwords could register (or a user could set) an account password like `Password123`, which passes length validation but offers minimal resistance to a targeted guess. This doesn't bypass any control directly — it just means the account is weaker than the documented policy claims.
+~~**Description:** `Security_Architecture.md` §2 specifies rejecting the top 10,000 common passwords (HaveIBeenPwned list). The real registration path (`auth.service.ts`) validates only length (10–128 chars) and type before hashing — no blocklist check exists.~~
 
-**Why it exists:** The blocklist is a discrete piece of validation logic with an external data dependency (the HaveIBeenPwned list, or a bundled subset of it) that appears to have been deprioritized during Phase 4's implementation in favor of the auth flows' core correctness (session management, OAuth, lockout) — consistent with this project's own established practice of sequencing correctness before completeness.
+~~**How it could be exploited:** An attacker with a list of common passwords could register (or a user could set) an account password like `Password123`, which passes length validation but offers minimal resistance to a targeted guess. This doesn't bypass any control directly — it just means the account is weaker than the documented policy claims.~~
 
-**Recommendation:** Add a Zod `.refine()` check against a bundled common-password list (a static list is sufficient at this scale — no live HaveIBeenPwned API call needed) in the registration/password-change schemas. Small, self-contained, no architectural change required.
+~~**Why it exists:** The blocklist is a discrete piece of validation logic with an external data dependency (the HaveIBeenPwned list, or a bundled subset of it) that appears to have been deprioritized during Phase 4's implementation in favor of the auth flows' core correctness (session management, OAuth, lockout) — consistent with this project's own established practice of sequencing correctness before completeness.~~
+
+~~**Recommendation:** Add a Zod `.refine()` check against a bundled common-password list (a static list is sufficient at this scale — no live HaveIBeenPwned API call needed) in the registration/password-change schemas. Small, self-contained, no architectural change required.~~
+
+**What's genuinely true, for the record:** the existing blocklist is exact-match only (not leetspeak-normalizing — `p@ssw0rd12` doesn't match even though `p@ssw0rd` does), and covers ~300 entries rather than the full HaveIBeenPwned top-10,000 `Security_Architecture.md` §2 describes. Both are real, minor, already-documented limitations in `common-passwords.ts`'s own header comment — not new findings, and not severe enough to warrant a new finding ID on their own.
 
 ---
 
@@ -209,8 +213,8 @@
 
 | ID | Subsystem | Severity | Status |
 |---|---|---|---|
-| F-01 | Authentication | Low | Open — recommend Milestone 2 |
-| F-02 | RBAC (documentation) | Informational | Open — documentation correction only |
+| F-01 | Authentication | N/A | **Retracted — Milestone 6.** Finding was factually wrong; the blocklist already existed since Phase 4 |
+| F-02 | RBAC (documentation) | Informational | **Resolved — Milestone 6** (doc corrected; also fixed a second, related inaccuracy found in the same pass — the JWT field table incorrectly listed `super_admin`/`viewer` as possible `orgRole` values) |
 | F-03 | OAuth / Encryption at Rest | Medium | **Resolved — Milestone 2** |
 | F-04 | RLS / Audit Logs | Medium | **Resolved — Milestone 2** |
 | F-05 | API Keys / RBAC | Medium | **Resolved — Milestone 2** |

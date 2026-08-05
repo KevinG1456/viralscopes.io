@@ -307,7 +307,20 @@ Each version entry uses the following change categories:
 ### Security (Phase 10 Milestone 5)
 
 - **`next` upgraded `16.2.12` → `16.3.0`** (non-breaking minor bump): resolves postcss's and sharp's bundled high-severity CVEs, previously allowlisted since Milestone 1 on the assumption that no fix existed without a 7-major-version Next.js downgrade — that assumption is no longer true. `.github/security/audit-allowlist.json` emptied; all 4 previous entries are genuinely fixed now, not merely accepted
-- Investigated a `fast-uri` Dependabot alert (high) surfaced by this milestone's own commit and determined it was a transient false positive in npm's advisory index, not a real unpatched vulnerability (confirmed against the GitHub Advisory API directly) — no code change needed
+- Investigated a `fast-uri` Dependabot alert (high). **Correction (Phase 10 Milestone 6):** this was originally, incorrectly, written up as "a transient false positive in npm's advisory index" — it was not. `fast-uri` was genuinely vulnerable (`3.1.4`/`4.1.1`) and was actually fixed as a side effect of the same `npm install` run for the `next` bump above (confirmed by inspecting this commit's own `package-lock.json` diff, and independently by GitHub's own Dependabot opening a real PR against `main`, which still has the old vulnerable versions, proposing the identical bump). The vulnerability and its fix were both real; only the *causal explanation* recorded at the time was wrong
+
+## Phase 10 Milestone 6 — Final Security Audit (Phase 10 complete)
+
+### Documentation (Phase 10 Milestone 6)
+
+- **Retracted F-01** (`docs/reviews/security/04-security-findings.md`/`05-risk-register.md`): the Milestone 1 finding "no common-password blocklist exists" was factually wrong — a real ~300-entry blocklist has existed since Phase 4's original commit. Confirmed via direct code inspection and a 9-case logic-level test. Struck through rather than deleted, so the record of the error is honest, not erased
+- **Corrected F-02** and a related error found in the same pass: `Security_Architecture.md`'s Role Hierarchy diagram incorrectly nested platform Super Admin above org-level Admin in one combined hierarchy (they're separate, orthogonal dimensions); the Permissions Matrix included a fictitious `viewer` role and incorrectly granted org-Admin the same n8n-workflow-trigger/dead-letter-queue access that's actually Super-Admin-only; a JWT-field table incorrectly listed `super_admin` as a possible `orgRole` value
+- Re-verified all 33 items in `Security_Architecture.md` §23's Security Checklist against the real code and running app: 25 confirmed true, 8 honestly left unchecked with a specific tracked reason each (see `PROJECT_STATUS.md` TD-013/025/027/028)
+- Corrected Milestone 5's own `fast-uri` write-up (see above) after a real Dependabot PR opened against `main` revealed the original "transient false positive" explanation was itself wrong
+
+### Verified (Phase 10 Milestone 6)
+
+- Full regression: re-confirmed F-03, F-04, F-05, F-08, F-09, F-10, F-11, and both GDPR endpoints all still work correctly against the real running application, not assumed intact after four milestones of subsequent changes
 
 ### Added
 

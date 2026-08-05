@@ -107,20 +107,17 @@
 
 ---
 
-### SEC-RISK-07 — No common-password blocklist (F-01)
+### SEC-RISK-07 — No common-password blocklist (F-01) — **RETRACTED, Milestone 6**
 
 | Property | Value |
 |---|---|
-| **Severity** | Low |
-| **Probability** | Low — bcrypt cost-12 + lockout + rate limiting already substantially mitigate brute-force, blocklist is an additional layer, not the only one |
-| **Subsystem** | Authentication |
-| **Phases affected** | Phase 4 (registration built), Phase 10 (found) |
-| **Status** | Open |
+| **Severity** | N/A |
+| **Status** | **Retracted.** This risk never existed — a real ~300-entry blocklist has been live since Phase 4 (`0bb43eb`), confirmed by direct code inspection and a 9-case logic-level test during Milestone 6's final audit. Milestone 1's original finding (F-01) was factually wrong |
 
-**Description:** Registration/password-change validate length only, not against a common-password list, as `Security_Architecture.md` §2 specifies.
+**Description (historical, for the record):** Milestone 1's review claimed registration/password-change validated length only, not against a common-password list. This was incorrect — `lib/password.ts`'s `hashPassword()` already called `validatePasswordStrength()` → `isCommonPassword()` on both paths at the time that review was written.
 
-**Owner:** To be assigned
-**Target resolution:** Was proposed for Milestone 2's bundle, but deliberately excluded from that milestone's approved scope (the repo owner's Milestone 2 instruction listed 5 specific findings, not including F-01) — remains open, no milestone currently assigned
+**Owner:** N/A — nothing to resolve
+**Target resolution:** N/A
 
 ---
 
@@ -159,7 +156,8 @@
 | Critical | 0 | — | — |
 | High | 0 | — | — |
 | Medium | 6 | SEC-RISK-01, 02, 03, 04, 05, 08 | **All 6 resolved** (5 in Milestone 2, 1 — SEC-RISK-08, found and fixed the same day — in Milestone 3) |
-| Low | 2 | SEC-RISK-06, 07 | SEC-RISK-06 **resolved in Milestone 4**; SEC-RISK-07 (password blocklist) has no milestone currently assigned |
+| Low | 1 | SEC-RISK-06 | **Resolved in Milestone 4** |
+| Retracted (never a real risk) | 1 | SEC-RISK-07 | Milestone 6 — the underlying finding (F-01) was factually wrong; a real blocklist has existed since Phase 4 |
 | Informational (accepted, no risk entry) | 4 | F-02, F-06, F-07, F-12 | N/A |
 
-*See `06-remediation-plan.md` for original sequencing. Milestone 2 (2026-08-01) resolved 5 Medium findings from the Milestone 1 review. Milestone 3 (2026-08-01) resolved a 6th Medium finding (SEC-RISK-08 / F-11) discovered during its own open-redirect audit, plus a documentation-only rate-limit-table correction (F-12) — both verified with real tests, not assumed. Milestone 4 (2026-08-01) resolved the one remaining scoped finding (SEC-RISK-06 / F-09, Docker digest pinning) plus infrastructure hardening beyond the original findings list (Traefik HTTP->HTTPS redirect, Dependabot, GitHub Actions SHA-pinning, container hardening flags) — see `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*
+*See `06-remediation-plan.md` for original sequencing. Milestone 2 (2026-08-01) resolved 5 Medium findings from the Milestone 1 review. Milestone 3 (2026-08-01) resolved a 6th Medium finding (SEC-RISK-08 / F-11) discovered during its own open-redirect audit, plus a documentation-only rate-limit-table correction (F-12) — both verified with real tests, not assumed. Milestone 4 (2026-08-01) resolved the one remaining scoped finding (SEC-RISK-06 / F-09, Docker digest pinning) plus infrastructure hardening beyond the original findings list (Traefik HTTP->HTTPS redirect, Dependabot, GitHub Actions SHA-pinning, container hardening flags). Milestone 6 (2026-08-05), while re-verifying every open finding for the final audit, retracted SEC-RISK-07/F-01 as a factually incorrect finding — see `PROJECT_STATUS.md`'s Status Update History for the consolidated summary.*

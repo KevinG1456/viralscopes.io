@@ -304,6 +304,11 @@ Each version entry uses the following change categories:
 
 - `Security_Architecture.md` §19's GDPR compliance table corrected to match reality: access/deletion/portability/consent marked implemented; **found and disclosed a real gap** — "right to rectification" was claimed as an already-built "MVP" feature, but no profile-update endpoint exists anywhere in `apps/api`; corrected rather than silently built (outside this milestone's scope) or left as a false claim
 
+### Security (Phase 10 Milestone 5)
+
+- **`next` upgraded `16.2.12` → `16.3.0`** (non-breaking minor bump): resolves postcss's and sharp's bundled high-severity CVEs, previously allowlisted since Milestone 1 on the assumption that no fix existed without a 7-major-version Next.js downgrade — that assumption is no longer true. `.github/security/audit-allowlist.json` emptied; all 4 previous entries are genuinely fixed now, not merely accepted
+- Investigated a `fast-uri` Dependabot alert (high) surfaced by this milestone's own commit and determined it was a transient false positive in npm's advisory index, not a real unpatched vulnerability (confirmed against the GitHub Advisory API directly) — no code change needed
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

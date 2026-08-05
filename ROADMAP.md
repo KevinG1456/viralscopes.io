@@ -681,11 +681,11 @@ The MVP (Phases 1–14) delivers a complete, production-grade SaaS product. It i
 - [ ] Environment variables encrypted at rest in Coolify
 - [x] `npm audit` in CI: high/critical CVEs block the build (already implemented in an earlier phase — `.github/workflows/security.yml`'s `dependency-audit` job + `.github/scripts/check-audit.mjs`; re-verified live in Phase 10 Milestone 4, allowlist confirmed current)
 - [x] Dependabot/Renovate active; Docker base images pinned (Phase 10 Milestone 4, F-09 — `.github/dependabot.yml`, both Dockerfiles pinned to a digest)
-- [ ] GDPR: `DELETE /api/v1/account` (hard delete, 30-day purge)
-- [ ] GDPR: `GET /api/v1/account/export` (JSON ZIP)
-- [ ] GDPR: Cookie consent banner on first visit
-- [ ] Privacy Policy page (legally reviewed)
-- [ ] Terms of Service page
+- [x] GDPR: `DELETE /api/v1/account` (Phase 10 Milestone 5 — immediate PII scrub + OAuth/session deletion; a daily job physically removes the tombstone row 30 days later on a best-effort basis, retaining it harmlessly if it's still FK-referenced)
+- [x] GDPR: `GET /api/v1/account/export` (Phase 10 Milestone 5 — plain downloadable JSON, not a ZIP archive; a single JSON payload gets no real portability benefit from zipping)
+- [x] GDPR: Cookie consent banner on first visit (Phase 10 Milestone 5 — disclosure only; no non-essential cookies exist yet to actually gate)
+- [x] Privacy Policy page (Phase 10 Milestone 5 — draft content, visibly marked as **not** legally reviewed; an AI coding assistant cannot provide that review)
+- [x] Terms of Service page (Phase 10 Milestone 5 — same draft-status caveat as the Privacy Policy)
 
 **Milestone:** Security checklist complete. GDPR endpoints live. CI blocks on CVEs.
 

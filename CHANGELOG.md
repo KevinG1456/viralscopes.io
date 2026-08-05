@@ -288,6 +288,22 @@ Each version entry uses the following change categories:
 
 - Reviewed the npm audit allowlist and confirmed all 4 entries are current (not stale); cross-checked against GitHub's live Dependabot Alerts API directly and found exactly one other real alert (`esbuild`, medium, dev-dependency only) — correctly outside this project's allowlist mechanism by design, not a gap
 
+## Phase 10 Milestone 5 — Compliance & Privacy
+
+### Added (Phase 10 Milestone 5)
+
+- `GET /api/v1/account/export` — GDPR right to access/data portability. Returns profile, current-org membership, linked OAuth providers (no tokens), session metadata, API key metadata (no hashes), watchlists, and alert rules as JSON
+- `DELETE /api/v1/account` — GDPR right to deletion. Immediately scrubs PII (email replaced with a non-recoverable placeholder, name/avatar/password hash cleared) and hard-deletes OAuth links and sessions; refuses with `409` if the requester solely owns an organisation with other members, since no ownership-transfer flow exists yet
+- Daily account-purge job (`lib/privacy-maintenance-queue.ts`) — attempts to physically remove tombstone rows 30 days after deletion, retaining any still referenced by watchlists/alert rules/API keys/organisations (harmless by then, since PII is already gone)
+- Cookie consent banner (Accept/Reject, 1-year `cookie_consent` cookie) in the root layout — disclosure only, since no non-essential cookies exist anywhere in this app to actually gate
+- Draft Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages, both visibly marked **not legally reviewed**, linked from every auth page
+- "Privacy & data" section on Settings → Profile: "Download my data" and "Delete my account"
+- `docs/guides/gdpr-requests.md` — self-serve and manual-fulfilment GDPR request procedures (referenced by `README.md`'s FAQ since before this milestone, never actually written until now)
+
+### Documentation (Phase 10 Milestone 5)
+
+- `Security_Architecture.md` §19's GDPR compliance table corrected to match reality: access/deletion/portability/consent marked implemented; **found and disclosed a real gap** — "right to rectification" was claimed as an already-built "MVP" feature, but no profile-update endpoint exists anywhere in `apps/api`; corrected rather than silently built (outside this milestone's scope) or left as a false claim
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

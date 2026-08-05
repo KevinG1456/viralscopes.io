@@ -1270,19 +1270,23 @@ Every significant security event generates an immutable entry in the `audit_logs
 
 ### GDPR (General Data Protection Regulation)
 
+Implementation status corrected in Phase 10 Milestone 5 — several rows
+below previously said "MVP" (implying built) when nothing existed yet;
+each is now marked against what's actually live, not what was planned.
+
 | Requirement | Implementation | Status |
 |---|---|---|
 | **Lawful basis** | Legitimate interest (analytics) + contract (service delivery) | Documented in Privacy Policy |
 | **Data minimisation** | Only data needed for the feature is collected | Enforced in schema design |
 | **Purpose limitation** | Data collected for content analysis is not used for advertising | Policy commitment + no ad network integrations |
-| **Right to access** | `GET /api/v1/account/export` — returns all user data as JSON | MVP |
-| **Right to deletion** | `DELETE /api/v1/account` — hard deletes PII within 30 days | MVP |
-| **Right to rectification** | Users can update all personal data via Settings | MVP |
-| **Data portability** | Export in machine-readable JSON format | MVP |
-| **Consent** | Cookie consent banner; no non-essential cookies before consent | MVP |
-| **Privacy policy** | Legally reviewed, linked from all auth pages and footer | MVP |
-| **DPA** | Data Processing Agreements available for Enterprise customers | MVP |
-| **Breach notification** | 72-hour notification to ICO + affected users | Incident response plan |
+| **Right to access** | `GET /api/v1/account/export` — returns profile, org membership, linked OAuth providers, sessions, API keys, watchlists, and alert rules as JSON | **Implemented** (Phase 10 Milestone 5) |
+| **Right to deletion** | `DELETE /api/v1/account` — scrubs PII (email/name/avatar/password hash) and deletes OAuth links + sessions immediately; the emptied account row is physically removed 30 days later on a best-effort basis (daily job) | **Implemented** (Phase 10 Milestone 5). Blocked with `409` if the requester solely owns an organisation that has other members — no ownership-transfer flow exists yet (TD-011), so this refuses rather than silently orphaning teammates |
+| **Right to rectification** | ~~Users can update all personal data via Settings~~ | **Not implemented** — no `PATCH` profile endpoint exists anywhere in `apps/api`; Settings → Profile is read-only today. Found while updating this table for Milestone 5, out of that milestone's approved scope to build — logged as a gap for a later milestone, not silently left as a false "MVP" claim |
+| **Data portability** | Export in machine-readable JSON format | **Implemented** (Phase 10 Milestone 5) |
+| **Consent** | Cookie consent banner (Accept/Reject, 1-year `cookie_consent` cookie); no non-essential cookies exist to gate — the banner is disclosure, not a technical block, since there's nothing non-essential to turn off yet | **Implemented** (Phase 10 Milestone 5) |
+| **Privacy policy** | Draft page linked from every `(auth)` page (login/register/reset-password/verify-email); ~~legally reviewed~~ | **Draft implemented, not legally reviewed** — an AI coding assistant cannot provide the legal review this row calls for; the page says so visibly rather than presenting draft content as final |
+| **DPA** | Data Processing Agreements available for Enterprise customers | **Not implemented** — no DPA generation or contract-request flow exists; still aspirational |
+| **Breach notification** | 72-hour notification to ICO + affected users | Incident response plan (process, not code) |
 | **Data transfers** | AI APIs (OpenAI, Anthropic) are US-based; covered by DPA and SCCs | Documented |
 
 ### CCPA (California Consumer Privacy Act)

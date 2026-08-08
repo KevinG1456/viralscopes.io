@@ -325,6 +325,7 @@ Each version entry uses the following change categories:
 ### Security (Phase 10 closeout — PR #23 CI fix)
 
 - Added a dedicated `config.rateLimit` override (5 requests / 15 minutes, per IP) to `GET /api/v1/account/export` and `DELETE /api/v1/account`, on top of the existing per-user `businessRateLimit` layer. Prompted by GitHub Advanced Security's default CodeQL "Missing rate limiting" query flagging `DELETE /account` — the route was never actually unprotected (`businessRateLimit` already covered it), but CodeQL's query only recognises `@fastify/rate-limit`'s route-option pattern, not the custom Redis-based middleware. The tight override is also independently justified: both endpoints are irreversible GDPR actions with no legitimate reason to be called more than a handful of times per session
+- **`nanoid` pinned to `3.3.18`** via a new root `package.json` `overrides` entry: GHSA-2v37-7h3g-55p8 (high, CWE-835 uncontrolled-resource-consumption), a fresh advisory that surfaced against `apps/web`'s transitive `postcss → nanoid@3.3.16` dependency between Milestone 5 and Phase 10 closeout, tripping the production-aware audit gate (`check-audit.mjs`) on PR #23. `overrides` was used instead of the audit allowlist since a genuine non-breaking patch (`nanoid@3.3.17`+) exists; verified `npm ls nanoid` resolves to `3.3.18` with no phantom direct dependency added to `apps/web/package.json`
 
 ### Added
 

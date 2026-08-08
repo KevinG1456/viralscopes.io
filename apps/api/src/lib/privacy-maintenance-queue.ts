@@ -41,12 +41,15 @@ export function createPrivacyMaintenanceQueue(
     logger.error({ err, queue: QUEUE_NAME }, 'BullMQ worker error');
   });
 
-  // Idempotent: BullMQ dedupes repeatable jobs by name + pattern, so
-  // calling this on every boot does not create duplicate scheduled runs.
-  void queue.add(
+  // Idempotent: upsertJobScheduler() replaces bullmq v5's queue.add({repeat})
+  // pattern (removed in v6 -- repeat scheduling is no longer a JobsOptions
+  // field). Calling this on every boot does not create duplicate scheduled
+  // runs; an existing scheduler with the same id is updated in place, not
+  // duplicated.
+  void queue.upsertJobScheduler(
     REPEATABLE_JOB_NAME,
-    {},
-    { repeat: { pattern: CRON_PATTERN }, jobId: REPEATABLE_JOB_NAME },
+    { pattern: CRON_PATTERN },
+    { name: REPEATABLE_JOB_NAME, data: {} },
   );
 
   return {

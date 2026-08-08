@@ -1123,6 +1123,23 @@ accurate — the two halves of the OAuth flow are protected differently.
 | `GET /auth/oauth/{google,github}/callback` | 10 | 1 minute |
 | `GET /auth/oauth/{google,github}` (start redirect) | 300 (global default, not a dedicated limit) | 1 minute |
 | `POST /auth/refresh` | 300 (global default) | 1 minute |
+| `GET /api/v1/account/export` | 5 | 15 minutes |
+| `DELETE /api/v1/account` | 5 | 15 minutes |
+
+`GET /account/export` and `DELETE /account` already carry `businessRateLimit`
+(the per-user, plan-tier-aware layer described above) as a `preHandler`.
+The dedicated `config.rateLimit` override above was added on top of that
+during Phase 10 closeout, after GitHub Advanced Security's default CodeQL
+"Missing rate limiting" query flagged the `DELETE /account` handler: the
+query recognises `@fastify/rate-limit`'s route-option pattern (used
+throughout this table) but has no way to statically confirm that the
+custom, Redis-based `businessRateLimit` middleware enforces an equivalent
+limit. Both mechanisms are layered, not redundant -- `businessRateLimit`'s
+per-minute ceiling scales with plan tier, while the flat 5/15-minute
+override here is deliberately tight given both endpoints are irreversible,
+highly sensitive GDPR actions (Right to Access / Right to Deletion, §19)
+that a legitimate user has no reason to call more than a handful of times
+in a session.
 
 `POST /auth/refresh` has no dedicated rate limit because its real defense
 isn't request-volume throttling: refresh tokens rotate on every use, and

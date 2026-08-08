@@ -17,7 +17,10 @@ export async function accountRoutes(
 ): Promise<void> {
   fastify.get(
     '/export',
-    { preHandler: [authenticate, businessRateLimit] },
+    {
+      preHandler: [authenticate, businessRateLimit],
+      config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    },
     async (request, reply) => {
       const data = await exportAccountData(fastify.db, request.user!.orgId, request.user!.userId);
       return reply.code(200).send(ok(data));
@@ -26,7 +29,10 @@ export async function accountRoutes(
 
   fastify.delete(
     '/',
-    { preHandler: [authenticate, validateCsrf, businessRateLimit] },
+    {
+      preHandler: [authenticate, validateCsrf, businessRateLimit],
+      config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    },
     async (request, reply) => {
       await deleteAccount(fastify.db, request.user!.orgId, request.user!.userId);
       clearAuthCookies(reply);

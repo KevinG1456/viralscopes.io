@@ -322,6 +322,10 @@ Each version entry uses the following change categories:
 
 - Full regression: re-confirmed F-03, F-04, F-05, F-08, F-09, F-10, F-11, and both GDPR endpoints all still work correctly against the real running application, not assumed intact after four milestones of subsequent changes
 
+### Security (Phase 10 closeout — PR #23 CI fix)
+
+- Added a dedicated `config.rateLimit` override (5 requests / 15 minutes, per IP) to `GET /api/v1/account/export` and `DELETE /api/v1/account`, on top of the existing per-user `businessRateLimit` layer. Prompted by GitHub Advanced Security's default CodeQL "Missing rate limiting" query flagging `DELETE /account` — the route was never actually unprotected (`businessRateLimit` already covered it), but CodeQL's query only recognises `@fastify/rate-limit`'s route-option pattern, not the custom Redis-based middleware. The tight override is also independently justified: both endpoints are irreversible GDPR actions with no legitimate reason to be called more than a handful of times per session
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

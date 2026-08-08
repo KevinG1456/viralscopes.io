@@ -2,13 +2,29 @@ import rateLimit from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import fp from 'fastify-plugin';
 
-// Registered with global:false -- Phase 4 only has auth routes, and each
-// applies its own per-route limit matching the table in
-// Security_Architecture.md §15 (auth.routes.ts). A plan-tier-aware global
-// limiter is Phase 5 territory, once there's a general API surface and
-// `request.user.planTier` is actually meaningful beyond auth. Takes no
-// config of its own -- kept as a FastifyPluginOptions-typed no-op param
-// for registration symmetry with the other plugins in server.ts.
+import { AppError } from '../lib/errors.js';
+
+// Phase 10 Milestone 2, finding F-10: this was registered with global:false,
+// meaning any route without its own explicit `config.rateLimit` (i.e. every
+// protected business route -- watchlists, alerts, api-keys, etc.) had NO
+// rate limiting ahead of `authenticate`. `businessRateLimit` only runs as a
+// preHandler *after* `authenticate` succeeds, so an unauthenticated flood
+// against a protected route still cost a full JWT-verification cycle (and,
+// for routes like requireSuperAdmin, a DB round-trip) per request, with
+// nothing throttling it first.
+//
+// global:true makes @fastify/rate-limit hook onRequest -- before any
+// route's preHandler chain, including `authenticate` -- so this now runs
+// ahead of authentication on every route by construction, not by each
+// route remembering to opt in. The per-route `config.rateLimit` overrides
+// already used by auth.routes.ts (5/min login, etc.) are unaffected: a
+// route-level override still replaces this default for that route, it just
+// no longer needs one to have *some* floor.
+//
+// The default itself (300/min/IP) is deliberately generous -- this is a
+// backstop against floods, not the primary business throttle
+// (businessRateLimit's plan-tier limits still apply, layered on top, once a
+// request is authenticated).
 //
 // Backed by Redis (not in-memory) so limits are shared across every API
 // instance, not reset per-process.
@@ -17,16 +33,29 @@ async function rateLimitPluginImpl(
   _opts: FastifyPluginOptions,
 ): Promise<void> {
   await fastify.register(rateLimit, {
-    global: false,
+    global: true,
+    max: 300,
+    timeWindow: '1 minute',
     redis: fastify.redis,
     keyGenerator: (request) => request.ip,
-    errorResponseBuilder: () => ({
-      success: false,
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Too many requests. Please wait before trying again.',
-      },
-    }),
+    // Phase 10 Milestone 2 (F-10 implementation): found while verifying this
+    // change -- @fastify/rate-limit's own contract (index.js:
+    // `throw params.errorResponseBuilder(req, respCtx)`) requires the return
+    // value to be an Error-like object carrying `.statusCode`; Fastify's
+    // error handling reads that property to set the HTTP status. This was
+    // returning a plain `{ success, error }` object with no `.statusCode`,
+    // so every rate-limit rejection fell through error-handler.plugin.ts's
+    // generic branch as an unstyled 500 instead of 429. Pre-existing bug
+    // (present since Phase 4, global:false just meant no route had ever
+    // actually hit a limit in practice) -- fixed here since enabling global
+    // mode is what finally exercised this path.
+    errorResponseBuilder: (_request, context) =>
+      new AppError(
+        'RATE_LIMIT_EXCEEDED',
+        'Too many requests. Please wait before trying again.',
+        context.statusCode,
+        { after: context.after },
+      ),
     addHeaders: {
       'x-ratelimit-limit': true,
       'x-ratelimit-remaining': true,

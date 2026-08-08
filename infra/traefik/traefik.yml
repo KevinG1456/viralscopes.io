@@ -10,8 +10,27 @@ providers:
     exposedByDefault: false
 
 entryPoints:
+  # Phase 10 Milestone 4 (finding F-08 follow-up / Security_Architecture.md
+  # §8's documented "HTTP redirect: All HTTP -> HTTPS at Traefik (307
+  # Temporary Redirect)"): this entrypoint-level redirect was missing --
+  # `web` (port 80) existed only for the ACME HTTP-01 challenge, with no
+  # router or redirect ever attached to it, so a plain `http://` request
+  # would have hit Traefik's default 404 instead of being redirected.
+  # dynamic/middlewares.yml's own `redirect-to-https` middleware was
+  # written for this but never referenced by any router (confirmed dead
+  # code during Milestone 1's review) -- fixed here at the entrypoint
+  # level instead, which redirects every request on :80 regardless of
+  # host/path before any router/middleware chain even runs, rather than
+  # requiring every current and future service's router to remember to
+  # attach the middleware individually.
   web:
     address: ':80'
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     address: ':443'
 

@@ -174,45 +174,77 @@ async function checkAccountLockout(userId: string): Promise<void> {
 
 ### Role Hierarchy
 
+> Corrected in Phase 10 Milestone 6 (2026-08-05, finding F-02). The
+> previous version of this diagram nested Super Admin above Admin in one
+> combined hierarchy and included a `Viewer` role, neither of which
+> matches the real, shipped model — confirmed via `requireRole()`'s
+> actual role checks and every RBAC verification performed across
+> Phases 4–10, not assumed. These are two **separate, orthogonal**
+> dimensions, not one hierarchy:
+
 ```
-Super Admin (platform-wide)
-    │
-    └── Admin (org-level)
-          │
-          ├── Owner (org owner)
-          │     │
-          │     └── Member (team member)
-          │           │
-          │           └── Viewer (read-only)
+Platform dimension (users.role -- independent of any organisation):
+    Super Admin  -- live DB read on every check (DEC-017), never a JWT
+                    claim; can act across every organisation
+    User         -- the default; platform-level access is governed
+                    entirely by which organisation(s) they belong to
+
+Organisation dimension (organization_members.role -- scoped to one org):
+    Owner   -- full control of that one organisation
+      │
+      └── Admin -- most of Owner's capabilities within that org, minus
+                   billing/ownership actions
+            │
+            └── Member -- day-to-day usage, no management capabilities
 ```
+
+A `viewer` value is allowed by the database's own `CHECK` constraint on
+`organization_members.role` (`IN ('admin', 'owner', 'member', 'viewer')`)
+but is never assigned, checked, or offered anywhere in the application —
+no invite flow, no `requireRole()` call, and no UI ever references it.
+It is a documented-but-unimplemented future role, not a live one; treat
+any reference to a "5-role model" elsewhere as describing the aspiration,
+not the shipped reality.
 
 ### Role Permissions Matrix
 
-| Permission | Super Admin | Admin | Owner | Member | Viewer |
-|---|---|---|---|---|---|
-| **Platform** | | | | | |
-| Access Super Admin Panel | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manage all organisations | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Override any org plan | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Trigger n8n workflows | ✅ | ✅ | ❌ | ❌ | ❌ |
-| View dead-letter queue | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Organisation** | | | | | |
-| View org content (videos, trends) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Create / delete watchlists | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Create / delete alert rules | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Trigger video analysis | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Create exports | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Invite members | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Remove members | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Change member roles | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Billing** | | | | | |
-| View billing and invoices | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Upgrade / downgrade plan | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Cancel subscription | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **API Keys** | | | | | |
-| View API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Create API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Revoke API keys | ✅ | ✅ | ✅ | ❌ | ❌ |
+Matrix corrected to the real 3-role organisation model (`viewer` removed
+— see note above) crossed with the separate platform Super Admin flag:
+
+| Permission | Super Admin (platform) | Owner (org) | Admin (org) | Member (org) |
+|---|---|---|---|---|
+| **Platform** | | | | |
+| Access Super Admin Panel | ✅ | ❌ | ❌ | ❌ |
+| Manage all organisations | ✅ | ❌ | ❌ | ❌ |
+| Override any org plan | ✅ | ❌ | ❌ | ❌ |
+| Trigger n8n workflows | ✅ | ❌ | ❌ | ❌ |
+| View dead-letter queue | ✅ | ❌ | ❌ | ❌ |
+| **Organisation** | | | | |
+| View org content (videos, trends) | ✅ | ✅ | ✅ | ✅ |
+| Create / delete watchlists | ✅ | ✅ | ✅ | ✅ |
+| Create / delete alert rules | ✅ | ✅ | ✅ | ✅ |
+| Trigger video analysis | ✅ | ✅ | ✅ | ✅ |
+| Create exports | ✅ | ✅ | ✅ | ✅ |
+| Invite members | ✅ | ✅ | ✅ | ❌ |
+| Remove members | ✅ | ✅ | ✅ | ❌ |
+| Change member roles | ✅ | ✅ | ✅ | ❌ |
+| **Billing** | | | | |
+| View billing and invoices | ✅ | ✅ | ✅ | ❌ |
+| Upgrade / downgrade plan | ✅ | ✅ | ❌ | ❌ |
+| Cancel subscription | ✅ | ✅ | ❌ | ❌ |
+| **API Keys** | | | | |
+| View API keys | ✅ | ✅ | ✅ | ✅ |
+| Create API keys | ✅ | ✅ | ✅ | ❌ |
+| Revoke API keys | ✅ | ✅ | ✅ | ❌ |
+
+Super Admin's platform-wide reach means every organisation-scoped
+permission is trivially `✅` for it too (a live DB read confirms the flag
+before any org-scoped check even runs) — collapsed to a single ✅ column
+rather than repeating "✅ (via platform override)" on every row.
+"Trigger n8n workflows"/"View dead-letter queue" are Super-Admin-only in
+the real code (`admin.routes.ts`'s `preHandler` requires
+`requireSuperAdmin`, not any org role) — the previous matrix incorrectly
+also granted these to org-level Admin.
 
 ### Enforcement Layers
 
@@ -345,7 +377,7 @@ All active sessions are invalidated when:
 | `sub` | User UUID (standard subject claim) |
 | `userId` | Explicit user ID (same as `sub`) |
 | `orgId` | Currently active organisation UUID |
-| `orgRole` | Role within the current org (`super_admin`, `admin`, `owner`, `member`, `viewer`) |
+| `orgRole` | Role within the current org (`owner`, `admin`, `member` — the real 3-role model; corrected Phase 10 Milestone 6, F-02). `super_admin` is never part of this claim at all: it's a separate, platform-wide `users.role` flag, deliberately checked with a live DB read on every use (DEC-017), never trusted from a JWT claim |
 | `planTier` | Plan for quick feature flag checks without a DB lookup |
 | `jti` | JWT ID — unique token identifier for revocation |
 | `iat` | Issued at (Unix timestamp) |
@@ -535,8 +567,23 @@ Preferred version:      1.3
 Certificate authority:  Let's Encrypt (via Coolify / Traefik)
 Certificate renewal:    Automatic (60-day certificates, renewed at 30 days)
 HSTS:                   max-age=31536000; includeSubDomains; preload
-HTTP redirect:          All HTTP → HTTPS at Traefik (307 Temporary Redirect)
+HTTP redirect:          All HTTP → HTTPS at Traefik (301 Moved Permanently)
 ```
+
+Permanent (301), not temporary, and deliberately so (corrected in Phase 10
+Milestone 4 -- a previous draft of this line said 307): this redirect
+policy itself is permanent, not conditional, so 301 lets browsers cache
+the redirect and skip the plaintext round-trip on every subsequent
+request -- a real security improvement (no repeated downgrade window per
+request) as well as a performance one. Configured as an entrypoint-level
+redirect on Traefik's `web` (port 80) entrypoint (`infra/traefik/
+traefik.yml`), not a per-router middleware -- covers every request on
+port 80 unconditionally, including any future service, rather than
+requiring each router to remember to attach a redirect middleware
+individually (a `redirect-to-https` middleware existed for this since
+Phase 2 but was never actually referenced by any router -- confirmed dead
+code during Milestone 1's review, replaced by this entrypoint-level
+config instead of finally being wired in as a per-router middleware).
 
 ### Cipher Suite Policy
 
@@ -969,58 +1016,71 @@ No wildcard (`*`) is ever used in production.
 
 ### Security Headers (Helmet.js)
 
+Implemented in `plugins/security-headers.plugin.ts` (Phase 10 Milestone 2,
+finding F-08). `apps/api` only ever returns JSON (never HTML -- see this
+document's own API Responses row above), so its CSP is deliberately
+`default-src 'none'` rather than the `'self'`-based policy an HTML-serving
+app would need -- there is no page here to author a script/style/img
+allowlist for:
+
 ```typescript
 fastify.register(helmet, {
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https://cdn.viralscopes.io"],
-      connectSrc: ["'self'"],
+      defaultSrc: ["'none'"],
       frameAncestors: ["'none'"],
     },
   },
+  frameguard: { action: "deny" },
+  crossOriginResourcePolicy: { policy: "same-site" },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true,
   },
-  frameguard: { action: "deny" },
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   permittedCrossDomainPolicies: false,
-  xContentTypeOptions: true,
-  xDnsPrefetchControl: { allow: false },
 });
 ```
+
+The nonce-based CSP described below (`default-src 'self'`, `script-src
+'self' 'nonce-{nonce}'`) is what actually matters for XSS defense-in-depth,
+and is enforced by `apps/web`'s own middleware (`src/proxy.ts`), not by
+this API.
 
 ---
 
 ## 15. Rate Limiting & Brute Force Prevention
 
-### Redis-Backed Sliding Window Rate Limiter
+### Two Layers, Not One
+
+Actual implementation is two separate mechanisms, not the single
+plan-tier-aware global limiter earlier drafts of this document described
+(that single-mechanism design was never built -- Phase 4 shipped
+`global:false` with only per-route auth-endpoint limits, leaving every
+other route with no floor at all until Phase 10 Milestone 2 closed that
+gap, finding F-10):
+
+1. **`plugins/rate-limit.plugin.ts`** -- a `global: true` registration with
+   a flat 300 requests/minute/IP default, applied via `@fastify/rate-limit`'s
+   `onRequest` hook to every route, running *before* `authenticate` in the
+   request lifecycle by construction. This is a backstop against
+   unauthenticated floods (credential stuffing, scraping, brute-force
+   probing), not the business throttle -- its ceiling is deliberately
+   generous. Per-route overrides (the Auth Endpoint table below) replace
+   this default for their own route via `config.rateLimit`.
 
 ```typescript
 // plugins/rate-limit.plugin.ts
 fastify.register(fastifyRateLimit, {
   global: true,
-  redis: redisClient,
-  keyGenerator: (request) => {
-    // Rate limit by API key if present, otherwise by user ID, fallback to IP
-    return request.apiKeyId ?? request.user?.id ?? request.ip;
-  },
-  max: async (request) => {
-    const plan = request.user?.planTier ?? "free";
-    return RATE_LIMITS[plan].perMinute;
-  },
+  max: 300,
   timeWindow: "1 minute",
-  errorResponseBuilder: () => ({
-    success: false,
-    error: {
-      code: "RATE_LIMIT_EXCEEDED",
-      message: "Rate limit exceeded. Upgrade your plan or wait for the window to reset.",
-    },
-  }),
+  redis: redisClient,
+  keyGenerator: (request) => request.ip,
+  errorResponseBuilder: (_request, context) =>
+    new AppError("RATE_LIMIT_EXCEEDED", "Too many requests. Please wait before trying again.", context.statusCode),
   addHeaders: {
     "x-ratelimit-limit": true,
     "x-ratelimit-remaining": true,
@@ -1030,16 +1090,73 @@ fastify.register(fastifyRateLimit, {
 });
 ```
 
+2. **`middleware/business-rate-limit.ts`** -- the actual plan-tier-aware
+   limiter, keyed by authenticated `userId` (not IP, so multiple users
+   behind one office IP don't share a budget) and looked up from
+   `PLAN_LIMITS` by the caller's `planTier`. Runs as a `preHandler`, so it
+   only ever applies *after* `authenticate` succeeds -- by definition it
+   cannot be the pre-auth control, which is exactly why layer 1 exists.
+
 ### Auth Endpoint Rate Limits (Per IP)
 
-| Endpoint | Limit | Window | Lockout |
-|---|---|---|---|
-| `POST /auth/login` | 10 | 1 minute | Block for 5 minutes after 10th attempt |
-| `POST /auth/register` | 5 | 1 minute | — |
-| `POST /auth/forgot-password` | 5 | 15 minutes | — |
-| `POST /auth/reset-password` | 3 | 15 minutes | — |
-| `POST /auth/verify-email` | 5 | 15 minutes | — |
-| `GET /auth/oauth/*` | 20 | 1 minute | — |
+Cross-checked against the real routes in Phase 10 Milestone 3 (previous
+drafts of this table had drifted from what was actually implemented in
+three places, corrected below): the login row's own "Lockout" column
+conflated the IP rate limit with the separate, account-keyed lockout
+mechanism (see Brute Force Account Lockout below — they're independent
+controls, not one number); the OAuth row's `20/1 minute` didn't match the
+callback routes' real `10/1 minute`; and the OAuth *start* redirect
+routes (`/oauth/google`, `/oauth/github`, registered internally by
+`@fastify/oauth2` from its own `startRedirectPath` option) have no
+route-level override reachable through that library's registration
+options at all, so `GET /auth/oauth/*` as a single wildcard row was never
+accurate — the two halves of the OAuth flow are protected differently.
+
+| Endpoint | Limit | Window |
+|---|---|---|
+| `POST /auth/login` | 10 | 1 minute |
+| `POST /auth/register` | 5 | 1 minute |
+| `POST /auth/logout` | 10 | 1 minute |
+| `POST /auth/forgot-password` | 5 | 15 minutes |
+| `POST /auth/reset-password` | 3 | 15 minutes |
+| `POST /auth/verify-email` | 5 | 15 minutes |
+| `GET /auth/oauth/{google,github}/callback` | 10 | 1 minute |
+| `GET /auth/oauth/{google,github}` (start redirect) | 300 (global default, not a dedicated limit) | 1 minute |
+| `POST /auth/refresh` | 300 (global default) | 1 minute |
+| `GET /api/v1/account/export` | 5 | 15 minutes |
+| `DELETE /api/v1/account` | 5 | 15 minutes |
+
+`GET /account/export` and `DELETE /account` already carry `businessRateLimit`
+(the per-user, plan-tier-aware layer described above) as a `preHandler`.
+The dedicated `config.rateLimit` override above was added on top of that
+during Phase 10 closeout, after GitHub Advanced Security's default CodeQL
+"Missing rate limiting" query flagged the `DELETE /account` handler: the
+query recognises `@fastify/rate-limit`'s route-option pattern (used
+throughout this table) but has no way to statically confirm that the
+custom, Redis-based `businessRateLimit` middleware enforces an equivalent
+limit. Both mechanisms are layered, not redundant -- `businessRateLimit`'s
+per-minute ceiling scales with plan tier, while the flat 5/15-minute
+override here is deliberately tight given both endpoints are irreversible,
+highly sensitive GDPR actions (Right to Access / Right to Deletion, §19)
+that a legitimate user has no reason to call more than a handful of times
+in a session.
+
+`POST /auth/refresh` has no dedicated rate limit because its real defense
+isn't request-volume throttling: refresh tokens rotate on every use, and
+presenting an already-rotated (revoked) token triggers reuse detection
+that revokes every session for that user immediately (`auth.service.ts`'s
+`refresh()`) -- a stolen-token replay is caught by that mechanism, not by
+counting requests. The OAuth start routes are lightweight 302 redirects
+with no database write and no expensive computation (the same category
+of endpoint as `/health`), so the global per-IP floor (see Two Layers,
+Not One above) is the intentional, sufficient control -- not a gap
+requiring a workaround around a third-party plugin's own route
+registration.
+
+Login's IP-based rate limit (10/min) and the account-keyed lockout below
+are independent, separately-triggered controls: the former slows down a
+single IP hammering any account; the latter locks one specific account
+regardless of which IP(s) the attempts came from.
 
 ### Brute Force Account Lockout
 
@@ -1202,19 +1319,23 @@ Every significant security event generates an immutable entry in the `audit_logs
 
 ### GDPR (General Data Protection Regulation)
 
+Implementation status corrected in Phase 10 Milestone 5 — several rows
+below previously said "MVP" (implying built) when nothing existed yet;
+each is now marked against what's actually live, not what was planned.
+
 | Requirement | Implementation | Status |
 |---|---|---|
 | **Lawful basis** | Legitimate interest (analytics) + contract (service delivery) | Documented in Privacy Policy |
 | **Data minimisation** | Only data needed for the feature is collected | Enforced in schema design |
 | **Purpose limitation** | Data collected for content analysis is not used for advertising | Policy commitment + no ad network integrations |
-| **Right to access** | `GET /api/v1/account/export` — returns all user data as JSON | MVP |
-| **Right to deletion** | `DELETE /api/v1/account` — hard deletes PII within 30 days | MVP |
-| **Right to rectification** | Users can update all personal data via Settings | MVP |
-| **Data portability** | Export in machine-readable JSON format | MVP |
-| **Consent** | Cookie consent banner; no non-essential cookies before consent | MVP |
-| **Privacy policy** | Legally reviewed, linked from all auth pages and footer | MVP |
-| **DPA** | Data Processing Agreements available for Enterprise customers | MVP |
-| **Breach notification** | 72-hour notification to ICO + affected users | Incident response plan |
+| **Right to access** | `GET /api/v1/account/export` — returns profile, org membership, linked OAuth providers, sessions, API keys, watchlists, and alert rules as JSON | **Implemented** (Phase 10 Milestone 5) |
+| **Right to deletion** | `DELETE /api/v1/account` — scrubs PII (email/name/avatar/password hash) and deletes OAuth links + sessions immediately; the emptied account row is physically removed 30 days later on a best-effort basis (daily job) | **Implemented** (Phase 10 Milestone 5). Blocked with `409` if the requester solely owns an organisation that has other members — no ownership-transfer flow exists yet (TD-011), so this refuses rather than silently orphaning teammates |
+| **Right to rectification** | ~~Users can update all personal data via Settings~~ | **Not implemented** — no `PATCH` profile endpoint exists anywhere in `apps/api`; Settings → Profile is read-only today. Found while updating this table for Milestone 5, out of that milestone's approved scope to build — logged as a gap for a later milestone, not silently left as a false "MVP" claim |
+| **Data portability** | Export in machine-readable JSON format | **Implemented** (Phase 10 Milestone 5) |
+| **Consent** | Cookie consent banner (Accept/Reject, 1-year `cookie_consent` cookie); no non-essential cookies exist to gate — the banner is disclosure, not a technical block, since there's nothing non-essential to turn off yet | **Implemented** (Phase 10 Milestone 5) |
+| **Privacy policy** | Draft page linked from every `(auth)` page (login/register/reset-password/verify-email); ~~legally reviewed~~ | **Draft implemented, not legally reviewed** — an AI coding assistant cannot provide the legal review this row calls for; the page says so visibly rather than presenting draft content as final |
+| **DPA** | Data Processing Agreements available for Enterprise customers | **Not implemented** — no DPA generation or contract-request flow exists; still aspirational |
+| **Breach notification** | 72-hour notification to ICO + affected users | Incident response plan (process, not code) |
 | **Data transfers** | AI APIs (OpenAI, Anthropic) are US-based; covered by DPA and SCCs | Documented |
 
 ### CCPA (California Consumer Privacy Act)
@@ -1420,54 +1541,63 @@ A blameless post-mortem document is published internally covering:
 
 Use this checklist for every feature review and before each release.
 
+> Re-verified item-by-item in Phase 10 Milestone 6 (2026-08-05) against
+> the real running application and codebase, not assumed from memory of
+> earlier phases. 25 of 33 items confirmed true; 8 are honestly left
+> unchecked below with the specific reason (a real gap, or genuinely
+> unverifiable in an environment with nothing deployed) rather than
+> checked off by default. Each unchecked item links to its tracking
+> entry in `PROJECT_STATUS.md`'s Technical Debt Log.
+
 ### Authentication & Sessions
-- [ ] All protected endpoints require valid JWT or API key
-- [ ] Access tokens expire in 15 minutes
-- [ ] Refresh tokens are stored HTTP-only, Secure, SameSite=Strict
-- [ ] Refresh token rotation invalidates the previous token
-- [ ] Account lockout triggers after 5 failed attempts
-- [ ] Password reset tokens are single-use and expire in 1 hour
-- [ ] Email verification is required before dashboard access
+- [x] All protected endpoints require valid JWT — re-confirmed via `authenticate` middleware present on every non-public route
+- [ ] ~~or API key~~ — API keys do not authenticate any request yet (TD-025); this half of the original checklist line is not yet true
+- [x] Access tokens expire in 15 minutes (`JWT_ACCESS_EXPIRY` default `15m`, `config.ts`)
+- [x] Refresh tokens are stored HTTP-only, Secure, SameSite=Strict (`lib/cookies.ts`)
+- [x] Refresh token rotation invalidates the previous token — re-confirmed: reuse of a rotated token revokes every session for that user (`auth.service.ts`'s `refresh()`)
+- [x] Account lockout triggers after 5 failed attempts (`lib/lockout.ts`'s `LOCKOUT_STAGES`)
+- [x] Password reset tokens are single-use and expire in 1 hour — re-confirmed directly in code (`PASSWORD_RESET_TOKEN_TTL_HOURS = '1h'`, `markPasswordResetTokenUsed` enforces single-use)
+- [x] Email verification is required before dashboard access — confirmed stronger than stated: enforced before a session is issued at all, not just before a specific route
 
 ### Authorisation
-- [ ] RBAC checks at both route middleware and service layer
-- [ ] Tenant isolation enforced (org_id filter on all tenant queries)
-- [ ] RLS policies active on all tenant-scoped tables
-- [ ] No privilege escalation vectors
+- [x] RBAC checks at both route middleware and service layer
+- [x] Tenant isolation enforced (org_id filter on all tenant queries)
+- [x] RLS policies active on all tenant-scoped tables
+- [x] No privilege escalation vectors — re-confirmed via Phase 9 Milestone 6's and Phase 10 Milestone 1's independent reviews, no new vector found this phase
 
 ### Input & Output
-- [ ] All inputs validated with Zod before any processing
-- [ ] All user-generated content sanitised before rendering
-- [ ] No raw SQL string interpolation
-- [ ] No `dangerouslySetInnerHTML` without DOMPurify
-- [ ] Error responses never expose stack traces or internal details
+- [x] All inputs validated with Zod before any processing
+- [x] All user-generated content sanitised before rendering — zero `dangerouslySetInnerHTML`/`eval` anywhere in `apps/web`, re-confirmed
+- [x] No raw SQL string interpolation
+- [x] No `dangerouslySetInnerHTML` without DOMPurify — there is no `dangerouslySetInnerHTML` at all
+- [x] Error responses never expose stack traces or internal details (`error-handler.plugin.ts` never serialises `err.stack`)
 
 ### Transport & Headers
-- [ ] HTTPS enforced; HTTP redirects to HTTPS
-- [ ] HSTS enabled with preload
-- [ ] CSP header set and tested
-- [ ] All Helmet.js headers active
-- [ ] CORS locked to allowed origins only
-- [ ] CSRF protection on browser-session state-changing endpoints
+- [x] HTTPS enforced; HTTP redirects to HTTPS — Phase 10 Milestone 4 (was previously dead config; fixed and verified live against a real Traefik container)
+- [x] HSTS enabled with preload (Phase 10 Milestone 2)
+- [x] CSP header set and tested (Phase 10 Milestone 2/3)
+- [x] All Helmet.js headers active, including Permissions-Policy (Phase 10 Milestone 2)
+- [x] CORS locked to allowed origins only
+- [x] CSRF protection on browser-session state-changing endpoints
 
 ### Secrets & Keys
-- [ ] No secrets in source code or Docker images
-- [ ] No secrets in application logs
-- [ ] API keys stored as sha256 hash only
-- [ ] Webhook signatures verified on all inbound webhooks
-- [ ] OAuth state parameter validated on callback
+- [x] No secrets in source code or Docker images
+- [x] No secrets in application logs (Pino redaction list, wider than this document's own minimum)
+- [x] API keys stored as sha256 hash only
+- [x] Webhook signatures verified on all inbound webhooks
+- [x] OAuth state parameter validated on callback (`@fastify/oauth2` + PKCE)
 
 ### Audit & Monitoring
-- [ ] All auth events logged to audit_logs
-- [ ] All admin actions logged to audit_logs
-- [ ] Prometheus alert configured for auth failure rate spike
-- [ ] Prometheus alert configured for anomalous API usage
+- [ ] All auth events logged to audit_logs — **not done.** `auditLog()` is called only from `account.service.ts` (Phase 10 Milestone 5's deletion event) and `webhook.service.ts` (billing events); `auth.service.ts` calls it nowhere. Tracked as TD-013 — its own blocker (F-04's RLS gap) was fixed in Milestone 2, but the wiring itself was deliberately out of scope for every milestone since
+- [ ] All admin actions logged to audit_logs — **not done.** `admin.routes.ts` never calls `auditLog()`. Newly tracked as TD-027 (found during this checklist re-verification, not previously logged)
+- [ ] Prometheus alert configured for auth failure rate spike — **not done.** No `rule_files`/alerting section exists in `prometheus.yml` at all. Newly tracked as TD-028
+- [ ] Prometheus alert configured for anomalous API usage — **not done.** Same gap as above, same TD-028
 
 ### Dependencies & Infrastructure
-- [ ] npm audit passes with no high/critical CVEs
-- [ ] All Docker base images pinned to specific digest
-- [ ] Coolify environment variables used for all secrets
-- [ ] No sensitive data in Grafana dashboards or Loki logs
+- [x] npm audit passes with no high/critical CVEs — re-verified clean in Phase 10 Milestone 5 (upgraded `next` to resolve postcss/sharp's bundled CVEs rather than continuing to allowlist them)
+- [x] All Docker base images pinned to specific digest (Phase 10 Milestone 4)
+- [ ] Coolify environment variables used for all secrets — **Unable to Verify.** No Coolify instance or production deployment exists in this environment to check against (same gating as TD-001/TD-006)
+- [x] No sensitive data in Grafana dashboards or Loki logs — true today because neither has any real content yet (`infra/monitoring/grafana/provisioning/dashboards/files/` is empty, no application log shipping to Loki is wired up); Pino's redaction list would protect whatever ships once this is built
 
 ---
 

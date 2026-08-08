@@ -10,14 +10,23 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Phase 10 Milestone 4: explicit least-privilege, matching the repo's own
+# default_workflow_permissions=read setting (verified via the API rather
+# than assumed) -- declared explicitly anyway so this workflow's actual
+# access doesn't silently change if that repo setting is ever loosened.
+# `npm ci` here runs arbitrary third-party postinstall scripts; a
+# write-scoped GITHUB_TOKEN would let a compromised one push to the repo.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Lint, Type-check, Build, Format, Secrets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: .nvmrc
           cache: npm

@@ -1,9 +1,16 @@
 # infra/docker/Dockerfile.web — Next.js frontend
 # Build context must be the repository root:
 #   docker build -f infra/docker/Dockerfile.web -t viralscopes/web .
+#
+# Phase 10 Milestone 4 (finding F-09): both FROM lines pinned to
+# `node:22-alpine`'s digest as of 2026-08-01 (verified via `docker pull`
+# immediately before pinning), same rationale as Dockerfile.api -- see that
+# file's own comment for the full explanation. No shared `base` stage here
+# to inherit from, so both lines carry the digest independently; keep them
+# in sync when the pin is next updated.
 
 # ---- Stage 1: build ----
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 WORKDIR /app
 
 # Workspace manifests first so `npm ci` is cached independently of source changes.
@@ -40,7 +47,7 @@ ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 RUN npx turbo run build --filter=@viralscopes/web
 
 # ---- Stage 2: production runtime ----
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

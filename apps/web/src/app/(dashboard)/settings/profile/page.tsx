@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '../../../../components/ui/card';
 import { Spinner } from '../../../../components/ui/spinner';
+import { useDeleteAccount, useExportAccount } from '../../../../hooks/use-account';
 import {
   useRevokeOtherSessions,
   useRevokeSession,
@@ -27,6 +28,8 @@ export default function ProfilePage(): React.ReactElement {
   const { data: sessions, isLoading, isError } = useSessions();
   const revokeSession = useRevokeSession();
   const revokeOthers = useRevokeOtherSessions();
+  const exportAccount = useExportAccount();
+  const deleteAccount = useDeleteAccount();
   const { showToast } = useToast();
 
   async function handleRevoke(id: string): Promise<void> {
@@ -52,6 +55,44 @@ export default function ProfilePage(): React.ReactElement {
     } catch (err) {
       showToast({
         title: err instanceof ApiClientError ? err.message : 'Failed to sign out other sessions.',
+        variant: 'error',
+      });
+    }
+  }
+
+  async function handleExport(): Promise<void> {
+    try {
+      const data = await exportAccount.mutateAsync();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'viralscopes-account-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({ title: 'Your data export has started downloading.', variant: 'success' });
+    } catch (err) {
+      showToast({
+        title: err instanceof ApiClientError ? err.message : 'Failed to export your data.',
+        variant: 'error',
+      });
+    }
+  }
+
+  async function handleDeleteAccount(): Promise<void> {
+    if (
+      !window.confirm(
+        'Delete your account? This immediately removes your personal data and cannot be undone.',
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteAccount.mutateAsync();
+      window.location.href = '/login';
+    } catch (err) {
+      showToast({
+        title: err instanceof ApiClientError ? err.message : 'Failed to delete account.',
         variant: 'error',
       });
     }
@@ -126,6 +167,32 @@ export default function ProfilePage(): React.ReactElement {
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Privacy &amp; data</CardTitle>
+          <CardDescription>
+            Download a copy of your personal data, or permanently delete your account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => void handleExport()}
+            loading={exportAccount.isPending}
+          >
+            Download my data
+          </Button>
+          <Button
+            variant="outline"
+            className="text-error hover:bg-error/10"
+            onClick={() => void handleDeleteAccount()}
+            loading={deleteAccount.isPending}
+          >
+            Delete my account
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -226,6 +226,40 @@ export interface PromptTestResult {
   status?: 'queued';
 }
 
+// Phase 10 Milestone 5 -- GET /api/v1/account/export's response shape.
+export interface AccountExportData {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    avatarUrl: string | null;
+    emailVerified: boolean;
+    createdAt: string;
+  };
+  organizationMemberships: Array<{
+    orgId: string;
+    orgName: string;
+    role: string;
+    joinedAt: string | null;
+  }>;
+  linkedOAuthAccounts: Array<{ provider: string; linkedAt: string }>;
+  sessions: Array<{
+    ipAddress: string | null;
+    userAgent: string | null;
+    lastUsedAt: string;
+    createdAt: string;
+  }>;
+  apiKeys: Array<{
+    name: string;
+    keyPrefix: string;
+    createdAt: string;
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+  }>;
+  watchlists: Array<{ name: string; type: string; target: string; createdAt: string }>;
+  alertRules: Array<{ name: string; triggerType: string; createdAt: string }>;
+}
+
 export interface JobLog {
   id: string;
   workflowName: string;

@@ -234,6 +234,99 @@ Each version entry uses the following change categories:
 - Confirmed no route or service touches `organization_members.role` — no privilege-escalation surface exists for org roles at all (TD-011 is fully unbuilt)
 - Reviewed and accepted (logged as TD-026) a narrower race-condition window in `upsertSubscriptionForOrg`'s non-locking SELECT-then-branch pattern — the database's own unique constraint plus the retry-safety fix above mean a worst-case race fails safely and recoverably, not silently
 
+## Phase 10 Milestone 2 — Application Security Hardening
+
+> Milestone 1 (Security Architecture Review) produced `docs/reviews/security/` but changed no code, so it has no entry here. This milestone fixes the 5 confirmed Medium findings that review surfaced.
+
+### Security (Phase 10 Milestone 2)
+
+- **Audit log tenant-isolation gap (F-04):** `audit_logs`' RLS policy rejected every insert with a `NULL` `org_id`, which would have made TD-013's planned auth-event logging (failed logins for nonexistent emails, pre-organisation registration events) fail immediately. Migration `0012_audit_logs_null_org_write.sql` relaxes only `WITH CHECK` to permit `org_id IS NULL`; `USING` (read visibility) is deliberately unchanged, so a tenant-scoped read still can never see a null-org row
+- **API key RBAC gap (F-05):** `POST`/`DELETE /api-keys` were reachable by any org member, contradicting `Security_Architecture.md`'s own Role Permissions Matrix (Owner/Admin only). Added `requireRole('owner', 'admin')` to both routes; `GET` (list) intentionally left unrestricted, outside this finding's scope
+- **Missing Content-Security-Policy (F-08):** neither app set a CSP or most other standard security headers. `apps/api` now sends a `default-src 'none'` policy via Helmet (it returns JSON only — no page exists to author a `'self'`-based policy for), plus HSTS/Referrer-Policy/Permissions-Policy/frame-ancestors/X-Frame-Options. `apps/web`'s middleware (`src/proxy.ts`) now generates a fresh nonce per request and sends a `script-src 'self' 'nonce-{nonce}'` policy — verified via raw HTML inspection that Next.js automatically applies the nonce to every framework-injected `<script>` tag
+- **No rate limiting ahead of authentication (F-10):** `plugins/rate-limit.plugin.ts` previously registered `@fastify/rate-limit` with `global: false`, so any route without its own explicit override (every protected business route) had no throttle at all before `authenticate` ran. Now `global: true` with a 300 requests/minute/IP default, applied via Fastify's `onRequest` hook — ahead of authentication on every route by construction, not by each route opting in. Existing per-route overrides (login, etc.) are unaffected
+- **No encryption at rest for OAuth provider tokens (F-03):** `oauth_accounts.access_token`/`refresh_token` relied on disk-level encryption only. New `lib/encryption.ts` (AES-256-GCM, optional `DB_ENCRYPTION_KEY`) is now wired transparently into the OAuth repository's create/find functions — callers read and write plaintext; only the stored column is ciphertext
+
+### Fixed (Phase 10 Milestone 2)
+
+- Found while verifying F-10: `@fastify/rate-limit`'s `errorResponseBuilder` was returning a plain object instead of an `Error`-like value carrying `.statusCode`, so every rate-limit rejection (on any route, not just the new global one — this bug predates this milestone) fell through the generic error handler as an unstyled `500` instead of the intended `429`. Fixed by returning a proper `AppError`
+- `ROADMAP.md`'s "Helmet.js: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy" task item checked off — the last piece (Permissions-Policy) was added to both apps while already inside this same code for F-08
+
+### Documentation (Phase 10 Milestone 2)
+
+- `Security_Architecture.md` §14 (Helmet.js example) now matches the actual API policy (`default-src 'none'`) instead of a generic `'self'`-based one
+- `Security_Architecture.md` §15 (Rate Limiting) now accurately describes two separate mechanisms — the new global pre-auth floor and the pre-existing post-auth plan-tier limiter — rather than the single combined design an earlier draft described but was never built
+- `docs/reviews/security/05-risk-register.md`: SEC-RISK-01 through 05 marked Resolved
+
+## Phase 10 Milestone 3 — API Security & Abuse Protection
+
+> F-10 (global pre-auth rate limiting), the one finding originally scoped to this milestone, was resolved early in Milestone 2 above at the repo owner's request. This milestone's work is three fresh audits performed against the running application, not a backlog of already-known fixes.
+
+### Security (Phase 10 Milestone 3)
+
+- **Open redirect on the login page (F-11):** `router.push(searchParams.get('from') ?? '/home')` passed a fully attacker-controlled query parameter straight into Next.js's client router with no validation. Confirmed via the router's own source that an external URL there triggers a genuine full-page browser redirect (the same code path that explicitly blocks `javascript:` URLs, but not plain `http(s)://` targets) — a real post-login open redirect, not a theoretical one. Fixed with `safeRedirectTarget()`, which only accepts same-app relative paths (rejecting absolute URLs, protocol-relative `//`, and backslash-prefixed variants a browser could normalise into an external origin)
+- Corrected `Security_Architecture.md`'s Auth Endpoint Rate Limits table, which had drifted from the real routes in three places (F-12, informational — the code was never laxer than documented, only the documentation was wrong): the login row's "Lockout" column conflated the IP rate limit with the separate account-keyed lockout; the OAuth row claimed `20/min` for both halves of the flow when only the callback routes use a dedicated `10/min` (the `@fastify/oauth2`-registered start-redirect routes have no route-level override reachable through that library's own options, and rely on the global 300/min/IP floor); `/auth/logout`/`/auth/refresh` were missing from the table entirely
+
+### Verified (Phase 10 Milestone 3)
+
+- Confirmed, by tracing every outbound server-side HTTP call in the codebase, that no SSRF vector exists anywhere today: OAuth provider profile fetches target hardcoded hosts; n8n webhook dispatch uses a hardcoded internal URL with request input only ever used as a `Map`-lookup key, never concatenated into a URL; no user-configurable webhook/callback-URL feature exists in the schema; Next's image optimizer has no `remotePatterns` configured
+
+## Phase 10 Milestone 4 — Infrastructure Security
+
+### Security (Phase 10 Milestone 4)
+
+- **HTTP never actually redirected to HTTPS (found during this milestone's own review, not a pre-identified finding):** Traefik's `web` (port 80) entrypoint had no router or redirect attached to it — `redirect-to-https`, a middleware written in Phase 2, was already known to be unreferenced dead code (Milestone 1's review), but the real consequence (a plain `http://` request hitting Traefik's default 404 instead of redirecting) had never been traced through. Fixed with an entrypoint-level redirect on `web` in `infra/traefik/traefik.yml`, covering every current and future service unconditionally rather than requiring each router to attach a middleware individually. Verified live against a real `traefik:v3` container: `http://` now returns `301 Moved Permanently` to the same host/path on HTTPS
+- **F-09 — Docker base images pinned to a digest:** both `FROM node:22-alpine` lines in `Dockerfile.api` and `Dockerfile.web` pinned to a verified digest instead of the floating `:22-alpine` tag; both images rebuilt and reconfirmed booting correctly
+- SHA-pinned every third-party GitHub Action referenced in `ci.yml`/`security.yml` (each commit verified against the real upstream repos, not guessed) — discovered `actions/dependency-review-action@v5` resolves to a movable, unprotected branch rather than a fixed tag, exactly the kind of reference this hardens against
+- Added explicit least-privilege `permissions: contents: read` to both GitHub Actions workflows
+
+### Added (Phase 10 Milestone 4)
+
+- `.github/dependabot.yml` — npm (workspace root), github-actions, and docker ecosystems, weekly cadence, production/dev dependency-type grouping so security patches never get bundled behind an unrelated update
+- `no-new-privileges` security option on every service in `docker-compose.prod.yml`; `read_only` root filesystem + `tmpfs /tmp` on `api`/`web` specifically (the two images this project builds and controls, both rebuilt and live-verified functioning correctly under the hardened flags)
+
+### Verified (Phase 10 Milestone 4)
+
+- Reviewed the npm audit allowlist and confirmed all 4 entries are current (not stale); cross-checked against GitHub's live Dependabot Alerts API directly and found exactly one other real alert (`esbuild`, medium, dev-dependency only) — correctly outside this project's allowlist mechanism by design, not a gap
+
+## Phase 10 Milestone 5 — Compliance & Privacy
+
+### Added (Phase 10 Milestone 5)
+
+- `GET /api/v1/account/export` — GDPR right to access/data portability. Returns profile, current-org membership, linked OAuth providers (no tokens), session metadata, API key metadata (no hashes), watchlists, and alert rules as JSON
+- `DELETE /api/v1/account` — GDPR right to deletion. Immediately scrubs PII (email replaced with a non-recoverable placeholder, name/avatar/password hash cleared) and hard-deletes OAuth links and sessions; refuses with `409` if the requester solely owns an organisation with other members, since no ownership-transfer flow exists yet
+- Daily account-purge job (`lib/privacy-maintenance-queue.ts`) — attempts to physically remove tombstone rows 30 days after deletion, retaining any still referenced by watchlists/alert rules/API keys/organisations (harmless by then, since PII is already gone)
+- Cookie consent banner (Accept/Reject, 1-year `cookie_consent` cookie) in the root layout — disclosure only, since no non-essential cookies exist anywhere in this app to actually gate
+- Draft Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages, both visibly marked **not legally reviewed**, linked from every auth page
+- "Privacy & data" section on Settings → Profile: "Download my data" and "Delete my account"
+- `docs/guides/gdpr-requests.md` — self-serve and manual-fulfilment GDPR request procedures (referenced by `README.md`'s FAQ since before this milestone, never actually written until now)
+
+### Documentation (Phase 10 Milestone 5)
+
+- `Security_Architecture.md` §19's GDPR compliance table corrected to match reality: access/deletion/portability/consent marked implemented; **found and disclosed a real gap** — "right to rectification" was claimed as an already-built "MVP" feature, but no profile-update endpoint exists anywhere in `apps/api`; corrected rather than silently built (outside this milestone's scope) or left as a false claim
+
+### Security (Phase 10 Milestone 5)
+
+- **`next` upgraded `16.2.12` → `16.3.0`** (non-breaking minor bump): resolves postcss's and sharp's bundled high-severity CVEs, previously allowlisted since Milestone 1 on the assumption that no fix existed without a 7-major-version Next.js downgrade — that assumption is no longer true. `.github/security/audit-allowlist.json` emptied; all 4 previous entries are genuinely fixed now, not merely accepted
+- Investigated a `fast-uri` Dependabot alert (high). **Correction (Phase 10 Milestone 6):** this was originally, incorrectly, written up as "a transient false positive in npm's advisory index" — it was not. `fast-uri` was genuinely vulnerable (`3.1.4`/`4.1.1`) and was actually fixed as a side effect of the same `npm install` run for the `next` bump above (confirmed by inspecting this commit's own `package-lock.json` diff, and independently by GitHub's own Dependabot opening a real PR against `main`, which still has the old vulnerable versions, proposing the identical bump). The vulnerability and its fix were both real; only the *causal explanation* recorded at the time was wrong
+
+## Phase 10 Milestone 6 — Final Security Audit (Phase 10 complete)
+
+### Documentation (Phase 10 Milestone 6)
+
+- **Retracted F-01** (`docs/reviews/security/04-security-findings.md`/`05-risk-register.md`): the Milestone 1 finding "no common-password blocklist exists" was factually wrong — a real ~300-entry blocklist has existed since Phase 4's original commit. Confirmed via direct code inspection and a 9-case logic-level test. Struck through rather than deleted, so the record of the error is honest, not erased
+- **Corrected F-02** and a related error found in the same pass: `Security_Architecture.md`'s Role Hierarchy diagram incorrectly nested platform Super Admin above org-level Admin in one combined hierarchy (they're separate, orthogonal dimensions); the Permissions Matrix included a fictitious `viewer` role and incorrectly granted org-Admin the same n8n-workflow-trigger/dead-letter-queue access that's actually Super-Admin-only; a JWT-field table incorrectly listed `super_admin` as a possible `orgRole` value
+- Re-verified all 33 items in `Security_Architecture.md` §23's Security Checklist against the real code and running app: 25 confirmed true, 8 honestly left unchecked with a specific tracked reason each (see `PROJECT_STATUS.md` TD-013/025/027/028)
+- Corrected Milestone 5's own `fast-uri` write-up (see above) after a real Dependabot PR opened against `main` revealed the original "transient false positive" explanation was itself wrong
+
+### Verified (Phase 10 Milestone 6)
+
+- Full regression: re-confirmed F-03, F-04, F-05, F-08, F-09, F-10, F-11, and both GDPR endpoints all still work correctly against the real running application, not assumed intact after four milestones of subsequent changes
+
+### Security (Phase 10 closeout — PR #23 CI fix)
+
+- Added a dedicated `config.rateLimit` override (5 requests / 15 minutes, per IP) to `GET /api/v1/account/export` and `DELETE /api/v1/account`, on top of the existing per-user `businessRateLimit` layer. Prompted by GitHub Advanced Security's default CodeQL "Missing rate limiting" query flagging `DELETE /account` — the route was never actually unprotected (`businessRateLimit` already covered it), but CodeQL's query only recognises `@fastify/rate-limit`'s route-option pattern, not the custom Redis-based middleware. The tight override is also independently justified: both endpoints are irreversible GDPR actions with no legitimate reason to be called more than a handful of times per session
+- **`nanoid` pinned to `3.3.18`** via a new root `package.json` `overrides` entry: GHSA-2v37-7h3g-55p8 (high, CWE-835 uncontrolled-resource-consumption), a fresh advisory that surfaced against `apps/web`'s transitive `postcss → nanoid@3.3.16` dependency between Milestone 5 and Phase 10 closeout, tripping the production-aware audit gate (`check-audit.mjs`) on PR #23. `overrides` was used instead of the audit allowlist since a genuine non-breaking patch (`nanoid@3.3.17`+) exists; verified `npm ls nanoid` resolves to `3.3.18` with no phantom direct dependency added to `apps/web/package.json`
+
 ### Added
 
 - `PROJECT_RULES.md` — Engineering standards, coding conventions, git workflow, RBAC, Definition of Done, and AI assistant contribution rules

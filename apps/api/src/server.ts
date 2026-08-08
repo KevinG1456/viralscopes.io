@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config.js';
 import { createBillingMaintenanceQueue } from './lib/billing-maintenance-queue.js';
+import { createPrivacyMaintenanceQueue } from './lib/privacy-maintenance-queue.js';
 import { createWorkflowQueue, queueName, type WorkflowQueue } from './lib/queue.js';
 import { cookiePlugin } from './plugins/cookie.plugin.js';
 import { corsPlugin } from './plugins/cors.plugin.js';
@@ -11,6 +12,8 @@ import { healthPlugin } from './plugins/health.plugin.js';
 import { buildLoggerOptions } from './plugins/logger.plugin.js';
 import { rateLimitPlugin } from './plugins/rate-limit.plugin.js';
 import { redisPlugin } from './plugins/redis.plugin.js';
+import { securityHeadersPlugin } from './plugins/security-headers.plugin.js';
+import { accountRoutes } from './routes/account.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { alertRoutes } from './routes/alert.routes.js';
 import { analyticsRoutes } from './routes/analytics.routes.js';
@@ -52,6 +55,7 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
   app.decorate('appConfig', config);
 
   await app.register(errorHandlerPlugin);
+  await app.register(securityHeadersPlugin);
   await app.register(corsPlugin, { config });
   await app.register(dbPlugin, { config });
   await app.register(redisPlugin, { config });
@@ -94,9 +98,20 @@ export async function buildServer(config: AppConfig): Promise<FastifyInstance> {
     await billingMaintenanceQueue.close();
   });
 
+  // Phase 10 — Security & Compliance (Milestone 5): daily 30-day
+  // soft-deleted-account purge sweep (Security_Architecture.md §19's
+  // "Right to deletion" — PII is scrubbed immediately at request time;
+  // this is the best-effort physical row removal that follows).
+  const privacyMaintenanceQueue = createPrivacyMaintenanceQueue(app.db, config, app.log);
+  app.addHook('onClose', async () => {
+    await privacyMaintenanceQueue.close();
+  });
+
   await app.register(healthPlugin, { config, workflowQueues });
   await app.register(authRoutes, { config, prefix: '/api/v1/auth' });
   await app.register(internalRoutes, { prefix: '/api/v1/internal' });
+  // Phase 10 — Security & Compliance (Milestone 5): GDPR export/deletion.
+  await app.register(accountRoutes, { prefix: '/api/v1/account' });
 
   // Phase 5 — Core Backend API. Read-only content (global, no RLS):
   await app.register(videoRoutes, { prefix: '/api/v1/videos' });

@@ -13,6 +13,15 @@ export default function AuthLayout({
         <span className="text-lg font-semibold text-text-primary">ViralScopes</span>
       </Link>
       <div className="w-full max-w-sm">{children}</div>
+      <p className="text-xs text-text-tertiary">
+        <Link href="/privacy" className="hover:underline">
+          Privacy Policy
+        </Link>
+        {' · '}
+        <Link href="/terms" className="hover:underline">
+          Terms of Service
+        </Link>
+      </p>
     </div>
   );
 }

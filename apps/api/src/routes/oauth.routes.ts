@@ -82,7 +82,12 @@ export async function registerOAuthRoutes(
         const profile = await fetchGoogleProfile(token.access_token);
         let resolved;
         try {
-          resolved = await findOrCreateUserFromOAuth(fastify.db, 'google', profile);
+          resolved = await findOrCreateUserFromOAuth(
+            fastify.db,
+            'google',
+            profile,
+            config.encryptionKey,
+          );
         } catch (err) {
           if (isOAuthLinkingRefusal(err)) {
             return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);
@@ -123,7 +128,12 @@ export async function registerOAuthRoutes(
         const profile = await fetchGitHubProfile(token.access_token);
         let resolved;
         try {
-          resolved = await findOrCreateUserFromOAuth(fastify.db, 'github', profile);
+          resolved = await findOrCreateUserFromOAuth(
+            fastify.db,
+            'github',
+            profile,
+            config.encryptionKey,
+          );
         } catch (err) {
           if (isOAuthLinkingRefusal(err)) {
             return reply.redirect(`${config.appUrl}/login?error=account_requires_verification`);

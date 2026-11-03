@@ -30,7 +30,7 @@
     "pino": "^10",
     "stripe": "22.3.2",
     "ulid": "^3",
-    "zod": "^3"
+    "zod": "^4"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9",
